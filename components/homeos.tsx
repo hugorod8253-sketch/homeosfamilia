@@ -801,8 +801,30 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
  const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":true));
 
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
- function freeze(id:string){const frozenAt=new Date().toISOString().slice(0,10);setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",frozenAt,originalExpires:i.originalExpires||i.expires,expires:undefined,dateType:undefined}:i)}));setToast("Producto movido al congelador")}
+ function freeze(id:string){
+  const frozenAt=new Date().toISOString().slice(0,10);
+  setState(s=>{
+   const item=s.inventory.find(i=>i.id===id);
+   if(!item)return s;
+   const key=classifyProduct(item.name,item.category).canonical;
+   return {...s,
+    productPreferences:{...s.productPreferences,[key]:{...(s.productPreferences[key]||{}),location:"Congelador"}},
+    inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",frozenAt,originalExpires:i.originalExpires||i.expires,expires:undefined,dateType:undefined}:i)
+   };
+  });
+  setToast("Guardado en congelador · HomeOS lo recordará");
+ }
  function addToBuy(i:InventoryItem){if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente")){setToast("Ya estaba en la lista de compra");return}setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
+ function moveProduct(i:InventoryItem,next:Location){
+  if(!canStoreAt(i.name,i.category,next)){setToast(storageWarning(i.name,i.category,next));return}
+  if(next==="Congelador"){freeze(i.id);return}
+  const profile=classifyProduct(i.name,i.category);
+  setState(s=>({...s,
+   productPreferences:{...s.productPreferences,[profile.canonical]:{...(s.productPreferences[profile.canonical]||{}),location:next}},
+   inventory:s.inventory.map(x=>x.id===i.id?{...x,location:next,frozenAt:undefined,stock:x.location==="Congelador"?"incierto":x.stock}:x)
+  }));
+  setToast("Ubicación aprendida para futuras compras");
+ }
  function parsePreparedVoice(text:string){
   const t=norm(text);
   const rMatch=t.match(/(\d+)\s*(raciones|tuppers|tuperes|tuppers?)/);
@@ -854,7 +876,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
     <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}</p>
     <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}
-    <div className="inventory-actions">{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"falta")}>Se acabó</button>}{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div>
+    <div className="inventory-actions">{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"falta")}>Se acabó</button>}{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div>{density==="detail"&&<label className="learn-location"><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select><small>HomeOS recordará esta preferencia sin saltarse las reglas de conservación.</small></label>}
    </article>
   })}</div>
 
