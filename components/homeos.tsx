@@ -541,6 +541,7 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
  const [index,setIndex]=useState(0);
  const [open,setOpen]=useState(false);
  const [useMuch,setUseMuch]=useState("");
+ const [craving,setCraving]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
  const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:RECIPES;
@@ -548,7 +549,24 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
  const recipe=(selectedRecipeId?RECIPES.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
  const miss=missing(recipe,state.inventory);
  const filtered=useMuch?RECIPES.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
+ const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2);
+ const cravingMatches=cravingWords.length?RECIPES.map(r=>{
+  const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
+  const hits=cravingWords.filter(w=>hay.includes(w)).length;
+  return {r,hits,fit:score(r,state.inventory)};
+ }).filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits||b.fit-a.fit).map(x=>x.r):[];
+ const suggestions=(craving.trim()?cravingMatches:pool).slice(0,4);
+ const dislikers=state.members.slice(0,state.profile.householdSize).map(member=>{
+  const dislikes=member.dislikes.split(/[,;\n]/).map(x=>norm(x.trim())).filter(Boolean);
+  const matches=recipe.ingredients.filter(i=>dislikes.some(d=>norm(i.name).includes(d)||d.includes(norm(i.key))||norm(i.key).includes(d))).map(i=>i.name);
+  return {name:member.name,matches};
+ }).filter(x=>x.matches.length);
 
+ function chooseRecipe(r:Recipe){
+  setSelectedRecipeId(r.id);
+  setMode(r.mode.includes(mode)?mode:r.mode[0]);
+  setIndex(0);
+ }
  function completeRecipe(){
   const usedKeys=recipe.ingredients.map(x=>norm(x.key));
   setState(s=>({...s,inventory:s.inventory.map(i=>{
@@ -561,14 +579,29 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
  }
 
  return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">RECETAS Y COMIDAS</span><h2>Qué puedes preparar hoy</h2><p>Primero te enseñamos recetas compatibles con tu inventario y tu tiempo. Los ingredientes que falten pasan a la compra con un toque.</p></div><div className="view-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Hábitos</button>}</div></div>
+  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
+
   {tab==="ideas"?<>
-   <div className="mode-row">{[["rapido","Rápido"],["normal","Normal"],["cocinar","Cocinar"],["mealprep","Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
-   <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?"TE FALTA POCO":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div><div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>{state.members.slice(0,state.profile.householdSize).some(m=>m.dislikes&&recipe.ingredients.some(i=>norm(m.dislikes).includes(norm(i.key))))&&<div className="family-warning">⚠ Esta receta contiene algo que no gusta a {state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes&&recipe.ingredients.some(i=>norm(m.dislikes).includes(norm(i.key)))).map(m=>m.name).join(", ")}.</div>}
-<div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Vamos a prepararlo</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Otra idea</button></div></div></article>
-   <div className="ingredient-summary"><article><small>TIENES</small>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>TE FALTA</small>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>Todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>Añadir faltantes</button></article></div>
-   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Tienes demasiado de algo?</h3><p>Escribe un ingrediente y HomeOS prioriza recetas que realmente lo gasten.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{setSelectedRecipeId(r.id);setMode(r.mode[0]);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?missing(r,state.inventory).length+" faltantes":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
+   <article className="meal-request">
+    <div><small>¿QUÉ TE APETECE?</small><h3>Busca una idea concreta</h3><p>Prueba con “pollo con tomate”, “pasta”, “algo rápido” o un ingrediente que quieras gastar.</p></div>
+    <input value={craving} onChange={e=>setCraving(e.target.value)} placeholder="Ej. pollo con tomate, carbonara, algo con leche…"/>
+    {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" ingredientes por completar":"Puedes hacerlo con lo que tienes"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. Puedes usar “Aprovechar producto” o elegir una de las ideas de abajo.</div>}</div>}
+   </article>
+
+   <div className="mode-row meal-modes">{[["rapido","⚡ Rápido"],["normal","🍽 Normal"],["cocinar","👨‍🍳 Cocinar"],["mealprep","🍱 Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
+
+   <div className="recipe-options-head"><div><small>CON LO QUE TIENES</small><h3>{mode==="mealprep"?"Opciones para preparar varias raciones":"Varias opciones, no solo una"}</h3></div><span>{pool.length} ideas disponibles</span></div>
+   <div className="recipe-option-grid">{suggestions.map(r=>{const rm=missing(r,state.inventory);return <button className={recipe.id===r.id?"recipe-option selected":"recipe-option"} key={r.id} onClick={()=>chooseRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.servings} raciones</span><small className={rm.length?"needs":"ready"}>{rm.length?String(rm.length)+" por completar":"✓ Puedes hacerlo"}</small></div></button>})}</div>
+
+   <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?String(miss.length)+" INGREDIENTES POR COMPLETAR":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div><div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>
+    {dislikers.length>0&&<div className="family-warning">{dislikers.map((d,i)=><span key={d.name}>⚠ {d.name==="Tú"?"Has marcado que no te gusta":("A "+d.name+" no le gusta")} {d.matches.join(", ")}{i<dislikers.length-1?".":""}</span>)}</div>}
+    <div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar esta receta</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Siguiente idea</button></div></div></article>
+
+   <div className="ingredient-summary clearer"><article><small>YA TIENES EN CASA</small><strong>{recipe.ingredients.length-miss.length} de {recipe.ingredients.length}</strong>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>NECESITAS PARA COMPLETARLA</small><strong>{miss.length?String(miss.length)+" ingredientes":"Nada"}</strong>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>✓ Está todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>Añadir lo que falta a compra</button></article></div>
+
+   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Qué quieres gastar antes?</h3><p>Escribe un producto que tengas de sobra y te mostramos recetas donde realmente se usa.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" por completar":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
   </>:<Habitos state={state}/>}
+
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2></div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div><button className="primary modal-save" onClick={completeRecipe}>He terminado</button></div></div>}
  </section>
 }
@@ -577,13 +610,16 @@ function Habitos({state}:{state:AppState}){
  const prepared=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").length;
  const known=state.inventory.filter(i=>i.stock!=="incierto").length;
  const quality=Math.min(100,Math.round((known/Math.max(1,state.inventory.length))*70 + Math.min(30,prepared*6)));
- const signals=[
-  ["Proteína","Aprendiendo",state.inventory.some(i=>/pollo|carne|pescado|huevo|proteina/i.test(i.name))],
-  ["Verdura y fruta","Aprendiendo",state.inventory.some(i=>i.category==="Fruta y verdura")],
-  ["Carbohidratos","Aprendiendo",state.inventory.some(i=>/arroz|pasta|pan|patata/i.test(i.name))],
-  ["Dulces / snacks","Sin datos suficientes",false]
+ const groups=[
+  {name:"Proteína",icon:"🥩",items:state.inventory.filter(i=>i.stock!=="falta"&&/pollo|carne|pescado|huevo|proteina|yogur/i.test(i.name))},
+  {name:"Verdura y fruta",icon:"🥬",items:state.inventory.filter(i=>i.stock!=="falta"&&i.category==="Fruta y verdura")},
+  {name:"Carbohidratos",icon:"🍚",items:state.inventory.filter(i=>i.stock!=="falta"&&/arroz|pasta|pan|patata|avena/i.test(i.name))},
+  {name:"Dulces / snacks",icon:"🍫",items:state.inventory.filter(i=>i.stock!=="falta"&&/chocolate|galleta|chuche|gominola|snack|bolleria/i.test(i.name))}
  ];
- return <div className="habits-grid"><article className="habit-chart"><div><small>HÁBITOS · DATOS REALES</small><h3>HomeOS está aprendiendo vuestro patrón</h3><p className="habit-explainer">Las compras no equivalen a consumo. Las conclusiones aparecerán cuando haya recetas, preparados, reposiciones, fotos o correcciones suficientes.</p></div>{signals.map(([k,label,seen])=><div className="habit-status-row" key={String(k)}><span>{String(k)}</span><b className={seen?"seen":""}>{seen?"Señales registradas":String(label)}</b></div>)}</article><article className="habit-note"><span>✦</span><h3>Calidad de la estimación</h3><strong className="quality-number">{quality}%</strong><p>Cuanto más historial real tenga HomeOS, menos dependerá de supuestos generales.</p><small>No mostramos porcentajes nutricionales inventados.</small></article></div>
+ return <div className="habits-detail">
+  <article className="habit-chart"><div><small>CÓMO COMEMOS · APRENDIENDO</small><h3>Qué datos tiene HomeOS ahora mismo</h3><p className="habit-explainer">No usamos lo comprado como si fuera lo comido. Hasta que haya suficiente historial de recetas, preparados y correcciones, mostramos señales reales en vez de porcentajes inventados.</p></div><div className="habit-group-grid">{groups.map(g=><div className="habit-group" key={g.name}><span>{g.icon}</span><div><strong>{g.name}</strong><b>{g.items.length} productos relacionados</b><small>{g.items.length?g.items.slice(0,3).map(i=>i.name).join(" · "):"Aún sin señal suficiente"}</small></div></div>)}</div></article>
+  <article className="habit-note"><span>✦</span><h3>Calidad de la estimación</h3><strong className="quality-number">{quality}%</strong><p>{known} de {state.inventory.length} productos tienen un estado conocido y hay {prepared} preparados registrados.</p><small>Cuando HomeOS tenga consumo real suficiente podrá estimar frecuencia y reparto con más detalle.</small></article>
+ </div>
 }
 
 function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void}){
