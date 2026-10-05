@@ -622,18 +622,113 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
 }
 
 function Habitos({state}:{state:AppState}){
- const prepared=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").length;
- const known=state.inventory.filter(i=>i.stock!=="incierto").length;
- const quality=Math.min(100,Math.round((known/Math.max(1,state.inventory.length))*70 + Math.min(30,prepared*6)));
- const groups=[
-  {name:"Proteína",icon:"🥩",items:state.inventory.filter(i=>i.stock!=="falta"&&/pollo|carne|pescado|huevo|proteina|yogur/i.test(i.name))},
-  {name:"Verdura y fruta",icon:"🥬",items:state.inventory.filter(i=>i.stock!=="falta"&&i.category==="Fruta y verdura")},
-  {name:"Carbohidratos",icon:"🍚",items:state.inventory.filter(i=>i.stock!=="falta"&&/arroz|pasta|pan|patata|avena/i.test(i.name))},
-  {name:"Dulces / snacks",icon:"🍫",items:state.inventory.filter(i=>i.stock!=="falta"&&/chocolate|galleta|chuche|gominola|snack|bolleria/i.test(i.name))}
+ const now=new Date();
+ const dayMs=86400000;
+ const daysAgo=(date:string)=>Math.floor((now.getTime()-new Date(date+"T12:00:00").getTime())/dayMs);
+ const historical=state.purchaseHistory.filter(x=>daysAgo(x.date)>=0&&daysAgo(x.date)<=28);
+ const provisional=state.inventory.filter(i=>i.purchasedAt&&daysAgo(i.purchasedAt)>=0&&daysAgo(i.purchasedAt)<=28).map(i=>({id:i.id,name:i.name,qty:i.qty,unit:i.unit,category:i.category,date:i.purchasedAt,supermarket:i.supermarket,requestedBy:"Casa"} as PurchaseRecord));
+ const source=historical.length?historical:provisional;
+ const sourceMode=historical.length?"Historial de compras":"Inventario reciente";
+ const food=source.filter(x=>x.category!=="Limpieza y hogar");
+ const recent=food.filter(x=>daysAgo(x.date)<=14);
+ const previous=food.filter(x=>daysAgo(x.date)>14&&daysAgo(x.date)<=28);
+
+ const isFruit=(n:string)=>/platano|banana|manzana|pera|naranja|mandarina|fresa|arandano|kiwi|uva|melon|sandia|melocoton|piña|mango|fruta/.test(norm(n));
+ const isVeg=(n:string)=>/tomate|lechuga|brocoli|calabacin|berenjena|zanahoria|cebolla|pimiento|espinaca|pepino|verdura|aguacate|judia verde|coliflor/.test(norm(n));
+ const isProtein=(n:string,c:string)=>c==="Carne"||/pollo|carne|ternera|cerdo|pavo|pescado|salmon|atun|huevo|legumbre|lenteja|garbanzo|proteina|tofu/.test(norm(n));
+ const isCarb=(n:string)=>/arroz|pasta|pan|patata|avena|cereal|harina|tortilla|cuscus|quinoa/.test(norm(n));
+ const isSnack=(n:string)=>/chocolate|galleta|chuche|gominola|snack|patatas fritas|bolleria|refresco|helado|caramelo/.test(norm(n));
+ const defs=[
+  {key:"protein",name:"Proteína",icon:"🥩",test:(x:PurchaseRecord)=>isProtein(x.name,x.category),min:.18,max:.5},
+  {key:"veg",name:"Verduras",icon:"🥬",test:(x:PurchaseRecord)=>isVeg(x.name),min:.12,max:.45},
+  {key:"fruit",name:"Fruta",icon:"🍎",test:(x:PurchaseRecord)=>isFruit(x.name),min:.08,max:.35},
+  {key:"carb",name:"Carbohidratos base",icon:"🍚",test:(x:PurchaseRecord)=>isCarb(x.name),min:.12,max:.45},
+  {key:"snack",name:"Dulces / snacks",icon:"🍫",test:(x:PurchaseRecord)=>isSnack(x.name),min:0,max:.18}
  ];
- return <div className="habits-detail">
-  <article className="habit-chart"><div><small>CÓMO COMEMOS · APRENDIENDO</small><h3>Qué datos tiene HomeOS ahora mismo</h3><p className="habit-explainer">No usamos lo comprado como si fuera lo comido. Hasta que haya suficiente historial de recetas, preparados y correcciones, mostramos señales reales en vez de porcentajes inventados.</p></div><div className="habit-group-grid">{groups.map(g=><div className="habit-group" key={g.name}><span>{g.icon}</span><div><strong>{g.name}</strong><b>{g.items.length} productos relacionados</b><small>{g.items.length?g.items.slice(0,3).map(i=>i.name).join(" · "):"Aún sin señal suficiente"}</small></div></div>)}</div></article>
-  <article className="habit-note"><span>✦</span><h3>Calidad de la estimación</h3><strong className="quality-number">{quality}%</strong><p>{known} de {state.inventory.length} productos tienen un estado conocido y hay {prepared} preparados registrados.</p><small>Cuando HomeOS tenga consumo real suficiente podrá estimar frecuencia y reparto con más detalle.</small></article>
+ const total=Math.max(1,food.length);
+ const groups=defs.map(d=>{
+  const count=food.filter(d.test).length;
+  const share=count/total;
+  const r=recent.filter(d.test).length;
+  const p=previous.filter(d.test).length;
+  let trend:"up"|"down"|"flat"|"new"="flat";
+  if(p===0&&r>0)trend="new";
+  else if(p>0&&r>=p*1.35)trend="up";
+  else if(p>0&&r<=p*.65)trend="down";
+  let status="En rango";
+  let tone="good";
+  if(food.length<8){status="Aprendiendo";tone="learn"}
+  else if(d.key==="snack"){
+   if(share>d.max){status="Muy presente";tone="warn"}
+   else if(share>d.max*.7){status="Presencia media";tone="mid"}
+   else{status="Presencia baja";tone="good"}
+  }else{
+   if(share<d.min*.65){status="Poco presente";tone="warn"}
+   else if(share<d.min){status="Algo bajo";tone="mid"}
+   else if(share>d.max){status="Muy presente";tone="mid"}
+   else{status="Bien presente";tone="good"}
+  }
+  return {...d,count,share,trend,status,tone};
+ });
+
+ const important=groups.filter(g=>g.key!=="snack");
+ const gaps=important.filter(g=>g.tone==="warn");
+ const snack=groups.find(g=>g.key==="snack")!;
+ let orientation="Aún estamos aprendiendo";
+ let orientationText="Necesitamos varias compras reales para ver una tendencia fiable.";
+ let orientationTone="learn";
+ if(food.length>=8){
+  if(gaps.length===0&&snack.tone!=="warn"){
+   orientation="Cesta bastante equilibrada";
+   orientationText="Hay presencia razonable de los principales grupos y los snacks no dominan la compra.";
+   orientationTone="good";
+  }else if(gaps.length){
+   orientation="Hay grupos que conviene reforzar";
+   orientationText="La compra reciente muestra poca presencia de "+gaps.map(g=>g.name.toLowerCase()).join(" y ")+".";
+   orientationTone="warn";
+  }else if(snack.tone==="warn"){
+   orientation="Demasiado peso de snacks";
+   orientationText="Los dulces y snacks aparecen con mucha frecuencia respecto al resto de la cesta.";
+   orientationTone="warn";
+  }
+ }
+ const dataQuality=Math.min(100,Math.round(Math.min(1,food.length/24)*85+Math.min(15,state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length)*15)));
+ const trendLabel=(g:typeof groups[number])=>g.trend==="up"?"↑ sube":g.trend==="down"?"↓ baja":g.trend==="new"?"↑ aparece":"→ estable";
+ const insightCandidates=[
+  ...groups.filter(g=>g.tone==="warn").map(g=>g.key==="snack"?"Los snacks tienen más peso del habitual en la cesta.":g.name+" aparece poco en las compras recientes."),
+  ...groups.filter(g=>g.tone==="good"&&g.key!=="snack").slice(0,2).map(g=>g.name+" está bien representada en la compra.")
+ ].slice(0,3);
+
+ return <div className="habits-dashboard">
+  <article className={"habit-orientation "+orientationTone}>
+   <div><small>ORIENTACIÓN DEL HOGAR · ÚLTIMOS 28 DÍAS</small><h3>{orientation}</h3><p>{orientationText}</p></div>
+   <div className="habit-confidence"><span>Calidad de lectura</span><strong>{dataQuality}%</strong><small>{food.length} líneas de compra analizadas · {sourceMode}</small></div>
+  </article>
+
+  <article className="habit-source-note">
+   <span>ⓘ</span><p><b>Esto analiza lo que entra en casa, no afirma exactamente lo que se ha comido.</b> HomeOS usa compras como señal principal y mejora cuando también registra recetas preparadas, correcciones y reposiciones.</p>
+  </article>
+
+  <div className="habit-balance-grid">
+   {groups.map(g=><article className={"habit-balance-card "+g.tone} key={g.key}>
+    <div className="habit-balance-top"><span>{g.icon}</span><div><strong>{g.name}</strong><small>{g.status}</small></div><b>{trendLabel(g)}</b></div>
+    <div className="habit-share-bar"><span style={{width:String(Math.min(100,Math.max(4,g.share*100)))+"%"}}/></div>
+    <div className="habit-balance-foot"><span>{g.count} compras relacionadas</span><strong>{food.length?Math.round(g.share*100):0}% de líneas</strong></div>
+   </article>)}
+  </div>
+
+  <div className="habit-bottom-grid">
+   <article className="habit-insights">
+    <div><small>QUÉ ESTÁ CAMBIANDO</small><h3>Lectura rápida</h3></div>
+    {insightCandidates.length?<div className="habit-insight-list">{insightCandidates.map((x,i)=><p key={i}><span>{i+1}</span>{x}</p>)}</div>:<p className="habit-empty-copy">Todavía no hay suficiente historial para sacar conclusiones útiles.</p>}
+   </article>
+   <article className="habit-direction">
+    <small>HACIA DÓNDE VA</small>
+    <h3>{recent.length>=4?"Comparación de las últimas 2 semanas":"Aprendiendo tendencia"}</h3>
+    <div>{groups.slice(0,4).map(g=><span key={g.key}><b>{g.icon} {g.name}</b><em className={g.trend}>{trendLabel(g)}</em></span>)}</div>
+    <p>La tendencia compara las compras de los últimos 14 días con los 14 anteriores. No es una valoración médica.</p>
+   </article>
+  </div>
  </div>
 }
 
