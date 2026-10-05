@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -69,9 +70,17 @@ const DEFAULT:AppState={
  profile:{householdSize:4,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goals:["organizar","desperdicio"],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo"}
 };
 
+function normalizeState(x:any):AppState{
+ const raw=x&&typeof x==="object"?x:{};
+ const rawMembers=raw.members||DEFAULT.members;
+ const profile={...DEFAULT.profile,...(raw.profile||{})};
+ const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));
+ const members=ensureMembers(baseMembers,profile.householdSize);
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping};
+}
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
- try{const x=JSON.parse(localStorage.getItem("homeos:v5")||"{}");const rawMembers=x.members||DEFAULT.members;const profile={...DEFAULT.profile,...x.profile};const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));const members=ensureMembers(baseMembers,profile.householdSize);return {...DEFAULT,...x,profile,members,events:x.events||DEFAULT.events,inventory:x.inventory||DEFAULT.inventory,shopping:x.shopping||DEFAULT.shopping};}catch{return DEFAULT}
+ try{return normalizeState(JSON.parse(localStorage.getItem("homeos:v5")||"{}"))}catch{return DEFAULT}
 }
 function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:00:00");return Math.ceil((d.getTime()-Date.now())/86400000)}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
