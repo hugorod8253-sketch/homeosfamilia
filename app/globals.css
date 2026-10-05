@@ -499,3 +499,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .shopping-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .recipe-option-grid{grid-template-columns:1fr 1fr}
 }
+
+.inventory-focus{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:#fff8ed}
+.inventory-focus.prepared{background:#f1f5ff}
+.inventory-focus>div{display:flex;align-items:center;gap:10px}.inventory-focus>div>span{font-size:22px}.inventory-focus>div>div{display:grid;gap:2px}.inventory-focus small{font-size:8px;letter-spacing:.08em;color:#8d8c82;font-weight:850}.inventory-focus strong{font-size:13px}.inventory-focus p{margin:0;font-size:9px;color:var(--muted)}
+.inventory-focus>button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:800}
+@media(max-width:720px){.inventory-focus{align-items:flex-start}.inventory-focus>div{align-items:flex-start}.inventory-focus p{max-width:240px}}
