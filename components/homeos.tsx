@@ -735,23 +735,58 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
 }
 
 function Finanzas({state,setState,available}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;available:number}){
- const pct=Math.min(100,Math.round(state.spent/Math.max(1,state.budget)*100));
- const priced=state.inventory.filter(i=>typeof i.price==="number"&&i.price!>0);
- const knownSpend=priced.reduce((n,i)=>n+(i.price||0),0);
- const byCat=priced.reduce<Record<string,number>>((a,i)=>{a[i.category]=(a[i.category]||0)+(i.price||0);return a},{});
- const fresh=(byCat["Carne"]||0)+(byCat["Fruta y verdura"]||0)+(byCat["Lácteos"]||0);
- const pantry=byCat["Despensa"]||0, prepared=byCat["Preparados"]||0, other=Math.max(0,knownSpend-fresh-pantry-prepared);
- const denom=Math.max(1,knownSpend);
- const parts=[fresh,pantry,prepared,other].map(x=>Math.round(x/denom*100));
- return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">FINANZAS</span><h2>Útil si quieres mirarlo, invisible si no</h2><p>El modo orientativo usa tickets e histórico. El preciso puede pedir el total si falta.</p></div><div className="mode-row compact"><button className={state.profile.financeMode==="orientativo"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"orientativo"}}))}>Orientativo</button><button className={state.profile.financeMode==="preciso"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"preciso"}}))}>Preciso</button></div></div>
-  <div className="finance-grid"><article className="finance-main"><small>GASTO DEL MES</small><strong>{state.spent.toFixed(2)} €</strong><div className="progress"><span style={{width:`${pct}%`}}/></div><div className="finance-row"><span>Presupuesto</span><b>{state.budget.toFixed(0)} €</b></div><div className="finance-row"><span>Disponible</span><b>{available.toFixed(2)} €</b></div></article><article className="soft-card green"><small>AHORRO VS PRESUPUESTO</small><strong>{Math.max(0,available).toFixed(0)} €</strong><p>Orientativo hasta cerrar el mes.</p></article><article className="soft-card amber"><small>DESPERDICIO REGISTRADO</small><strong>{state.waste.toFixed(2)} €</strong><p>Separado del ahorro para no inflar cifras.</p></article></div>
-  <article className="chart-card"><div className="chart-head"><div><small>EVOLUCIÓN</small><h3>Control mensual</h3></div><strong>{pct}%</strong></div><div className="finance-history-empty"><strong>Historial mensual en construcción</strong><p>Se activará cuando existan varios meses de compras registradas. Así evitamos dibujar una tendencia falsa.</p></div></article>
-  <div className="finance-visual-grid">
-    <article className="finance-donut-card"><div className="donut" style={{background:`conic-gradient(#507a61 0 ${parts[0]}%,#89aa93 ${parts[0]}% ${parts[0]+parts[1]}%,#d4b06b ${parts[0]+parts[1]}% ${parts[0]+parts[1]+parts[2]}%,#c98d89 ${parts[0]+parts[1]+parts[2]}% 100%)`}}><div><strong>{state.spent.toFixed(0)}€</strong><span>total</span></div></div><div><small>PRODUCTOS CON PRECIO CONOCIDO</small><h3>Distribución registrada</h3><ul><li><i className="dot d1"/>Frescos <b>{parts[0]}%</b></li><li><i className="dot d2"/>Despensa <b>{parts[1]}%</b></li><li><i className="dot d3"/>Preparados <b>{parts[2]}%</b></li><li><i className="dot d4"/>Otros <b>{parts[3]}%</b></li></ul></div></article>
-    <article className="finance-insight-card"><small>RESUMEN DEL MES</small><h3>{available>=0?"Vas dentro del presupuesto":"Has superado el presupuesto"}</h3><p>{knownSpend>0?"La distribución se calcula solo con productos cuyo precio conocemos. ":"Todavía faltan precios suficientes para repartir el gasto por categorías. "}El desperdicio registrado representa aproximadamente {(state.waste/Math.max(1,state.spent)*100).toFixed(1)}% del gasto.</p><div className="finance-kpis"><span><b>{Math.max(0,available).toFixed(0)}€</b> margen</span><span><b>{state.waste.toFixed(0)}€</b> desperdicio</span><span><b>{pct}%</b> presupuesto usado</span></div></article>
+ const usedPct=Math.min(100,Math.round(state.spent/Math.max(1,state.budget)*100));
+ const priced=state.inventory.filter(i=>typeof i.price==="number"&&(i.price||0)>0);
+ function financeCategory(i:InventoryItem){
+  if(i.location==="Congelador")return "Congelados";
+  if(i.category==="Carne")return "Carne y pescado";
+  if(i.category==="Fruta y verdura")return "Fruta y verdura";
+  if(i.category==="Lácteos")return "Lácteos";
+  if(i.category==="Limpieza y hogar")return "Limpieza y hogar";
+  if(i.category==="Preparados")return "Preparados";
+  if(i.category==="Suplementos")return "Suplementos";
+  if(i.category==="Despensa")return "Despensa";
+  return "Otros";
+ }
+ const byCat=priced.reduce<Record<string,number>>((a,i)=>{const k=financeCategory(i);a[k]=(a[k]||0)+(i.price||0);return a},{});
+ const knownSpend=Object.values(byCat).reduce((a,b)=>a+b,0);
+ const categoryOrder=["Carne y pescado","Fruta y verdura","Lácteos","Congelados","Despensa","Limpieza y hogar","Preparados","Suplementos","Otros"];
+ const icons:Record<string,string>={"Carne y pescado":"🥩","Fruta y verdura":"🥬","Lácteos":"🥛","Congelados":"🧊","Despensa":"🥫","Limpieza y hogar":"🧴","Preparados":"🍱","Suplementos":"＋","Otros":"🛍️"};
+ const rows=categoryOrder.filter(k=>(byCat[k]||0)>0).map(k=>({name:k,value:byCat[k]||0,icon:icons[k]}));
+ const remaining=Math.max(0,available);
+ const over=Math.max(0,-available);
+ const modeText=state.profile.financeMode==="preciso"
+  ?"Cada compra debe tener un total. Así el gasto mensual no depende de estimaciones."
+  :"Si falta el total, HomeOS puede usar precios que ya conoce. Siempre se marca como aproximado.";
+
+ return <section className="stack finance-page">
+  <div className="page-intro finance-intro"><div><span className="eyebrow">FINANZAS DE CASA</span><h2>Cuánto has gastado y cuánto te queda</h2><p>El presupuesto es lo que quieres gastar este mes en alimentación y hogar. No lo llamamos ahorro: simplemente es dinero que todavía queda disponible.</p></div><div className="finance-mode-switch"><small>MODO DE CÁLCULO</small><div><button className={state.profile.financeMode==="orientativo"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"orientativo"}}))}>≈ Orientativo</button><button className={state.profile.financeMode==="preciso"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"preciso"}}))}>= Preciso</button></div><p>{modeText}</p></div></div>
+
+  <article className="budget-overview">
+   <div className="budget-head"><div><small>PRESUPUESTO DEL MES</small><strong>{state.budget.toFixed(0)} €</strong></div><label><span>Cambiar</span><div><input type="number" min="0" value={state.budget} onChange={e=>setState(s=>({...s,budget:Math.max(0,Number(e.target.value)||0)}))}/><b>€</b></div></label></div>
+   <div className="budget-progress"><span style={{width:String(usedPct)+"%"}}/></div>
+   <div className="budget-numbers">
+    <div><small>GASTADO</small><strong>{state.spent.toFixed(2)} €</strong></div>
+    <div className={available>=0?"remaining":"remaining over"}><small>{available>=0?"TE QUEDA":"TE HAS PASADO"}</small><strong>{available>=0?remaining.toFixed(2):over.toFixed(2)} €</strong></div>
+    <div><small>PRESUPUESTO USADO</small><strong>{usedPct}%</strong></div>
+   </div>
+  </article>
+
+  <div className="finance-secondary">
+   <article className="waste-card"><span>♻️</span><div><small>DESPERDICIO REGISTRADO</small><strong>{state.waste.toFixed(2)} €</strong><p>Solo cuenta productos que realmente has marcado como tirados o caducados.</p></div></article>
+   <article className="finance-data-card"><span>🧾</span><div><small>GASTO CON CATEGORÍA CONOCIDA</small><strong>{knownSpend.toFixed(2)} €</strong><p>De {state.spent.toFixed(2)} € gastados este mes. El resto aún no tiene detalle por producto.</p></div></article>
   </div>
-  <article className="budget-editor"><div><h3>Presupuesto mensual</h3><p>Opcional. Puedes usar HomeOS sin definirlo.</p></div><div className="budget-control"><input type="number" value={state.budget} onChange={e=>setState(s=>({...s,budget:Math.max(0,Number(e.target.value)||0)}))}/><span>€ / mes</span></div></article>
+
+  <article className="category-spend-card">
+   <div className="category-spend-head"><div><small>EN QUÉ SE VA EL DINERO</small><h3>Gasto por categoría</h3><p>Cuando tengamos tickets detallados, aquí aparecerá el reparto exacto de cada compra.</p></div><strong>{knownSpend.toFixed(2)} € clasificados</strong></div>
+   {rows.length?<div className="category-money-list">{rows.map((r,i)=>{const pct=knownSpend?Math.round(r.value/knownSpend*100):0;return <div className="money-row" key={r.name}><span className="money-icon">{r.icon}</span><div><div className="money-row-top"><b>{r.name}</b><strong>{r.value.toFixed(2)} €</strong></div><div className="money-bar"><span className={"bar-"+((i%6)+1)} style={{width:String(pct)+"%"}}/></div><small>{pct}% de lo clasificado</small></div></div>})}</div>:<div className="finance-empty"><span>🧾</span><strong>Todavía no hay productos con precio</strong><p>Cuando cierres compras con importes o se lean tickets, aparecerá el desglose.</p></div>}
+  </article>
+
+  <article className="finance-how">
+   <div><small>QUÉ SIGNIFICA CADA DATO</small><h3>Un ejemplo sencillo</h3></div>
+   <div className="finance-example"><span>Presupuesto <b>800 €</b></span><span>− Gastado <b>{state.spent.toFixed(2)} €</b></span><span>= Disponible <b>{available>=0?remaining.toFixed(2)+" €":"0 €"}</b></span></div>
+   <p>El desperdicio se muestra aparte y no se resta otra vez del presupuesto porque ya forma parte de las compras realizadas.</p>
+  </article>
  </section>
 }
 
