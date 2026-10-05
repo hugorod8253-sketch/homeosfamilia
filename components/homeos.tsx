@@ -712,6 +712,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
  const [preparedServings,setPreparedServings]=useState(1);
  const [preparedLocation,setPreparedLocation]=useState<"Nevera"|"Congelador">("Nevera");
  const [photoStatus,setPhotoStatus]=useState("");
+ useEffect(()=>{if(focus!=="all"){setLoc("Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
  const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":true));
 
