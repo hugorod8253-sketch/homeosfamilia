@@ -891,9 +891,9 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
  const usedPct=Math.min(100,Math.round(state.spent/Math.max(1,state.budget)*100));
  const priced=state.inventory.filter(i=>typeof i.price==="number"&&(i.price||0)>0);
  function financeCategory(i:InventoryItem){
-  if(i.location==="Congelador")return "Congelados";
+  if(i.location==="Congelador"||i.category==="Congelados")return "Congelados";
   if(i.category==="Carne")return "Carne y pescado";
-  if(i.category==="Fruta y verdura")return "Fruta y verdura";
+  if(i.category==="Fruta y verdura")return i.subcategory==="Fruta"?"Fruta":"Verdura";
   if(i.category==="Lácteos")return "Lácteos";
   if(i.category==="Limpieza y hogar")return "Limpieza y hogar";
   if(i.category==="Preparados")return "Preparados";
@@ -903,8 +903,8 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
  }
  const byCat=priced.reduce<Record<string,number>>((a,i)=>{const k=financeCategory(i);a[k]=(a[k]||0)+(i.price||0);return a},{});
  const knownSpend=Object.values(byCat).reduce((a,b)=>a+b,0);
- const categoryOrder=["Carne y pescado","Fruta y verdura","Lácteos","Congelados","Despensa","Limpieza y hogar","Preparados","Suplementos","Otros"];
- const icons:Record<string,string>={"Carne y pescado":"🥩","Fruta y verdura":"🥬","Lácteos":"🥛","Congelados":"🧊","Despensa":"🥫","Limpieza y hogar":"🧴","Preparados":"🍱","Suplementos":"＋","Otros":"🛍️"};
+ const categoryOrder=["Carne y pescado","Verdura","Fruta","Lácteos","Congelados","Despensa","Bebidas","Snacks y dulces","Limpieza y hogar","Higiene y cuidado","Preparados","Suplementos","Otros"];
+ const icons:Record<string,string>={"Carne y pescado":"🥩","Verdura":"🥬","Fruta":"🍎","Lácteos":"🥛","Congelados":"🧊","Despensa":"🥫","Bebidas":"🥤","Snacks y dulces":"🍪","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Preparados":"🍱","Suplementos":"＋","Otros":"🛍️"};
  const rows=categoryOrder.filter(k=>(byCat[k]||0)>0).map(k=>({name:k,value:byCat[k]||0,icon:icons[k]}));
  const remaining=Math.max(0,available);
  const over=Math.max(0,-available);
