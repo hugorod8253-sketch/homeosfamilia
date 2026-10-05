@@ -29,8 +29,8 @@ const RULES:Rule[]=[
  P("espinacas",/espinaca/,"Fruta y verdura","Verdura","Nevera","alta","spinach","flex"),
  P("brócoli",/brocoli/,"Fruta y verdura","Verdura","Nevera","alta","broccoli","flex"),
  P("coliflor",/coliflor/,"Fruta y verdura","Verdura","Nevera","alta","cauliflower","flex"),
- P("tomate",/tomate(?!\s*(frito|triturado|conserva|lata))/,"Fruta y verdura","Verdura","Nevera","alta","tomato","flex"),
  P("tomate cherry",/tomate\s+cherry|cherry/,"Fruta y verdura","Verdura","Nevera","alta","tomato-cherry","flex"),
+ P("tomate",/tomate(?!\s*(frito|triturado|conserva|lata|cherry))/,"Fruta y verdura","Verdura","Nevera","alta","tomato","flex"),
  P("pepino",/pepino/,"Fruta y verdura","Verdura","Nevera","alta","cucumber","flex"),
  P("calabacín",/calabacin/,"Fruta y verdura","Verdura","Nevera","alta","zucchini","flex"),
  P("berenjena",/berenjena/,"Fruta y verdura","Verdura","Nevera","alta","eggplant","flex"),
@@ -38,7 +38,7 @@ const RULES:Rule[]=[
  P("zanahoria",/zanahoria/,"Fruta y verdura","Verdura","Nevera","media","carrot","flex"),
  P("cebolla",/cebolla/,"Fruta y verdura","Verdura","Despensa","media","onion","flex"),
  P("ajo",/\bajo\b|ajos/,"Fruta y verdura","Verdura","Despensa","baja","garlic","flex"),
- P("patata",/patata(?!s?\s*(frita|congelada))/,"Fruta y verdura","Verdura","Despensa","media","potato","flex"),
+ P("patata",/patata(?!s?\s*(frita|congelada|de\s+bolsa|chips))/,"Fruta y verdura","Verdura","Despensa","media","potato","flex"),
  P("boniato",/boniato|batata/,"Fruta y verdura","Verdura","Despensa","media","sweet-potato","flex"),
  P("aguacate",/aguacate/,"Fruta y verdura","Fruta","Despensa","alta","avocado","flex"),
  P("champiñón",/champinon|seta/,"Fruta y verdura","Verdura","Nevera","alta","mushroom","flex"),
@@ -61,6 +61,11 @@ const RULES:Rule[]=[
  P("sandía",/sandia/,"Fruta y verdura","Fruta","Despensa","media","watermelon","flex"),
  P("melocotón",/melocoton|nectarina/,"Fruta y verdura","Fruta","Nevera","media","peach","flex"),
  P("fruta del dragón",/fruta\s+del\s+dragon|pitahaya/,"Fruta y verdura","Fruta","Nevera","media","dragon-fruit","flex"),
+ P("papaya",/papaya/,"Fruta y verdura","Fruta","Nevera","media","papaya","flex"),
+ P("maracuyá",/maracuya|fruta\s+de\s+la\s+pasion/,"Fruta y verdura","Fruta","Nevera","media","passion-fruit","flex"),
+ P("granada",/granada/,"Fruta y verdura","Fruta","Nevera","media","pomegranate","flex"),
+ P("lichi",/lichi|lychee/,"Fruta y verdura","Fruta","Nevera","alta","lychee","flex"),
+ P("coco",/\bcoco\b/,"Fruta y verdura","Fruta","Despensa","baja","coconut","flex"),
 
  // Carne y aves
  P("pechuga de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))(?:pechuga.*pollo|filete.*pollo)/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
@@ -150,6 +155,7 @@ const RULES:Rule[]=[
  P("frutos secos",/almendra|nuez|pistacho|anacardo|avellana|cacahuete|frutos\s+secos/,"Despensa","Frutos secos","Despensa","baja","nuts","shelf"),
 
  // Congelados y preparados
+ P("patatas de bolsa",/patatas.*(?:de\s+bolsa|chips)|chips\s+de\s+patata/,"Snacks y dulces","Aperitivo","Despensa","baja","chips","shelf"),
  P("patatas fritas congeladas",/patata.*(congelad|frita).*|french\s+fries|patatas\s+fritas/,"Congelados","Patatas","Congelador","baja","frozen-fries","frozen"),
  P("nuggets",/nugget/,"Congelados","Pollo empanado","Congelador","baja","nuggets","frozen"),
  P("verdura congelada",/(brocoli|espinaca|guisante|menestra|verdura|judia).*congelad|congelad.*(brocoli|espinaca|guisante|menestra|verdura|judia)/,"Congelados","Verdura congelada","Congelador","baja","frozen-vegetables","frozen"),
@@ -175,7 +181,6 @@ const RULES:Rule[]=[
  P("chocolate",/chocolate/,"Snacks y dulces","Chocolate","Despensa","baja","chocolate","shelf"),
  P("galletas",/galleta/,"Snacks y dulces","Galletas","Despensa","baja","cookie","shelf"),
  P("gominolas",/gominola|chuche|caramelo/,"Snacks y dulces","Golosinas","Despensa","baja","candy","shelf"),
- P("patatas de bolsa",/patatas.*(bolsa|chips)|chips\s+de\s+patata/,"Snacks y dulces","Aperitivo","Despensa","baja","chips","shelf"),
  P("helado",/helado/,"Congelados","Helados","Congelador","baja","ice-cream","frozen"),
 
  // Bebidas
@@ -213,7 +218,10 @@ const RULES:Rule[]=[
  P("jabón de manos",/jabon.*mano/,"Higiene y cuidado","Manos","Despensa","baja","hand-soap","household"),
  P("desodorante",/desodorante/,"Higiene y cuidado","Higiene","Despensa","baja","deodorant","household"),
  P("pasta de dientes",/pasta.*diente|dentifrico/,"Higiene y cuidado","Dental","Despensa","baja","toothpaste","household"),
- P("perfume",/perfume|colonia|eau\s+de/,"Higiene y cuidado","Fragancia","Despensa","baja","perfume","household"),
+ P("perfume",/perfume|colonia|eau\s+de|bruma\s+corporal/,"Higiene y cuidado","Fragancia","Despensa","baja","perfume","household"),
+ P("crema corporal",/crema\s+corporal|locion\s+corporal|body\s+lotion/,"Higiene y cuidado","Cuerpo","Despensa","baja","body-lotion","household"),
+ P("crema facial",/crema\s+facial|hidratante\s+facial/,"Higiene y cuidado","Facial","Despensa","baja","face-cream","household"),
+ P("protector solar",/protector\s+solar|fotoprotector|spf\s*\d+/,"Higiene y cuidado","Solar","Despensa","baja","sunscreen","household"),
 ];
 
 const CATEGORY_FALLBACKS:Record<string,ProductProfile>={
