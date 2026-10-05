@@ -86,25 +86,55 @@ function productIcon(name:string,cat:string){
  if(/pan|baguette|molde|hamburguesa.*pan/.test(n)) return "🍞";
  if(/leche/.test(n)) return "🥛";
  if(/yogur/.test(n)) return "🥣";
+ if(/mozzarella/.test(n)) return "⚪";
  if(/queso/.test(n)) return "🧀";
  if(/huevo/.test(n)) return "🥚";
  if(/tomate/.test(n)) return "🍅";
+ if(/patata/.test(n)) return "🥔";
+ if(/cebolla/.test(n)) return "🧅";
+ if(/zanahoria/.test(n)) return "🥕";
+ if(/aguacate/.test(n)) return "🥑";
  if(/platano|banana/.test(n)) return "🍌";
  if(/manzana/.test(n)) return "🍎";
+ if(/naranja|mandarina/.test(n)) return "🍊";
+ if(/limon/.test(n)) return "🍋";
+ if(/fresa/.test(n)) return "🍓";
  if(/arandano|frutos rojos/.test(n)) return "🫐";
+ if(/chuche|gominola|caramelo/.test(n)) return "🍬";
+ if(/chocolate/.test(n)) return "🍫";
+ if(/galleta/.test(n)) return "🍪";
+ if(/helado/.test(n)) return "🍨";
+ if(/pizza/.test(n)) return "🍕";
  if(/pollo/.test(n)) return "🍗";
  if(/carne|ternera|cerdo|entrecot|hamburguesa/.test(n)) return "🥩";
  if(/pescado|salmon|atun/.test(n)) return "🐟";
+ if(/marisco|gamba|langostino/.test(n)) return "🍤";
  if(/arroz/.test(n)) return "🍚";
  if(/pasta|macarron|espagueti/.test(n)) return "🍝";
+ if(/sopa|crema/.test(n)) return "🥣";
+ if(/ensalada/.test(n)) return "🥗";
+ if(/sandwich|bocadillo/.test(n)) return "🥪";
  if(/cafe/.test(n)) return "☕";
  if(/agua/.test(n)) return "💧";
+ if(/refresco|cola/.test(n)) return "🥤";
+ if(/zumo/.test(n)) return "🧃";
+ if(/congelad/.test(n)) return "🧊";
+ if(/preparad|tupper|meal prep/.test(n)||cat==="Preparados") return "🍱";
  if(/proteina|creatina|suplement/.test(n)||cat==="Suplementos") return "🥤";
+ if(/detergente|suavizante|limpiador/.test(n)) return "🧴";
+ if(/jabon/.test(n)) return "🧼";
+ if(/papel higienico|papel de cocina|servilleta/.test(n)) return "🧻";
  if(cat==="Fruta y verdura") return "🥬";
- if(cat==="Preparados") return "🍱";
  if(cat==="Lácteos") return "🥛";
  if(cat==="Carne") return "🥩";
  return "🛍️";
+}
+function rotationBand(name:string,cat:string,location?:string){
+ const n=norm(name);
+ if(location==="Congelador") return {key:"baja",label:"Rotación baja"};
+ if(/carne|pollo|pescado|mozzarella|yogur|pan|fruta|verdura|tomate|leche fresca|preparad/.test(n)) return {key:"alta",label:"Rotación alta"};
+ if(/queso|embutido|huevo|tortilla|salsa refrigerada|bebida fresca/.test(n)) return {key:"media",label:"Rotación media"};
+ return {key:"baja",label:"Rotación baja"};
 }
 function presenceText(p:Member["presence"]){return p==="casa"?"Come habitualmente en casa":p==="fuera_dia"?"Fuera durante el día":p==="fines_semana"?"Principalmente fines de semana":"Rutina variable"}
 function appetiteText(a:Member["appetite"]){return a==="poco"?"Come poco":a==="mucho"?"Come bastante":"Consumo normal"}
@@ -301,7 +331,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. leche semidesnatada Lidl, 1 kg pollo…"/><select value={member} onChange={e=>setMember(e.target.value)}>{state.members.slice(0,state.profile.householdSize).map(m=><option key={m.id}>{m.name}</option>)}</select><button onClick={add}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}</div>}
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>¿En qué tienda estás?</h3><p>Elige una arriba para reorganizar la compra.</p></article>}
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div>{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}</div>)}</article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Adjuntar ticket</strong><p>Guárdalo con la compra para completar productos y total.</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{if(e.target.files?.[0])setToast("Ticket adjuntado. Queda pendiente de análisis automático")}}/><article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}</div>)}</div></article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Adjuntar ticket</strong><p>Guárdalo con la compra para completar productos y total.</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{if(e.target.files?.[0])setToast("Ticket adjuntado. Queda pendiente de análisis automático")}}/><article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
   {shoppingActive&&activeStore&&other.length>0&&<article className="other-stores"><div><small>PENDIENTE EN OTRAS TIENDAS</small><h3>También tenías esto apuntado</h3></div>{other.map(i=><div key={i.id}><span><strong>{i.name}</strong><small>{i.supermarket}</small></span><button onClick={()=>moveHere(i.id)}>Traer aquí</button></div>)}</article>}
  </section>
 }
@@ -362,7 +392,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
  return <section className="stack">
   <div className="page-intro"><div><span className="eyebrow">INVENTARIO DE CASA</span><h2>Qué hay, qué queda poco y qué conviene revisar</h2><p>Una vista visual por ubicación y categoría. HomeOS estima cuando no tiene confirmación reciente.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>🍱 Añadir preparado</button><button className="secondary" onClick={()=>cameraRef.current?.click()}>Hacer foto</button><button className="secondary" onClick={()=>galleryRef.current?.click()}>Fototeca</button><input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>e.target.files?.[0]&&setToast("Foto guardada para revisión del inventario")}/><input ref={galleryRef} hidden type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&setToast("Imagen guardada para revisión del inventario")}/></div></div>
   <div className="inventory-controls"><div className="segmented">{LOCATIONS.map(x=><button key={x} className={loc===x?"active":""} onClick={()=>setLoc(x)}>{x}</button>)}</div><div className="segmented categories">{CATEGORIES.map(x=><button key={x} className={cat===x?"active":""} onClick={()=>setCat(x)}>{x}</button>)}</div></div>
-  <div className="inventory-grid">{shown.map(i=><article className="inventory-card" key={i.id}><div className="inventory-top"><span className="food-dot">{i.location==="Nevera"?"❄":i.location==="Congelador"?"◈":i.location==="Suplementos"?"＋":"▦"}</span><span className={`stock-badge ${i.stock}`}>{statusLabel(i.stock)}</span></div><h3>{i.name}</h3><p>{i.stock==="incierto"?"Cantidad estimada":`${i.qty} ${i.unit}`} · {i.location}</p>{i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 Preparado</span><span>{i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca":"Consumo pref."}: {new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}<div className="inventory-actions"><button onClick={()=>setStock(i.id,"falta")}>Se acabó</button><button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div></article>)}</div>
+  <div className="inventory-grid">{shown.map(i=><article className="inventory-card" key={i.id}><div className="inventory-top"><span className="food-dot">{i.location==="Nevera"?"❄":i.location==="Congelador"?"◈":i.location==="Suplementos"?"＋":"▦"}</span><span className={`stock-badge ${i.stock}`}>{statusLabel(i.stock)}</span></div><h3>{i.name}</h3><p>{i.stock==="incierto"?"Cantidad estimada":`${i.qty} ${i.unit}`} · {i.location}</p><div className={`rotation-badge ${rotationBand(i.name,i.category,i.location).key}`}>{rotationBand(i.name,i.category,i.location).label}</div>{i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 Preparado</span><span>{i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca":"Consumo pref."}: {new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}<div className="inventory-actions"><button onClick={()=>setStock(i.id,"falta")}>Se acabó</button><button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div></article>)}</div>
   {preparedOpen&&<div className="modal-backdrop" onMouseDown={()=>setPreparedOpen(false)}><div className="modal prepared-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">PREPARADOS</span><h2>Guardar comida ya hecha</h2><p>Sobras, tuppers y meal prep viven en el mismo sitio.</p></div><button onClick={()=>setPreparedOpen(false)}>×</button></div><div className="voice-prepared-box"><button className={voiceListening?"voice-main listening":"voice-main"} onClick={startPreparedVoice}>{voiceListening?"Escuchando…":"🎙 Añadir por voz"}</button><span>Ej.: “Han sobrado 3 raciones de pollo con arroz y van a la nevera”.</span>{voiceDraft&&<small>Entendido: “{voiceDraft}”</small>}</div><div className="prepared-divider"><span>o manualmente</span></div><div className="prepared-form"><label><span>¿Qué es?</span><input autoFocus value={preparedName} onChange={e=>setPreparedName(e.target.value)} placeholder="Ej. pollo con arroz, lentejas…"/></label><label><span>Raciones aproximadas</span><div className="stepper"><button onClick={()=>setPreparedServings(n=>Math.max(1,n-1))}>−</button><b>{preparedServings}</b><button onClick={()=>setPreparedServings(n=>n+1)}>+</button></div></label><label><span>¿Dónde lo guardas?</span><div className="storage-choice"><button className={preparedLocation==="Nevera"?"active":""} onClick={()=>setPreparedLocation("Nevera")}>❄️ Nevera</button><button className={preparedLocation==="Congelador"?"active":""} onClick={()=>setPreparedLocation("Congelador")}>🧊 Congelador</button></div></label><div className="prepared-note">HomeOS lo tratará como comida lista y la priorizará. La conservación dependerá del plato y de cuándo se preparó; no se inventa una fecha de seguridad.</div></div><button className="primary modal-save" onClick={savePrepared}>Guardar preparado</button></div></div>}
  </section>
 }
