@@ -379,7 +379,17 @@ export default function HomeOS(){
      inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category:x.category,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
     }
    }
-   return {...s,inventory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
+   const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>({
+    id:crypto.randomUUID(),
+    name:x.name,
+    qty:x.qty,
+    unit:x.unit,
+    category:x.category,
+    date:today,
+    supermarket:x.supermarket||activeStore||undefined,
+    requestedBy:x.requestedBy
+   }))].slice(-600);
+   return {...s,inventory,purchaseHistory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
   });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
