@@ -247,10 +247,35 @@ function Inicio({state,setState,expiring,confidence,available,setView}:{state:Ap
 }
 
 function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>}){
- const now=new Date(),year=now.getFullYear(),month=now.getMonth(),days=new Date(year,month+1,0).getDate(),blank=(new Date(year,month,1).getDay()+6)%7;
- const [title,setTitle]=useState(""),[date,setDate]=useState("");
- const add=()=>{if(!title||!date)return;setState(s=>({...s,events:[...s.events,{id:crypto.randomUUID(),title,date}]}));setTitle("");setDate("")};
- return <article className="calendar-card"><div className="calendar-head"><div><small>CALENDARIO DEL HOGAR</small><h3>{new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(now)}</h3></div><div className="event-add"><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Evento"/><input type="date" value={date} onChange={e=>setDate(e.target.value)}/><button onClick={add}>Añadir</button></div></div><div className="calendar-week">{["L","M","X","J","V","S","D"].map(x=><b key={x}>{x}</b>)}</div><div className="calendar-grid">{Array.from({length:blank}).map((_,i)=><span key={"b"+i}/>)}{Array.from({length:days}).map((_,i)=>{const d=i+1,iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,ev=state.events.find(e=>e.date===iso);return <div className={ev?"calendar-day has-event":"calendar-day"} key={d}><b>{d}</b>{ev&&<small>{ev.title}</small>}</div>})}</div></article>
+ const today=new Date();
+ const [cursor,setCursor]=useState(()=>new Date(today.getFullYear(),today.getMonth(),1));
+ const [selectedDate,setSelectedDate]=useState("");
+ const [title,setTitle]=useState("");
+ const year=cursor.getFullYear(),month=cursor.getMonth();
+ const days=new Date(year,month+1,0).getDate();
+ const blank=(new Date(year,month,1).getDay()+6)%7;
+ const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+ const monthLabel=new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(cursor);
+ const add=()=>{if(!title.trim()||!selectedDate)return;setState(s=>({...s,events:[...s.events,{id:crypto.randomUUID(),title:title.trim(),date:selectedDate}]}));setTitle("")};
+ const move=(delta:number)=>setCursor(new Date(year,month+delta,1));
+ const goToday=()=>{setCursor(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDate(todayIso)};
+ return <article className="calendar-card">
+  <div className="calendar-head">
+   <div><small>CALENDARIO DEL HOGAR</small><div className="calendar-title-row"><button className="calendar-nav" onClick={()=>move(-1)} aria-label="Mes anterior">‹</button><h3>{monthLabel}</h3><button className="calendar-nav" onClick={()=>move(1)} aria-label="Mes siguiente">›</button><button className="calendar-today" onClick={goToday}>Hoy</button></div></div>
+   {selectedDate?<div className="event-add selected"><div><span>Evento para</span><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}</strong></div><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. cena familiar"/><button onClick={add}>Añadir</button></div>:<div className="calendar-hint">Pulsa un día para añadir un evento</div>}
+  </div>
+  <div className="calendar-week">{["L","M","X","J","V","S","D"].map(x=><b key={x}>{x}</b>)}</div>
+  <div className="calendar-grid">
+   {Array.from({length:blank}).map((_,i)=><span key={"b"+i}/>)}
+   {Array.from({length:days}).map((_,i)=>{
+    const d=i+1;
+    const iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const events=state.events.filter(e=>e.date===iso);
+    const cls=["calendar-day",events.length?"has-event":"",iso===todayIso?"today":"",iso===selectedDate?"selected":""].filter(Boolean).join(" ");
+    return <button className={cls} key={d} onClick={()=>setSelectedDate(iso)}><b>{d}</b>{events.slice(0,2).map(ev=><small key={ev.id}>{ev.title}</small>)}{events.length>2&&<small>+{events.length-2} más</small>}</button>
+   })}
+  </div>
+ </article>
 }
 
 function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void}){
