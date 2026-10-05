@@ -420,17 +420,33 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  const [quick,setQuick]=useState("");
  const [member,setMember]=useState(state.members[0]?.name||"Tú");
  const [storeFilter,setStoreFilter]=useState("Todos");
+ const [purchaseTotal,setPurchaseTotal]=useState("");
+ const [receiptName,setReceiptName]=useState("");
 
  function add(){
   let value=quick.trim();if(!value)return;
   let supermarket:string|undefined;
   const lower=norm(value);
-  for(const s of state.profile.supermarkets){if(lower.includes(norm(s))){supermarket=s;value=value.replace(new RegExp(s,"i"),"").trim()}}
-  let category="Despensa",unit="ud";
-  if(/leche|yogur|queso/.test(lower))category="Lácteos";
-  if(/pollo|carne|ternera|cerdo/.test(lower)){category="Carne";unit=/kg|kilo/.test(lower)?"kg":"ud"}
-  if(/tomate|fruta|verdura|platano|arándano|arandano/.test(lower))category="Fruta y verdura";
-  setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:value.charAt(0).toUpperCase()+value.slice(1),qty:1,unit,category,supermarket,requestedBy:member,reason:"persona",status:"pendiente"}]}));
+  for(const s of state.profile.supermarkets){
+   if(s!=="Otro supermercado"&&lower.includes(norm(s))){
+    supermarket=s;value=value.replace(new RegExp(s,"i"),"").trim();break;
+   }
+  }
+  let qty=1,unit=inferUnit(value);
+  const m=value.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|uds?|unidades?|rollos?|packs?|paquetes?)/i);
+  if(m){
+   qty=Number(m[1].replace(",","."))||1;
+   const raw=m[2].toLowerCase();
+   unit=raw==="l"?"L":raw.startsWith("ud")||raw.startsWith("unidad")?"uds":raw.startsWith("rollo")?"rollos":raw.startsWith("pack")||raw.startsWith("paquete")?"pack":raw;
+   value=value.replace(m[0]," ").replace(/\s+/g," ").trim();
+  }
+  const category=inferCategory(value);
+  const name=(value||quick.trim()).replace(/^de\s+/i,"").trim();
+  setState(s=>{
+   const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente");
+   if(duplicate)return {...s,shopping:s.shopping.map(i=>i.id===duplicate.id?{...i,qty:i.qty+qty}:i)};
+   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category,supermarket,requestedBy:member,reason:"persona",status:"pendiente"}]};
+  });
   setQuick("");
  }
  function moveHere(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,supermarket:activeStore,status:"pendiente"}:i)}))}
@@ -440,11 +456,11 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  const grouped=mainItems.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
  const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
  return <section className="stack">
-  <div className="shopping-top"><div><span className="eyebrow">LISTA GENERAL</span><h2>{shoppingActive?(activeStore?`Comprando en ${activeStore}`:"Elige dónde estás comprando"):"Compra compartida"}</h2><p>Primero una lista simple. Cuando entras en una tienda, HomeOS la reorganiza.</p></div>{shoppingActive?<button className="primary" onClick={finishShopping}>Terminar compra</button>:<button className="primary" onClick={()=>setShoppingActive(true)}>Estoy comprando</button>}</div>
+  <div className="shopping-top"><div><span className="eyebrow">LISTA GENERAL</span><h2>{shoppingActive?(activeStore?`Comprando en ${activeStore}`:"Elige dónde estás comprando"):"Compra compartida"}</h2><p>Primero una lista simple. Cuando entras en una tienda, HomeOS la reorganiza.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setShoppingActive(false);setActiveStore("");setPurchaseTotal("")}}>Salir</button><button className="primary" disabled={!activeStore} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));finishShopping(purchaseTotal.trim()&&Number.isFinite(n)?n:undefined);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary" onClick={()=>setShoppingActive(true)}>Estoy comprando</button>}</div>
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. leche semidesnatada Lidl, 1 kg pollo…"/><select value={member} onChange={e=>setMember(e.target.value)}>{state.members.slice(0,state.profile.householdSize).map(m=><option key={m.id}>{m.name}</option>)}</select><button onClick={add}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}</div>}
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button></div>}
-  {shoppingActive&&!activeStore&&<article className="empty-state"><h3>¿En qué tienda estás?</h3><p>Elige una arriba para reorganizar la compra.</p></article>}
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}</div>)}</div></article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Adjuntar ticket</strong><p>Guárdalo con la compra para completar productos y total.</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{if(e.target.files?.[0])setToast("Ticket adjuntado. Queda pendiente de análisis automático")}}/><article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
+  {shoppingActive&&!activeStore&&<article className="empty-state"><h3>¿En qué tienda estás?</h3><p>Elige una arriba para reorganizar la compra. No se puede cerrar hasta seleccionar una.</p></article>}
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}</div>)}</div></article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Adjuntar ticket</strong><p>{receiptName?`Seleccionado: ${receiptName}`:"Selecciona foto o PDF del ticket."}</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{const file=e.target.files?.[0];if(file){setReceiptName(file.name);setToast("Ticket seleccionado")}}}/>{shoppingActive&&<label className="purchase-total"><span>Total de la compra <small>opcional</small></span><div><input inputMode="decimal" value={purchaseTotal} onChange={e=>setPurchaseTotal(e.target.value)} placeholder="0,00"/><b>€</b></div></label>}<article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
   {shoppingActive&&activeStore&&other.length>0&&<article className="other-stores"><div><small>PENDIENTE EN OTRAS TIENDAS</small><h3>También tenías esto apuntado</h3></div>{other.map(i=><div key={i.id}><span><strong>{i.name}</strong><small>{i.supermarket}</small></span><button onClick={()=>moveHere(i.id)}>Traer aquí</button></div>)}</article>}
  </section>
 }
