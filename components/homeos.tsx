@@ -11,7 +11,7 @@ type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 type InventoryItem = {
   id:string; name:string; qty:number; unit:string; location:Location; category:string;
   stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
-  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep";
+  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; frozenAt?:string; originalExpires?:string; supermarket?:string;
 };
 type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; supermarket?:string;
@@ -35,7 +35,7 @@ type AppState = {
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number;
 };
 
-const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería"];
+const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería","Otro supermercado"];
 const CATEGORIES=["Todos","Lácteos","Carne","Fruta y verdura","Despensa","Preparados","Suplementos"];
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa","Suplementos"];
 
@@ -80,6 +80,32 @@ function hasInv(inv:InventoryItem[],key:string){const k=norm(key);return inv.som
 function missing(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.filter(x=>!hasInv(inv,x.key))}
 function score(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.length-missing(recipe,inv).length}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
+function inferCategory(name:string){
+ const n=norm(name);
+ if(/leche|yogur|queso|mozzarella|nata|mantequilla/.test(n)) return "Lácteos";
+ if(/pollo|carne|ternera|cerdo|pavo|hamburguesa|pescado|salmon|atun|marisco/.test(n)) return "Carne";
+ if(/tomate|fruta|verdura|platano|banana|manzana|naranja|limon|fresa|arandano|patata|cebolla|zanahoria|aguacate/.test(n)) return "Fruta y verdura";
+ if(/proteina|creatina|suplement/.test(n)) return "Suplementos";
+ if(/tupper|preparad|meal prep|sobras/.test(n)) return "Preparados";
+ return "Despensa";
+}
+function inferUnit(name:string){
+ const n=norm(name);
+ if(/kg|kilo/.test(n)) return "kg";
+ if(/gramo/.test(n)) return "g";
+ if(/litro/.test(n)) return "L";
+ if(/mililitro|ml/.test(n)) return "ml";
+ if(/rollo/.test(n)) return "rollos";
+ return "ud";
+}
+function ensureMembers(members:Member[],count:number){
+ const out=[...members];
+ while(out.length<count){
+  const n=out.length+1;
+  out.push({id:"m"+n,name:"Miembro "+n,relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""});
+ }
+ return out;
+}
 function statusLabel(s:StockState){return s==="hay"?"Hay":s==="poco"?"Queda poco":s==="falta"?"Probablemente falta":s==="mucho"?"Hay bastante":"Revisar"}
 function productIcon(name:string,cat:string){
  const n=norm(name);
@@ -138,6 +164,16 @@ function rotationBand(name:string,cat:string,location?:string){
 }
 function presenceText(p:Member["presence"]){return p==="casa"?"Come habitualmente en casa":p==="fuera_dia"?"Fuera durante el día":p==="fines_semana"?"Principalmente fines de semana":"Rutina variable"}
 function appetiteText(a:Member["appetite"]){return a==="poco"?"Come poco":a==="mucho"?"Come bastante":"Consumo normal"}
+function habitSignals(state:AppState){
+ const active=state.inventory.filter(i=>i.stock!=="falta");
+ const has=(re:RegExp,cat?:string)=>active.some(i=>(cat&&i.category===cat)||re.test(norm(i.name)));
+ return [
+  ["Proteína",has(/pollo|carne|pescado|huevo|proteina|yogur/)],
+  ["Verdura",has(/verdura|tomate|zanahoria|cebolla|aguacate|brocoli/,"Fruta y verdura")],
+  ["Carbohidratos",has(/arroz|pasta|pan|patata|avena/)],
+  ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria/)]
+ ] as [string,boolean][];
+}
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
 
 const nav:{id:View;label:string;icon:string}[]=[
