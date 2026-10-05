@@ -544,3 +544,33 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .event-compose-row button{min-width:82px}
  .event-compose>small{display:none}
 }
+
+/* Product intelligence + custom pictograms */
+.product-glyph{width:100%;height:100%;min-width:0;min-height:0;display:grid;place-items:center;font-size:1.05em;line-height:1;color:#516159}
+.product-svg{width:78%;height:78%;display:block}
+.product-pictogram .product-glyph{font-size:23px}
+.inventory-product-icon .product-glyph{font-size:22px}
+.meal-request-results .product-glyph{width:26px;height:26px;font-size:21px}
+.glyph-fruta-y-verdura{color:#557c5d}
+.glyph-carne{color:#9b5d56}
+.glyph-lacteos{color:#5c7b9b}
+.glyph-congelados{color:#5b89a2}
+.glyph-preparados{color:#8a704c}
+.glyph-despensa{color:#887248}
+.glyph-bebidas{color:#527c91}
+.glyph-snacks-y-dulces{color:#936c73}
+.glyph-suplementos{color:#6d6f8c}
+.glyph-limpieza-y-hogar{color:#557e79}
+.glyph-higiene-y-cuidado{color:#856b88}
+.product-pictogram{overflow:hidden}
+.product-pictogram .product-svg{width:30px;height:30px}
+.inventory-product-icon .product-svg{width:24px;height:24px}
+.learn-location{display:grid;gap:5px;margin-top:9px;padding-top:9px;border-top:1px solid #edf0ed}
+.learn-location>span{font-size:8px;letter-spacing:.04em;font-weight:850;color:#7f8982}
+.learn-location select{width:100%;border:1px solid var(--line);border-radius:9px;background:#f8faf8;padding:7px 8px;font-size:9px;color:#445149}
+.learn-location small{font-size:8px;line-height:1.35;color:#909892}
+.inventory-grid.compact .learn-location{display:none}
+@media(max-width:720px){
+ .product-pictogram .product-svg{width:28px;height:28px}
+ .learn-location select{min-height:38px}
+}
