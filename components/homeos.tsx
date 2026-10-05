@@ -99,16 +99,7 @@ function hasInv(inv:InventoryItem[],key:string){const k=norm(key);return inv.som
 function missing(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.filter(x=>!hasInv(inv,x.key))}
 function score(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.length-missing(recipe,inv).length}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
-function inferCategory(name:string){
- const n=norm(name);
- if(/leche|yogur|queso|mozzarella|nata|mantequilla/.test(n)) return "Lácteos";
- if(/pollo|carne|ternera|cerdo|pavo|hamburguesa|pescado|salmon|atun|marisco/.test(n)) return "Carne";
- if(/tomate|fruta|verdura|platano|banana|manzana|naranja|limon|fresa|arandano|patata|cebolla|zanahoria|aguacate/.test(n)) return "Fruta y verdura";
- if(/proteina|creatina|suplement/.test(n)) return "Suplementos";
- if(/detergente|suavizante|limpiador|jabon|papel higienico|papel de cocina|servilleta|lavavajillas|bolsa de basura|lejia/.test(n)) return "Limpieza y hogar";
- if(/tupper|preparad|meal prep|sobras/.test(n)) return "Preparados";
- return "Despensa";
-}
+function inferCategory(name:string){return classifyProduct(name).category}
 function inferUnit(name:string){
  const n=norm(name);
  if(/kg|kilo/.test(n)) return "kg";
@@ -127,60 +118,11 @@ function ensureMembers(members:Member[],count:number){
  return out;
 }
 function statusLabel(s:StockState){return s==="hay"?"Hay":s==="poco"?"Queda poco":s==="falta"?"Probablemente falta":s==="mucho"?"Hay bastante":"Revisar"}
-function productIcon(name:string,cat:string){
- const n=norm(name);
- if(/pan|baguette|molde|hamburguesa.*pan/.test(n)) return "🍞";
- if(/leche/.test(n)) return "🥛";
- if(/yogur/.test(n)) return "🥣";
- if(/mozzarella/.test(n)) return "⚪";
- if(/queso/.test(n)) return "🧀";
- if(/huevo/.test(n)) return "🥚";
- if(/tomate/.test(n)) return "🍅";
- if(/patata/.test(n)) return "🥔";
- if(/cebolla/.test(n)) return "🧅";
- if(/zanahoria/.test(n)) return "🥕";
- if(/aguacate/.test(n)) return "🥑";
- if(/platano|banana/.test(n)) return "🍌";
- if(/manzana/.test(n)) return "🍎";
- if(/naranja|mandarina/.test(n)) return "🍊";
- if(/limon/.test(n)) return "🍋";
- if(/fresa/.test(n)) return "🍓";
- if(/arandano|frutos rojos/.test(n)) return "🫐";
- if(/chuche|gominola|caramelo/.test(n)) return "🍬";
- if(/chocolate/.test(n)) return "🍫";
- if(/galleta/.test(n)) return "🍪";
- if(/helado/.test(n)) return "🍨";
- if(/pizza/.test(n)) return "🍕";
- if(/pollo/.test(n)) return "🍗";
- if(/carne|ternera|cerdo|entrecot|hamburguesa/.test(n)) return "🥩";
- if(/pescado|salmon|atun/.test(n)) return "🐟";
- if(/marisco|gamba|langostino/.test(n)) return "🍤";
- if(/arroz/.test(n)) return "🍚";
- if(/pasta|macarron|espagueti/.test(n)) return "🍝";
- if(/sopa|crema/.test(n)) return "🥣";
- if(/ensalada/.test(n)) return "🥗";
- if(/sandwich|bocadillo/.test(n)) return "🥪";
- if(/cafe/.test(n)) return "☕";
- if(/agua/.test(n)) return "💧";
- if(/refresco|cola/.test(n)) return "🥤";
- if(/zumo/.test(n)) return "🧃";
- if(/congelad/.test(n)) return "🧊";
- if(/preparad|tupper|meal prep/.test(n)||cat==="Preparados") return "🍱";
- if(/proteina|creatina|suplement/.test(n)||cat==="Suplementos") return "🥤";
- if(/detergente|suavizante|limpiador/.test(n)) return "🧴";
- if(/jabon/.test(n)) return "🧼";
- if(/papel higienico|papel de cocina|servilleta/.test(n)) return "🧻";
- if(cat==="Fruta y verdura") return "🥬";
- if(cat==="Lácteos") return "🥛";
- if(cat==="Carne") return "🥩";
- return "🛍️";
-}
+function productIcon(name:string,cat:string){return <ProductGlyph name={name} category={cat}/>}
 function rotationBand(name:string,cat:string,location?:string){
- const n=norm(name);
  if(location==="Congelador") return {key:"baja",label:"Rotación baja"};
- if(/carne|pollo|pescado|mozzarella|yogur|pan|fruta|verdura|tomate|leche fresca|preparad/.test(n)) return {key:"alta",label:"Rotación alta"};
- if(/queso|embutido|huevo|tortilla|salsa refrigerada|bebida fresca/.test(n)) return {key:"media",label:"Rotación media"};
- return {key:"baja",label:"Rotación baja"};
+ const r=classifyProduct(name,cat).rotation;
+ return {key:r,label:r==="alta"?"Rotación alta":r==="media"?"Rotación media":"Rotación baja"};
 }
 function presenceText(p:Member["presence"]){return p==="casa"?"Come habitualmente en casa":p==="fuera_dia"?"Fuera durante el día":p==="fines_semana"?"Principalmente fines de semana":"Rutina variable"}
 function appetiteText(a:Member["appetite"]){return a==="poco"?"Come poco":a==="mucho"?"Come bastante":"Consumo normal"}
