@@ -205,12 +205,23 @@ export default function HomeOS(){
   setToast(`${miss.length} ingredientes añadidos a la compra`);
  }
 
- function finishShopping(){
+ function finishShopping(total?:number){
   const cart=state.shopping.filter(i=>i.status==="carrito");
   if(!cart.length){setToast("Todavía no hay productos en el carrito");return}
   const today=new Date().toISOString().slice(0,10);
-  const additions:InventoryItem[]=cart.map(x=>({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location:x.category==="Lácteos"||x.category==="Carne"?"Nevera":"Despensa",category:x.category,stock:"hay",purchasedAt:today}));
-  setState(s=>({...s,inventory:[...additions,...s.inventory],shopping:s.shopping.filter(i=>i.status!=="carrito")}));
+  setState(s=>{
+   const inventory=[...s.inventory];
+   for(const x of cart){
+    const location:Location=x.category==="Lácteos"||x.category==="Carne"?"Nevera":"Despensa";
+    const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location);
+    if(idx>=0){
+     inventory[idx]={...inventory[idx],qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket};
+    }else{
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category:x.category,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
+    }
+   }
+   return {...s,inventory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
+  });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
 
@@ -405,7 +416,7 @@ function Habitos({state}:{state:AppState}){
  return <div className="habits-grid"><article className="habit-chart"><div><small>HÁBITOS · DATOS REALES</small><h3>HomeOS está aprendiendo vuestro patrón</h3><p className="habit-explainer">Las compras no equivalen a consumo. Las conclusiones aparecerán cuando haya recetas, preparados, reposiciones, fotos o correcciones suficientes.</p></div>{signals.map(([k,label,seen])=><div className="habit-status-row" key={String(k)}><span>{String(k)}</span><b className={seen?"seen":""}>{seen?"Señales registradas":String(label)}</b></div>)}</article><article className="habit-note"><span>✦</span><h3>Calidad de la estimación</h3><strong className="quality-number">{quality}%</strong><p>Cuanto más historial real tenga HomeOS, menos dependerá de supuestos generales.</p><small>No mostramos porcentajes nutricionales inventados.</small></article></div>
 }
 
-function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:()=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void}){
+function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void}){
  const [quick,setQuick]=useState("");
  const [member,setMember]=useState(state.members[0]?.name||"Tú");
  const [storeFilter,setStoreFilter]=useState("Todos");
