@@ -142,7 +142,7 @@ function Comprar({state,setState,quick,setQuick,addQuick,toggleShopping,startSho
 function Casa({inventory,setState}:{inventory:InventoryItem[];setState:React.Dispatch<React.SetStateAction<AppState>>}){
   const [filter,setFilter]=useState("Todos");
   const shown=inventory.filter(i=>filter==="Todos"||i.location===filter);
-  function consume(id:string){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,qty:Math.max(0,i.qty-1),confidence:"seguro"}:i).filter(i=>i.qty>0)}));}
+  function consume(id:string){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,qty:Math.max(0,i.qty-1),confidence:"seguro" as Confidence}:i).filter(i=>i.qty>0)}));}
   return <section className="stack"><div className="page-intro"><div><span className="eyebrow">INVENTARIO ESTIMADO</span><h2>Lo que probablemente hay en casa</h2><p>No exige precisión milimétrica: muestra seguridad y solo pregunta cuando importa.</p></div><button className="secondary">Actualizar con foto</button></div><div className="segmented">{["Todos","Nevera","Congelador","Despensa"].map(x=><button key={x} className={filter===x?"active":""} onClick={()=>setFilter(x)}>{x}</button>)}</div><div className="inventory-grid">{shown.map(i=><article className="inventory-card" key={i.id}><div className="inventory-top"><span className="food-dot">{i.location==="Nevera"?"❄":i.location==="Despensa"?"▦":"□"}</span><span className={`confidence ${i.confidence}`}>{i.confidence}</span></div><h3>{i.name}</h3><p>{i.qty} {i.unit} · {i.location}</p><div className="inventory-bottom"><small>{daysUntil(i.expires)<=3?`Caduca en ${daysUntil(i.expires)}d`:`Hasta ${i.expires.slice(5).replace("-","/")}`}</small><button onClick={()=>consume(i.id)}>He usado 1</button></div></article>)}</div></section>
 }
 
