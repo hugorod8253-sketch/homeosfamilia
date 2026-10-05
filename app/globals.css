@@ -125,3 +125,8 @@ html,body{overflow-x:hidden}
   .shop-visual-card{grid-template-columns:auto 1fr}
   .shop-visual-card em{grid-column:2}
 }
+
+.prepared-button{border:0;background:#23382c;color:white;border-radius:12px;padding:10px 13px;font-weight:800;white-space:nowrap}
+.prepared-meta{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.prepared-meta span{font-size:10px;background:#eef4ef;color:#4e6c58;border-radius:999px;padding:5px 7px}
+.prepared-modal{width:min(560px,100%)}.prepared-form{display:grid;gap:16px;margin:20px 0}.prepared-form label{display:grid;gap:7px}.prepared-form label>span{font-size:11px;font-weight:800;color:var(--muted)}.prepared-form input{border:1px solid var(--line);border-radius:12px;padding:12px 13px;outline:0;background:#fafbf9}.stepper{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;max-width:220px}.stepper button{height:40px;border:0;border-radius:10px;background:#edf1ed;font-size:20px}.stepper b{text-align:center;font-size:18px}.storage-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}.storage-choice button{border:1px solid var(--line);background:#fafbf9;border-radius:12px;padding:12px;font-weight:800}.storage-choice button.active{background:#e5f1e8;border-color:#91bea1;color:#315a43}.prepared-note{background:#f4f7f4;border-radius:12px;padding:12px;color:#66716a;font-size:12px;line-height:1.45}
+@media(max-width:720px){.photo-actions{display:grid;grid-template-columns:1fr 1fr}.prepared-button{grid-column:1/-1}.storage-choice{grid-template-columns:1fr}}
