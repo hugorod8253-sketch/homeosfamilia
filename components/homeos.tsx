@@ -374,7 +374,7 @@ export default function HomeOS(){
  }
 
  if(!hydrated)return <div className="app-loading"><div className="app-loading-mark">H</div><strong>HomeOS</strong></div>;
- if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState}/>;
+ if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus}/>;
 
  return <div className="app-shell">
   <aside className="sidebar">
@@ -384,7 +384,7 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Dashboard":nav.find(n=>n.id===view)?.label}</h1></div><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></header>
+   <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Dashboard":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast}/>}
@@ -393,7 +393,7 @@ export default function HomeOS(){
   </main>
 
   <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>setView(n.id)}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>
-  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)}/>}
+  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
  </div>
 }
