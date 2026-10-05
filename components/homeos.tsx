@@ -430,31 +430,34 @@ function Inicio({state,setState,expiring,confidence,available,setView}:{state:Ap
  const todayIso=new Date().toISOString().slice(0,10);
  const next=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
  const recommended=state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length;
+ const pending=state.shopping.filter(i=>i.status==="pendiente").length;
+ const known=state.inventory.filter(i=>i.stock!=="incierto").length;
+ const review=state.inventory.length-known;
+ const readyServings=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0);
+ const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"—";
+ const peopleAtHome=state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="casa").length;
  return <section className="stack">
-  <div className="dashboard-hero"><div><span className="eyebrow">HOMEOS HOY · {state.profile.cooking==="mealprep"?"MEAL PREP":state.profile.cooking==="rapido"?"POCO TIEMPO":state.profile.cooking==="cocinar"?"ME GUSTA COCINAR":"COCINA NORMAL"}</span><h2>{state.profile.householdSize===1?"Tu cocina, pensada para ti":state.profile.householdSize===2?"Vuestra cocina, coordinada":"La cocina de casa, coordinada"}</h2><p>{recommended? `${recommended} productos podrían necesitar reposición.`:"No hay ninguna compra urgente detectada."} {state.profile.shoppingCycle==="semanal"?"Próxima compra estimada: esta semana.":state.profile.shoppingCycle==="mensual"?"HomeOS prioriza lo que debe durar hasta la próxima compra grande.":""}</p></div><div className="confidence-pill"><span>Inventario</span><strong>{confidence>.8?"Bastante actualizado":confidence>.55?"Orientativo":"Necesita revisión"}</strong><small>{state.profile.nutrition==="detallada"?"Nutrición detallada":state.profile.nutrition==="basica"?"Hábitos activos":"Nutrición oculta"}</small></div></div>
+  <div className="dashboard-hero"><div><span className="eyebrow">HOY EN CASA</span><h2>{state.profile.householdSize===1?"Tu casa, sin tener que recordarlo todo":"Lo importante de casa, de un vistazo"}</h2><p>{pending?String(pending)+" productos pendientes de compra.":"La lista de compra está al día."} {recommended?String(recommended)+" son sugerencias de reposición de HomeOS.":""}</p></div><div className="inventory-trust"><span>ESTADO DEL INVENTARIO</span><strong>{known} productos con estado conocido</strong><small>{review?String(review)+" necesitan revisión":"Nada pendiente de revisar"}</small></div></div>
+
   <div className="household-context">
-   <div><small>PERFIL DEL HOGAR</small><strong>{state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="casa").length} comen habitualmente en casa</strong><span>{state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="fuera_dia").length} fuera durante el día · {state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length} con consumo alto</span></div>
-   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Configurar perfiles</button>
+   <div><small>PERFIL DEL HOGAR</small><strong>{state.profile.householdSize===1?"Perfil personal":String(peopleAtHome)+" comen habitualmente en casa"}</strong><span>{state.profile.householdSize===1?"Tus gustos y rutina ajustan las sugerencias.":state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="fuera_dia").length+" fuera durante el día · "+state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length+" con consumo alto"}</span></div>
+   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Configurar hogar</button>
   </div>
-  <div className="quick-strip" aria-label="Acciones rápidas">
-   <button onClick={()=>setView("comer")}><span>🍽️</span><div><strong>Quiero comer</strong><small>Ideas con lo que hay</small></div></button>
-   <button onClick={()=>setView("comprar")}><span>🛒</span><div><strong>Voy a comprar</strong><small>Lista ordenada</small></div></button>
-   <button onClick={()=>setView("casa")}><span>🏠</span><div><strong>¿Qué hay en casa?</strong><small>Inventario rápido</small></div></button>
+
+  <div className="hero-grid home-primary-actions">
+   <button className="decision-card photo-card" onClick={()=>setView("comer")}><img src={RECIPES[0].image} alt="Idea para comer" decoding="async"/><div className="photo-overlay"><small>¿QUÉ COMEMOS HOY?</small><h2>Ideas con lo que ya tienes</h2><p>Varias opciones según tiempo, inventario y gustos.</p><span className="card-cta">Ver ideas →</span></div></button>
+   <button className="decision-card shopping-decision" onClick={()=>setView("comprar")}><span className="decision-icon">🛒</span><div><small>LISTA DE COMPRA</small><h2>{pending?String(pending)+" pendientes":"Todo al día"}</h2><p>{pending?"Entra, marca lo que coges y termina la compra.":"Añade algo cuando lo necesites."}</p><span className="card-cta">Abrir lista →</span></div></button>
   </div>
-  <div className="hero-grid">
-   <button className="decision-card photo-card" onClick={()=>setView("comer")}><img src={RECIPES[0].image} alt="Idea para comer" decoding="async"/><div className="photo-overlay"><small>QUÉ COMEMOS</small><h2>Ideas con lo que tienes</h2><p>Rápidas, útiles y conectadas al inventario.</p></div></button>
-   <button className="decision-card blue" onClick={()=>setView("comprar")}><span className="decision-icon">🛒</span><div><small>PRÓXIMA COMPRA</small><h2>{state.shopping.filter(x=>x.status==="pendiente").length} pendientes</h2><p>HomeOS separa pedido, recomendación y receta.</p></div><b>›</b></button>
+
+  <div className="home-status-grid">
+   <button className="status-card expiry-card" onClick={()=>setView("casa")}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
+   <button className="status-card budget-card" onClick={()=>setView("finanzas")}><span>€</span><div><small>TE QUEDA ESTE MES</small><strong>{Math.max(0,available).toFixed(0)} €</strong><p>de {state.budget.toFixed(0)} € de presupuesto</p></div><b>›</b></button>
+   <button className="status-card prepared-card" onClick={()=>setView("casa")}><span>🍱</span><div><small>COMIDA PREPARADA</small><strong>{readyServings}</strong><p>raciones listas</p></div><b>›</b></button>
+   <button className="status-card event-card" onClick={()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"center"})}><span>📅</span><div><small>PRÓXIMO EVENTO</small><strong>{nextDate}</strong><p>{next?.title||"Sin eventos"}</p></div><b>›</b></button>
   </div>
-  <div className="card-grid four">
-   <article className="soft-card amber"><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></article>
-   <article className="soft-card green"><small>DISPONIBLE MES</small><strong>{available.toFixed(0)} €</strong><p>Seguimiento {state.profile.financeMode}</p></article>
-   <article className="soft-card blue-soft"><small>PREPARADOS</small><strong>{state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0)}</strong><p>Raciones listas en nevera/congelador</p></article>
-   <article className="soft-card rose"><small>PRÓXIMO EVENTO</small><strong>{next?new Date(next.date+"T12:00:00").getDate():"—"}</strong><p>{next?.title||"Sin eventos"}</p></article>
-  </div>
-  <div className="home-secondary-grid">
-   <button className="home-recipes-card" onClick={()=>setView("comer")}><div><small>RECETAS</small><h3>Cocina con lo que ya tienes</h3><p>Recetas rápidas, meal prep y nutrición por ración.</p></div><span>Ver recetas →</span></button>
-   {state.profile.nutrition!=="off"&&<article className="home-habits-card"><div className="home-habits-head"><div><small>HÁBITOS · APRENDIENDO</small><h3>Cómo está comiendo el hogar</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-mini">{habitSignals(state).map(([label,seen])=><span key={label}>{label}<b style={{width:seen?"72%":"18%",opacity:seen?1:.35}}/></span>)}</div><p>{habitSignals(state).filter(([,seen])=>seen).length} grupos con señales recientes. HomeOS evita inventar porcentajes de consumo.</p></article>}
-  </div>
+
+  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
+
   <CalendarCard state={state} setState={setState}/>
  </section>
 }
