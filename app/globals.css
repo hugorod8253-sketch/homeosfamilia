@@ -311,3 +311,31 @@ button:disabled{opacity:.42;cursor:not-allowed;filter:saturate(.6)}
 .profile-market-grid{display:flex;gap:6px;flex-wrap:wrap}
 .profile-market-grid button{border:1px solid var(--line);background:#f7f9f6;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:700}
 .profile-market-grid button.active{background:#e5f1e8;border-color:#91bea1;color:#315a43}
+
+/* Delight + ease-of-use polish */
+button{transition:transform .12s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease,opacity .16s ease}
+button:not(:disabled):active{transform:scale(.985)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(72,112,87,.18);outline-offset:2px}
+.quick-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.quick-strip button{border:1px solid var(--line);background:white;border-radius:16px;padding:13px 14px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:left;box-shadow:0 7px 20px rgba(42,51,46,.045)}
+.quick-strip button:hover{box-shadow:0 10px 26px rgba(42,51,46,.08);transform:translateY(-1px)}
+.quick-strip>button>span{width:36px;height:36px;border-radius:11px;background:#f2f5f1;display:grid;place-items:center;font-size:18px}
+.quick-strip div{display:grid;gap:2px}.quick-strip strong{font-size:13px}.quick-strip small{font-size:10px;color:var(--muted)}
+.friendly-empty{border:1px dashed #d7ddd7;border-radius:18px;background:#fbfcfa;padding:28px;display:grid;place-items:center;text-align:center;gap:5px;color:var(--muted)}
+.friendly-empty>span{width:38px;height:38px;border-radius:50%;background:#edf3ee;color:#3f684f;display:grid;place-items:center;font-weight:800}
+.friendly-empty h3{margin:4px 0 0;color:var(--ink);font-size:16px}.friendly-empty p{margin:0;font-size:12px}
+.inventory-empty{grid-column:1/-1}
+.toast{display:flex!important;align-items:center;gap:8px}.toast>span{width:20px;height:20px;border-radius:50%;background:#dfece3;color:#315a43;display:grid;place-items:center;font-size:11px;font-weight:900}
+.primary{box-shadow:0 8px 18px rgba(31,41,35,.12)}
+.primary:not(:disabled):hover{box-shadow:0 10px 22px rgba(31,41,35,.17);transform:translateY(-1px)}
+.inventory-card,.soft-card,.list-card,.featured-meal,.calendar-card,.finance-main,.chart-card,.home-recipes-card,.home-habits-card{transition:box-shadow .18s ease,transform .18s ease}
+.inventory-card:hover,.soft-card:hover,.home-habits-card:hover{box-shadow:0 14px 34px rgba(45,55,49,.08)}
+@media(max-width:720px){
+ button,.primary,.secondary{min-height:44px}
+ .quick-strip{grid-template-columns:1fr}
+ .quick-strip button{padding:11px 12px}
+ .quick-strip>button>span{width:34px;height:34px}
+ .topbar{position:sticky;top:0;z-index:20;background:rgba(244,246,242,.88);backdrop-filter:blur(16px);padding:8px 0}
+ .bottom-nav button{min-height:48px}
+ .friendly-empty{padding:22px 16px}
+}
