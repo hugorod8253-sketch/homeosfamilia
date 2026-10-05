@@ -296,7 +296,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
 
     <aside className={selectedDate?"apple-event-panel open":"apple-event-panel"}>
       {selectedDate?<><div className="event-panel-date"><small>FECHA SELECCIONADA</small><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}</strong></div>
-      {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div key={ev.id}><span className="event-color-dot"/><b>{ev.title}</b></div>)}</div>}
+      {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div key={ev.id}><span className="event-color-dot"/><b>{ev.title}</b><button className="event-delete" onClick={()=>setState(s=>({...s,events:s.events.filter(e=>e.id!==ev.id)}))}>Eliminar</button></div>)}</div>}
       <div className="event-compose"><label>Nuevo evento</label><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. comida familiar"/><button onClick={add}>Añadir evento</button></div></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
     </aside>
    </div>
