@@ -89,14 +89,15 @@ const nav:{id:View;label:string;icon:string}[]=[
 export default function HomeOS(){
  const [view,setView]=useState<View>("inicio");
  const [state,setState]=useState<AppState>(DEFAULT);
+ const [hydrated,setHydrated]=useState(false);
  const [toast,setToast]=useState("");
  const [profileOpen,setProfileOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
  const cameraRef=useRef<HTMLInputElement>(null),galleryRef=useRef<HTMLInputElement>(null),receiptRef=useRef<HTMLInputElement>(null);
 
- useEffect(()=>setState(loadState()),[]);
- useEffect(()=>{if(typeof window!=="undefined")localStorage.setItem("homeos:v5",JSON.stringify(state))},[state]);
+ useEffect(()=>{setState(loadState());setHydrated(true)},[]);
+ useEffect(()=>{if(hydrated&&typeof window!=="undefined")localStorage.setItem("homeos:v5",JSON.stringify(state))},[state,hydrated]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
 
  const expiring=useMemo(()=>state.inventory.filter(i=>daysUntil(i.expires)<=3&&i.stock!=="falta"),[state.inventory]);
@@ -119,6 +120,7 @@ export default function HomeOS(){
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
 
+ if(!hydrated)return <div className="app-loading"><div className="app-loading-mark">H</div><strong>HomeOS</strong></div>;
  if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState}/>;
 
  return <div className="app-shell">
@@ -195,23 +197,31 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
  const [index,setIndex]=useState(0);
  const [open,setOpen]=useState(false);
  const [useMuch,setUseMuch]=useState("");
+ const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
  const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:RECIPES;
- const recipe=pool[index%pool.length],miss=missing(recipe,state.inventory);
- const filtered=useMuch?RECIPES.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch)))):[];
+ const autoRecipe=pool[index%pool.length];
+ const recipe=(selectedRecipeId?RECIPES.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
+ const miss=missing(recipe,state.inventory);
+ const filtered=useMuch?RECIPES.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
 
  function completeRecipe(){
-  const missNames=miss.map(m=>m.key);
-  setState(s=>({...s,inventory:s.inventory.map(i=>missNames.some(k=>norm(i.name).includes(norm(k)))?i:{...i,stock:i.stock==="poco"?"falta":i.stock==="hay"?"poco":i.stock})}));
+  const usedKeys=recipe.ingredients.map(x=>norm(x.key));
+  setState(s=>({...s,inventory:s.inventory.map(i=>{
+   const itemName=norm(i.name);
+   const match=usedKeys.some(k=>itemName.includes(k)||k.includes(itemName.split(" ")[0]));
+   if(!match||i.stock==="falta") return i;
+   return {...i,stock:i.stock==="poco"?"falta":"poco"};
+  })}));
   setOpen(false);
  }
  return <section className="stack">
   <div className="page-intro"><div><span className="eyebrow">RECETAS Y COMIDAS</span><h2>Qué puedes preparar hoy</h2><p>Primero te enseñamos recetas compatibles con tu inventario y tu tiempo. Los ingredientes que falten pasan a la compra con un toque.</p></div><div className="view-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Hábitos</button>}</div></div>
   {tab==="ideas"?<>
-   <div className="mode-row">{[["rapido","Rápido"],["normal","Normal"],["cocinar","Cocinar"],["mealprep","Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0)}}>{label}</button>)}</div>
-   <article className="featured-meal"><img src={recipe.image} alt={recipe.title}/><div className="featured-copy"><span className="eyebrow">{miss.length?"TE FALTA POCO":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div><div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div><div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar receta</button><button className="secondary" onClick={()=>setIndex(i=>i+1)}>Otra idea</button></div></div></article>
+   <div className="mode-row">{[["rapido","Rápido"],["normal","Normal"],["cocinar","Cocinar"],["mealprep","Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
+   <article className="featured-meal"><img src={recipe.image} alt={recipe.title}/><div className="featured-copy"><span className="eyebrow">{miss.length?"TE FALTA POCO":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div><div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div><div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar receta</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Otra idea</button></div></div></article>
    <div className="ingredient-summary"><article><small>TIENES</small>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>TE FALTA</small>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>Todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>Añadir faltantes</button></article></div>
-   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Tienes demasiado de algo?</h3><p>Escribe un ingrediente y HomeOS prioriza recetas que realmente lo gasten.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.slice(0,3).map(r=><button key={r.id} onClick={()=>{setUseMuch("");setMode(r.mode[0]);setIndex(0)}}>{r.title}<span>{r.time} min</span></button>)}</div>}</article>
+   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Tienes demasiado de algo?</h3><p>Escribe un ingrediente y HomeOS prioriza recetas que realmente lo gasten.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{setSelectedRecipeId(r.id);setMode(r.mode[0]);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?missing(r,state.inventory).length+" faltantes":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
   </>:<Habitos state={state}/>}
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2></div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div><button className="primary modal-save" onClick={completeRecipe}>He terminado</button></div></div>}
  </section>
@@ -241,15 +251,16 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  }
  function moveHere(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,supermarket:activeStore,status:"pendiente"}:i)}))}
  function cart(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,status:i.status==="carrito"?"pendiente":"carrito"}:i)}))}
- const visible=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
- const grouped=visible.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
- const other=shoppingActive?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
+ const filteredList=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
+ const mainItems=shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList;
+ const grouped=mainItems.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
+ const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
  return <section className="stack">
-  <div className="shopping-top"><div><span className="eyebrow">LISTA GENERAL</span><h2>{shoppingActive?`Comprando en ${activeStore}`:"Compra compartida"}</h2><p>Primero una lista simple. Cuando entras en una tienda, HomeOS la reorganiza.</p></div>{shoppingActive?<button className="primary" onClick={finishShopping}>Terminar compra</button>:<button className="primary" onClick={()=>setShoppingActive(true)}>Estoy comprando</button>}</div>
+  <div className="shopping-top"><div><span className="eyebrow">LISTA GENERAL</span><h2>{shoppingActive?(activeStore?`Comprando en ${activeStore}`:"Elige dónde estás comprando"):"Compra compartida"}</h2><p>Primero una lista simple. Cuando entras en una tienda, HomeOS la reorganiza.</p></div>{shoppingActive?<button className="primary" onClick={finishShopping}>Terminar compra</button>:<button className="primary" onClick={()=>setShoppingActive(true)}>Estoy comprando</button>}</div>
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. leche semidesnatada Lidl, 1 kg pollo…"/><select value={member} onChange={e=>setMember(e.target.value)}>{state.members.slice(0,state.profile.householdSize).map(m=><option key={m.id}>{m.name}</option>)}</select><button onClick={add}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}</div>}
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>¿En qué tienda estás?</h3><p>Elige una arriba para reorganizar la compra.</p></article>}
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div>{items.filter(i=>!shoppingActive||!i.supermarket||i.supermarket===activeStore).map(i=><div className={i.status==="carrito"?"shop-row checked":"shop-row"} key={i.id}><button className="fake-check" onClick={()=>cart(i.id)}>✓</button><div><strong>{i.name}</strong><small>{reasonText(i.reason)} {i.reason==="persona"?i.requestedBy:""} {i.supermarket?`· ${i.supermarket}`:"· cualquier tienda"}</small></div><b>{i.qty} {i.unit}</b></div>)}</article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Ticket</strong><p>La IA intentará entender productos, cantidades y total.</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{if(e.target.files?.[0])setToast("Ticket recibido para revisión")}}/><article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.entries(grouped).map(([cat,items])=><article className="list-card" key={cat}><div className="list-title"><h3>{cat}</h3><span>{items.length}</span></div>{items.map(i=><div className={i.status==="carrito"?"shop-row checked":"shop-row"} key={i.id}><button className="fake-check" onClick={()=>cart(i.id)}>✓</button><div><strong>{i.name}</strong><small>{reasonText(i.reason)} {i.reason==="persona"?i.requestedBy:""} {i.supermarket?`· ${i.supermarket}`:"· cualquier tienda"}</small></div><b>{i.qty} {i.unit}</b></div>)}</article>)}</div><aside className="purchase-tools"><button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Ticket</strong><p>La IA intentará entender productos, cantidades y total.</p></div></button><input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>{if(e.target.files?.[0])setToast("Ticket recibido para revisión")}}/><article className="tool-card"><span>✦</span><div><strong>HomeOS recomienda</strong><p>{state.shopping.filter(i=>i.reason==="recomienda").length} productos por posible falta.</p></div></article></aside></div>}
   {shoppingActive&&activeStore&&other.length>0&&<article className="other-stores"><div><small>PENDIENTE EN OTRAS TIENDAS</small><h3>También tenías esto apuntado</h3></div>{other.map(i=><div key={i.id}><span><strong>{i.name}</strong><small>{i.supermarket}</small></span><button onClick={()=>moveHere(i.id)}>Traer aquí</button></div>)}</article>}
  </section>
 }
@@ -257,7 +268,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
 function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void}){
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const shown=state.inventory.filter(i=>(loc==="Todo"||i.location===loc)&&(cat==="Todos"||i.category===cat));
- function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock}:i)}))}
+ function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function freeze(id:string){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",stock:"hay"}:i)}));setToast("Producto movido al congelador")}
  function addToBuy(i:InventoryItem){setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a recomendaciones de compra")}
  return <section className="stack">
@@ -278,5 +289,7 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
 }
 
 function ProfileModal({state,setState,close}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;close:()=>void}){
- return <div className="modal-backdrop" onMouseDown={close}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">MI HOGAR</span><h2>Preferencias</h2></div><button onClick={close}>×</button></div><div className="settings-list"><label><span>Personas</span><select value={state.profile.householdSize} onChange={e=>setState(s=>({...s,profile:{...s.profile,householdSize:Number(e.target.value)}}))}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label><label><span>Cocina</span><select value={state.profile.cooking} onChange={e=>setState(s=>({...s,profile:{...s.profile,cooking:e.target.value as CookingStyle}}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label><label><span>Nutrición</span><select value={state.profile.nutrition} onChange={e=>setState(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label><label><span>Compra habitual</span><select value={state.profile.shoppingCycle} onChange={e=>setState(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label></div><button className="primary modal-save" onClick={close}>Guardar</button></div></div>
+ const [draft,setDraft]=useState<Profile>(state.profile);
+ function save(){setState(s=>({...s,profile:draft}));close()}
+ return <div className="modal-backdrop" onMouseDown={close}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">MI HOGAR</span><h2>Preferencias</h2></div><button onClick={close}>×</button></div><div className="settings-list"><label><span>Personas</span><select value={draft.householdSize} onChange={e=>setDraft(p=>({...p,householdSize:Number(e.target.value)}))}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label><label><span>Cocina</span><select value={draft.cooking} onChange={e=>setDraft(p=>({...p,cooking:e.target.value as CookingStyle}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label><label><span>Nutrición</span><select value={draft.nutrition} onChange={e=>setDraft(p=>({...p,nutrition:e.target.value as NutritionMode}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label><label><span>Compra habitual</span><select value={draft.shoppingCycle} onChange={e=>setDraft(p=>({...p,shoppingCycle:e.target.value as Profile["shoppingCycle"]}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label></div><div className="modal-actions"><button className="secondary" onClick={close}>Cancelar</button><button className="primary" onClick={save}>Guardar cambios</button></div></div></div>
 }
