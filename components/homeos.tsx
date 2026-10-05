@@ -37,10 +37,10 @@ type AppState = {
 };
 
 const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería","Otro supermercado"];
-const CATEGORIES=["Todos","Lácteos","Carne","Fruta y verdura","Despensa","Preparados","Suplementos"];
+const CATEGORIES=["Todos","Lácteos","Carne","Fruta y verdura","Despensa","Preparados","Suplementos","Limpieza y hogar"];
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa"];
-const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Despensa":"Despensa","Preparados":"Preparados","Suplementos":"Suplementos"};
-const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Despensa":"🥫","Preparados":"🍱","Suplementos":"＋"};
+const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Despensa":"Despensa","Preparados":"Preparados","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar"};
+const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Despensa":"🥫","Preparados":"🍱","Suplementos":"＋","Limpieza y hogar":"🧴"};
 const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"▦"};
 
 const RECIPES:Recipe[]=[
@@ -98,6 +98,7 @@ function inferCategory(name:string){
  if(/pollo|carne|ternera|cerdo|pavo|hamburguesa|pescado|salmon|atun|marisco/.test(n)) return "Carne";
  if(/tomate|fruta|verdura|platano|banana|manzana|naranja|limon|fresa|arandano|patata|cebolla|zanahoria|aguacate/.test(n)) return "Fruta y verdura";
  if(/proteina|creatina|suplement/.test(n)) return "Suplementos";
+ if(/detergente|suavizante|limpiador|jabon|papel higienico|papel de cocina|servilleta|lavavajillas|bolsa de basura|lejia/.test(n)) return "Limpieza y hogar";
  if(/tupper|preparad|meal prep|sobras/.test(n)) return "Preparados";
  return "Despensa";
 }
