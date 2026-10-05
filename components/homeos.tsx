@@ -201,8 +201,10 @@ export default function HomeOS(){
  function addFromRecipe(recipe:Recipe){
   const miss=missing(recipe,state.inventory);
   if(!miss.length){setToast("Tienes todo para esta receta");return}
-  setState(s=>({...s,shopping:[...s.shopping,...miss.filter(m=>!s.shopping.some(q=>norm(q.name).includes(norm(m.key)))).map(m=>({id:crypto.randomUUID(),name:m.name,qty:1,unit:inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const}))]}));
-  setToast(`${miss.length} ingredientes añadidos a la compra`);
+  const toAdd=miss.filter(m=>!state.shopping.some(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key))));
+  if(!toAdd.length){setToast("Los ingredientes que faltan ya están en la compra");return}
+  setState(s=>({...s,shopping:[...s.shopping,...toAdd.map(m=>({id:crypto.randomUUID(),name:m.name,qty:1,unit:inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const}))]}));
+  setToast(`${toAdd.length} ingredientes añadidos a la compra`);
  }
 
  function finishShopping(total?:number){
@@ -262,7 +264,7 @@ function Onboarding({state,setState}:{state:AppState;setState:React.Dispatch<Rea
   {step===3&&<div className="ob-panel"><span className="eyebrow">NUTRICIÓN</span><h1>¿Cuánta información quieres ver?</h1><div className="goal-grid">{[["off","Solo cocina e inventario","Sin gráficos nutricionales."],["basica","Hábitos sencillos","Tendencias semanales sin contar cada caloría."],["detallada","Nutrición detallada","Calorías y macros en recetas y análisis."]].map(([id,label,desc])=><button key={id} className={state.profile.nutrition===id?"goal-choice active":"goal-choice"} onClick={()=>setState(s=>({...s,profile:{...s.profile,nutrition:id as NutritionMode}}))}><strong>{label}</strong><span>{desc}</span></button>)}</div></div>}
   {step===4&&<div className="ob-panel"><span className="eyebrow">PRIORIDADES</span><h1>¿Qué quieres mejorar?</h1><p>Puedes marcar varias.</p><div className="market-grid">{[["organizar","Organizar la cocina"],["ahorrar","Ahorrar"],["desperdicio","Desperdiciar menos"],["equilibrio","Comer más equilibrado"]].map(([id,label])=><button key={id} className={state.profile.goals.includes(id as Goal)?"choice active":"choice"} onClick={()=>toggleGoal(id as Goal)}>{label}</button>)}</div></div>}
   {step===5&&<div className="ob-panel"><span className="eyebrow">TIENDAS</span><h1>¿Dónde compráis?</h1><p>Puedes cambiarlo después. También admitimos carnicerías y tiendas de barrio.</p><div className="market-grid">{SUPERMARKETS.map(m=><button key={m} className={state.profile.supermarkets.includes(m)?"choice active":"choice"} onClick={()=>toggleMarket(m)}>{m}</button>)}</div></div>}
-  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>
+  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" disabled={state.profile.supermarkets.length===0} onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>
  </div></div>
 }
 
@@ -482,7 +484,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
  const shown=state.inventory.filter(i=>(loc==="Todo"||i.location===loc)&&(cat==="Todos"||i.category===cat));
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function freeze(id:string){const frozenAt=new Date().toISOString().slice(0,10);setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",frozenAt,originalExpires:i.originalExpires||i.expires,expires:undefined,dateType:undefined}:i)}));setToast("Producto movido al congelador")}
- function addToBuy(i:InventoryItem){setState(s=>{const exists=s.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente");return exists?s:{...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}});setToast("Añadido a la compra")}
+ function addToBuy(i:InventoryItem){if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente")){setToast("Ya estaba en la lista de compra");return}setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
  function parsePreparedVoice(text:string){
   const t=norm(text);
   const rMatch=t.match(/(\d+)\s*(raciones|tuppers|tuperes|tuppers?)/);
@@ -549,7 +551,7 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
     <article className="finance-donut-card"><div className="donut" style={{background:`conic-gradient(#507a61 0 ${parts[0]}%,#89aa93 ${parts[0]}% ${parts[0]+parts[1]}%,#d4b06b ${parts[0]+parts[1]}% ${parts[0]+parts[1]+parts[2]}%,#c98d89 ${parts[0]+parts[1]+parts[2]}% 100%)`}}><div><strong>{state.spent.toFixed(0)}€</strong><span>total</span></div></div><div><small>PRODUCTOS CON PRECIO CONOCIDO</small><h3>Distribución registrada</h3><ul><li><i className="dot d1"/>Frescos <b>{parts[0]}%</b></li><li><i className="dot d2"/>Despensa <b>{parts[1]}%</b></li><li><i className="dot d3"/>Preparados <b>{parts[2]}%</b></li><li><i className="dot d4"/>Otros <b>{parts[3]}%</b></li></ul></div></article>
     <article className="finance-insight-card"><small>RESUMEN DEL MES</small><h3>{available>=0?"Vas dentro del presupuesto":"Has superado el presupuesto"}</h3><p>{knownSpend>0?"La distribución se calcula solo con productos cuyo precio conocemos. ":"Todavía faltan precios suficientes para repartir el gasto por categorías. "}El desperdicio registrado representa aproximadamente {(state.waste/Math.max(1,state.spent)*100).toFixed(1)}% del gasto.</p><div className="finance-kpis"><span><b>{Math.max(0,available).toFixed(0)}€</b> margen</span><span><b>{state.waste.toFixed(0)}€</b> desperdicio</span><span><b>{pct}%</b> presupuesto usado</span></div></article>
   </div>
-  <article className="budget-editor"><div><h3>Presupuesto mensual</h3><p>Opcional. Puedes usar HomeOS sin definirlo.</p></div><div className="budget-control"><input type="number" value={state.budget} onChange={e=>setState(s=>({...s,budget:Number(e.target.value)||0}))}/><span>€ / mes</span></div></article>
+  <article className="budget-editor"><div><h3>Presupuesto mensual</h3><p>Opcional. Puedes usar HomeOS sin definirlo.</p></div><div className="budget-control"><input type="number" value={state.budget} onChange={e=>setState(s=>({...s,budget:Math.max(0,Number(e.target.value)||0)}))}/><span>€ / mes</span></div></article>
  </section>
 }
 
@@ -573,7 +575,7 @@ function ProfileModal({state,setState,close}:{state:AppState;setState:React.Disp
     <label><span>Personas</span><select value={draft.profile.householdSize} onChange={e=>setDraft(s=>{const householdSize=Number(e.target.value);return {...s,profile:{...s.profile,householdSize},members:ensureMembers(s.members,householdSize)}})}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label>
     <label><span>Cocina</span><select value={draft.profile.cooking} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,cooking:e.target.value as CookingStyle}}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label>
     <label><span>Nutrición</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label>
-    <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label>
+    <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label><div className="profile-market-section"><span>Supermercados habituales</span><div className="profile-market-grid">{SUPERMARKETS.map(m=><button type="button" key={m} className={draft.profile.supermarkets.includes(m)?"active":""} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];return {...s,profile:{...s.profile,supermarkets}}})}>{m}</button>)}</div></div>
    </div>}
   <div className="modal-actions"><button className="secondary" onClick={close}>Cancelar</button><button className="primary" onClick={save}>Guardar hogar</button></div>
  </div></div>
