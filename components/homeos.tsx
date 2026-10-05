@@ -18,6 +18,7 @@ type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; supermarket?:string;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito";
 };
+type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;date:string;supermarket?:string;requestedBy?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
 type EventItem = {id:string;title:string;date:string};
 type RecipeIngredient = {name:string;qty:string;key:string};
@@ -32,7 +33,7 @@ type Profile = {
   notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 type AppState = {
-  inventory:InventoryItem[]; shopping:ShoppingItem[]; members:Member[]; events:EventItem[];
+  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; members:Member[]; events:EventItem[];
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number;
 };
 
@@ -68,6 +69,7 @@ const DEFAULT:AppState={
   {id:"s2",name:"Pan de hamburguesa",qty:1,unit:"pack",category:"Despensa",supermarket:"Mercadona",requestedBy:"Tú",reason:"receta",status:"pendiente"},
   {id:"s3",name:"Leche semidesnatada",qty:2,unit:"L",category:"Lácteos",supermarket:"Lidl",requestedBy:"Papá",reason:"persona",status:"pendiente"}
  ],
+ purchaseHistory:[],
  members:[{id:"m1",name:"Tú",relation:"Yo",presence:"fines_semana",appetite:"normal",dislikes:"",notes:"Entre semana casi no está en casa."},{id:"m2",name:"Mamá",relation:"Madre",presence:"fuera_dia",appetite:"normal",dislikes:"",notes:"Suele comer fuera y vuelve por la noche."},{id:"m3",name:"Papá",relation:"Padre",presence:"casa",appetite:"normal",dislikes:"",notes:"Hace parte de la compra familiar."},{id:"m4",name:"Hermano",relation:"Hijo",presence:"casa",appetite:"mucho",dislikes:"queso",notes:"Consume bastante comida preparada."}],
  events:[{id:"e1",title:"Navidad",date:"2026-12-25"}],
  budget:800,spent:486.35,waste:18.4,wasteSaved:27.6,
@@ -80,7 +82,7 @@ function normalizeState(x:any):AppState{
  const profile={...DEFAULT.profile,...(raw.profile||{})};
  const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));
  const members=ensureMembers(baseMembers,profile.householdSize);
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping};
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[]};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
