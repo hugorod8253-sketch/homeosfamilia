@@ -12,15 +12,15 @@ type NutritionMode = "basica"|"detallada"|"off";
 type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 
 type InventoryItem = {
-  id:string; name:string; qty:number; unit:string; location:Location; category:string;
+  id:string; name:string; qty:number; unit:string; location:Location; category:string; subcategory?:string;
   stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
   price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; frozenAt?:string; originalExpires?:string; supermarket?:string;
 };
 type ShoppingItem = {
-  id:string; name:string; qty:number; unit:string; category:string; supermarket?:string;
+  id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito";
 };
-type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;date:string;supermarket?:string;requestedBy?:string};
+type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string};
 type ProductPreference = {location?:Location;category?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
 type EventItem = {id:string;title:string;date:string};
@@ -96,12 +96,12 @@ function normalizeState(x:any):AppState{
   const category=pref.category||p.category;
   const preserveFrozen=i.location==="Congelador"&&Boolean(i.frozenAt);
   const location=preserveFrozen?i.location:recommendedLocation(i.name,category,pref.location) as Location;
-  return {...i,category,location};
+  return {...i,category,subcategory:i.subcategory||p.subcategory,location};
  }):baseInventory;
  const shopping=needsProductMigration?baseShopping.map(i=>{
   const p=classifyProduct(i.name,i.category);
   const pref=productPreferences[p.canonical]||{};
-  return {...i,category:pref.category||p.category};
+  return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
  return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],productPreferences,productEngineVersion:1};
 }
@@ -345,9 +345,9 @@ export default function HomeOS(){
     const location=recommendedLocation(x.name,category,pref.location) as Location;
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location);
     if(idx>=0){
-     inventory[idx]={...inventory[idx],category,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket};
+     inventory[idx]={...inventory[idx],category,subcategory:profile.subcategory,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket};
     }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
     }
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
@@ -359,6 +359,7 @@ export default function HomeOS(){
      qty:x.qty,
      unit:x.unit,
      category:pref.category||p.category,
+     subcategory:p.subcategory,
      date:today,
      supermarket:x.supermarket||activeStore||undefined,
      requestedBy:x.requestedBy
@@ -740,12 +741,14 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
    unit=raw==="l"?"L":raw.startsWith("ud")||raw.startsWith("unidad")?"uds":raw.startsWith("rollo")?"rollos":raw.startsWith("brick")?"bricks":raw.startsWith("pack")||raw.startsWith("paquete")?"pack":raw;
    value=value.replace(m[0]," ").replace(/\s+/g," ").trim();
   }
-  const category=inferCategory(value);
+  const productProfile=classifyProduct(value);
+  const category=productProfile.category;
+  const subcategory=productProfile.subcategory;
   const name=(value||quick.trim()).replace(/^de\s+/i,"").trim();
   setState(s=>{
    const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente");
    if(duplicate)return {...s,shopping:s.shopping.map(i=>i.id===duplicate.id?{...i,qty:i.qty+qty}:i)};
-   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
+   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category,subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
   });
   setQuick("");
  }
@@ -814,7 +817,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
   });
   setToast("Guardado en congelador · HomeOS lo recordará");
  }
- function addToBuy(i:InventoryItem){if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente")){setToast("Ya estaba en la lista de compra");return}setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
+ function addToBuy(i:InventoryItem){if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente")){setToast("Ya estaba en la lista de compra");return}setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,subcategory:i.subcategory,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
  function moveProduct(i:InventoryItem,next:Location){
   if(!canStoreAt(i.name,i.category,next)){setToast(storageWarning(i.name,i.category,next));return}
   if(next==="Congelador"){freeze(i.id);return}
