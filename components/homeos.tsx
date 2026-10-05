@@ -250,6 +250,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
  const today=new Date();
  const [cursor,setCursor]=useState(()=>new Date(today.getFullYear(),today.getMonth(),1));
  const [selectedDate,setSelectedDate]=useState("");
+ const [selectedEventId,setSelectedEventId]=useState("");
  const [title,setTitle]=useState("");
  const year=cursor.getFullYear(),month=cursor.getMonth();
  const days=new Date(year,month+1,0).getDate();
@@ -260,6 +261,21 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
  const move=(delta:number)=>setCursor(new Date(year,month+delta,1));
  const goToday=()=>{setCursor(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDate(todayIso)};
  const selectedEvents=selectedDate?state.events.filter(e=>e.date===selectedDate):[];
+ useEffect(()=>{
+  const onKey=(e:KeyboardEvent)=>{
+   const target=e.target as HTMLElement|null;
+   if(target&&(["INPUT","TEXTAREA","SELECT"].includes(target.tagName)||target.isContentEditable)) return;
+   if(e.key!=="Delete"&&e.key!=="Backspace") return;
+   const onlyEvent=!selectedEventId&&selectedEvents.length===1?selectedEvents[0].id:"";
+   const id=selectedEventId||onlyEvent;
+   if(!id)return;
+   e.preventDefault();
+   setState(s=>({...s,events:s.events.filter(ev=>ev.id!==id)}));
+   setSelectedEventId("");
+  };
+  window.addEventListener("keydown",onKey);
+  return()=>window.removeEventListener("keydown",onKey);
+ },[selectedEventId,selectedDate,state.events]);
  return <article className="calendar-card apple-calendar">
    <div className="apple-calendar-top">
     <div>
@@ -286,7 +302,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
         const iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
         const events=state.events.filter(e=>e.date===iso);
         const cls=["apple-day",events.length?"has-event":"",iso===todayIso?"today":"",iso===selectedDate?"selected":""].filter(Boolean).join(" ");
-        return <button className={cls} key={d} onClick={()=>setSelectedDate(iso)}>
+        return <button className={cls} key={d} onClick={()=>{setSelectedDate(iso);setSelectedEventId("")}}>
           <span className="day-number">{d}</span>
           {events.length>0&&<div className="day-events">{events.slice(0,2).map(ev=><span key={ev.id}>{ev.title}</span>)}</div>}
         </button>
@@ -296,7 +312,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
 
     <aside className={selectedDate?"apple-event-panel open":"apple-event-panel"}>
       {selectedDate?<><div className="event-panel-date"><small>FECHA SELECCIONADA</small><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}</strong></div>
-      {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div key={ev.id}><span className="event-color-dot"/><b>{ev.title}</b><button className="event-delete" onClick={()=>setState(s=>({...s,events:s.events.filter(e=>e.id!==ev.id)}))}>Eliminar</button></div>)}</div>}
+      {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div className={selectedEventId===ev.id?"event-row selected":"event-row"} key={ev.id} onClick={()=>setSelectedEventId(ev.id)}><span className="event-color-dot"/><b>{ev.title}</b><button className="event-delete" onClick={(e)=>{e.stopPropagation();setState(s=>({...s,events:s.events.filter(x=>x.id!==ev.id)}));setSelectedEventId("")}}>Eliminar</button></div>)}<small className="keyboard-hint">Selecciona un evento y pulsa Supr/Delete para eliminarlo.</small></div>}
       <div className="event-compose"><label>Nuevo evento</label><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. comida familiar"/><button onClick={add}>Añadir evento</button></div></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
     </aside>
    </div>
