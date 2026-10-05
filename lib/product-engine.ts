@@ -23,7 +23,7 @@ const RULES:Rule[]=[
  // Verdura y hortaliza — específicos antes de genéricos
  P("lechuga iceberg",/lechuga\s+iceberg|iceberg/,"Fruta y verdura","Verdura","Nevera","alta","lettuce-iceberg","flex"),
  P("lechuga romana",/lechuga\s+romana|romana/,"Fruta y verdura","Verdura","Nevera","alta","lettuce-romaine","flex"),
- P("lechuga",/lechuga|cogollo/,"Fruta y verdura","Verdura","Nevera","alta","lettuce","flex"),
+ P("lechuga",/lechuga|cogollo|batavia|trocadero|lollo|escarola/,"Fruta y verdura","Verdura","Nevera","alta","lettuce","flex"),
  P("canónigos",/canonigo/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
  P("rúcula",/rucula/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
  P("espinacas",/espinaca/,"Fruta y verdura","Verdura","Nevera","alta","spinach","flex"),
@@ -63,9 +63,9 @@ const RULES:Rule[]=[
  P("fruta del dragón",/fruta\s+del\s+dragon|pitahaya/,"Fruta y verdura","Fruta","Nevera","media","dragon-fruit","flex"),
 
  // Carne y aves
- P("pechuga de pollo",/pechuga.*pollo|filete.*pollo/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
- P("pechuga de pavo",/pechuga.*pavo|filete.*pavo/,"Carne","Pavo","Nevera","alta","turkey-breast","cold-required"),
- P("solomillo de pollo",/solomillo.*pollo/,"Carne","Pollo","Nevera","alta","chicken-tender","cold-required"),
+ P("pechuga de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))(?:pechuga.*pollo|filete.*pollo)/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
+ P("pechuga de pavo",/(?!.*(?:rebozad|empanad|congelad))(?:pechuga.*pavo|filete.*pavo)/,"Carne","Pavo","Nevera","alta","turkey-breast","cold-required"),
+ P("solomillo de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))solomillo.*pollo/,"Carne","Pollo","Nevera","alta","chicken-tender","cold-required"),
  P("solomillo de pavo",/solomillo.*pavo/,"Carne","Pavo","Nevera","alta","turkey-tender","cold-required"),
  P("muslo de pollo",/muslo.*pollo|contramuslo|cuarto\s+trasero.*pollo/,"Carne","Pollo","Nevera","alta","chicken-leg","cold-required"),
  P("pollo entero",/pollo\s+entero/,"Carne","Pollo","Nevera","alta","chicken-whole","cold-required"),
@@ -77,6 +77,10 @@ const RULES:Rule[]=[
  P("lomo de cerdo",/lomo.*cerdo|cinta\s+de\s+lomo|chuleta.*lomo/,"Carne","Cerdo","Nevera","alta","pork-loin","cold-required"),
  P("solomillo de cerdo",/solomillo.*cerdo/,"Carne","Cerdo","Nevera","alta","pork-tenderloin","cold-required"),
  P("costillas",/costilla/,"Carne","Cerdo","Nevera","alta","ribs","cold-required"),
+ P("secreto de cerdo",/secreto.*cerdo|secreto\s+iberico/,"Carne","Cerdo","Nevera","alta","steak","cold-required"),
+ P("presa ibérica",/presa.*iberic/,"Carne","Cerdo","Nevera","alta","steak","cold-required"),
+ P("pluma ibérica",/pluma.*iberic/,"Carne","Cerdo","Nevera","alta","steak-thin","cold-required"),
+ P("cordero",/cordero|chuleta.*cordero|paletilla.*cordero/,"Carne","Cordero","Nevera","alta","steak","cold-required"),
  P("bacon",/bacon|panceta/,"Carne","Embutido","Nevera","media","bacon","cold-required"),
  P("jamón serrano",/jamon\s+serrano|jamon\s+iberico|paleta\s+iberica/,"Carne","Embutido","Nevera","baja","ham-cured","flex"),
  P("jamón cocido",/jamon\s+cocido|jamon\s+york/,"Carne","Embutido","Nevera","media","ham-cooked","cold-required"),
@@ -148,6 +152,8 @@ const RULES:Rule[]=[
  // Congelados y preparados
  P("patatas fritas congeladas",/patata.*(congelad|frita).*|french\s+fries|patatas\s+fritas/,"Congelados","Patatas","Congelador","baja","frozen-fries","frozen"),
  P("nuggets",/nugget/,"Congelados","Pollo empanado","Congelador","baja","nuggets","frozen"),
+ P("verdura congelada",/(brocoli|espinaca|guisante|menestra|verdura|judia).*congelad|congelad.*(brocoli|espinaca|guisante|menestra|verdura|judia)/,"Congelados","Verdura congelada","Congelador","baja","frozen-vegetables","frozen"),
+ P("pescado congelado",/(merluza|bacalao|salmon|pescado|gamba|langostino).*congelad|congelad.*(merluza|bacalao|salmon|pescado|gamba|langostino)/,"Congelados","Pescado congelado","Congelador","baja","frozen-fish","frozen"),
  P("pollo rebozado congelado",/(pollo|pechuga|solomillo).*(rebozad|empanad|kentucky)/,"Congelados","Pollo empanado","Congelador","baja","breaded-chicken","frozen"),
  P("croquetas frescas",/croqueta.*(fresca|refrigerad)/,"Preparados","Croquetas","Nevera","alta","croquette","cold-required"),
  P("croquetas",/croqueta/,"Congelados","Croquetas","Congelador","baja","croquette-frozen","frozen"),
