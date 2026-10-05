@@ -197,12 +197,148 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
+ const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
+ const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
  const cameraRef=useRef<HTMLInputElement>(null),galleryRef=useRef<HTMLInputElement>(null),receiptRef=useRef<HTMLInputElement>(null);
+ const syncRevisionRef=useRef(0);
+ const lastSyncedJsonRef=useRef("");
+ const syncCreateRef=useRef(false);
+ const syncTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const stateRef=useRef(state);
 
- useEffect(()=>{setState(loadState());setHydrated(true)},[]);
- useEffect(()=>{if(hydrated&&typeof window!=="undefined")localStorage.setItem("homeos:v5",JSON.stringify(state))},[state,hydrated]);
+ useEffect(()=>{stateRef.current=state},[state]);
+
+ useEffect(()=>{
+  let alive=true;
+  (async()=>{
+   const local=loadState();
+   const creds=getStoredSync();
+   if(creds&&syncConfigured()){
+    setSyncStatus("connecting");
+    try{
+     const remote=await readRemoteHousehold(creds);
+     if(!alive)return;
+     if(remote){
+      const remoteState=normalizeState(remote.data);
+      setSyncCreds(creds);
+      syncRevisionRef.current=remote.revision;
+      lastSyncedJsonRef.current=JSON.stringify(remoteState);
+      setState(remoteState);
+      setSyncStatus("synced");
+     }else{
+      clearSync();
+      setState(local);
+      setSyncStatus("local");
+     }
+    }catch{
+     if(!alive)return;
+     setSyncCreds(creds);
+     setState(local);
+     setSyncStatus("error");
+    }
+   }else{
+    setState(local);
+    setSyncStatus("local");
+   }
+   if(alive)setHydrated(true);
+  })();
+  return()=>{alive=false};
+ },[]);
+
+ useEffect(()=>{
+  if(!hydrated||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
+  syncCreateRef.current=true;
+  const snapshot=state;
+  setSyncStatus("connecting");
+  createRemoteHousehold("Mi hogar",snapshot).then(({creds,revision})=>{
+   setSyncCreds(creds);
+   syncRevisionRef.current=revision;
+   lastSyncedJsonRef.current=JSON.stringify(snapshot);
+   setSyncStatus("synced");
+  }).catch(()=>setSyncStatus("error")).finally(()=>{syncCreateRef.current=false});
+ },[hydrated,state.profile.onboardingDone,syncCreds]);
+
+ useEffect(()=>{
+  if(!hydrated||typeof window==="undefined")return;
+  const json=JSON.stringify(state);
+  localStorage.setItem("homeos:v5",json);
+  if(!syncCreds||!state.profile.onboardingDone||!syncConfigured()||json===lastSyncedJsonRef.current)return;
+  if(syncTimerRef.current)clearTimeout(syncTimerRef.current);
+  syncTimerRef.current=setTimeout(async()=>{
+   setSyncStatus("connecting");
+   try{
+    const revision=await writeRemoteHousehold(syncCreds,stateRef.current);
+    syncRevisionRef.current=revision;
+    lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
+    setSyncStatus("synced");
+   }catch{setSyncStatus("error")}
+  },700);
+  return()=>{if(syncTimerRef.current)clearTimeout(syncTimerRef.current)};
+ },[state,hydrated,syncCreds]);
+
+ useEffect(()=>{
+  if(!hydrated||!syncCreds||!syncConfigured())return;
+  let alive=true;
+  const pull=async()=>{
+   if(document.visibilityState==="hidden")return;
+   if(JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)return;
+   try{
+    const remote=await readRemoteHousehold(syncCreds);
+    if(!alive||!remote||remote.revision<=syncRevisionRef.current)return;
+    const remoteState=normalizeState(remote.data);
+    syncRevisionRef.current=remote.revision;
+    lastSyncedJsonRef.current=JSON.stringify(remoteState);
+    setState(remoteState);
+    setSyncStatus("synced");
+   }catch{if(alive)setSyncStatus("error")}
+  };
+  const id=window.setInterval(pull,15000);
+  window.addEventListener("focus",pull);
+  document.addEventListener("visibilitychange",pull);
+  return()=>{alive=false;window.clearInterval(id);window.removeEventListener("focus",pull);document.removeEventListener("visibilitychange",pull)};
+ },[hydrated,syncCreds]);
+
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"})},[view]);
+
+ async function connectHome(code:string){
+  const creds=parseConnectionCode(code);
+  if(!creds||!syncConfigured())return false;
+  setSyncStatus("connecting");
+  try{
+   const remote=await readRemoteHousehold(creds);
+   if(!remote){setSyncStatus("error");return false}
+   const remoteState=normalizeState(remote.data);
+   storeSync(creds);
+   setSyncCreds(creds);
+   syncRevisionRef.current=remote.revision;
+   lastSyncedJsonRef.current=JSON.stringify(remoteState);
+   setState(remoteState);
+   setSyncStatus("synced");
+   setToast("Hogar conectado");
+   return true;
+  }catch{setSyncStatus("error");return false}
+ }
+
+ async function copyHomeCode(){
+  if(!syncCreds)return;
+  try{
+   await navigator.clipboard.writeText(connectionCode(syncCreds));
+   setToast("Código del hogar copiado");
+  }catch{setToast("No se pudo copiar el código")}
+ }
+
+ async function syncNow(){
+  if(!syncCreds)return;
+  setSyncStatus("connecting");
+  try{
+   const revision=await writeRemoteHousehold(syncCreds,stateRef.current);
+   syncRevisionRef.current=revision;
+   lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
+   setSyncStatus("synced");
+   setToast("Hogar sincronizado");
+  }catch{setSyncStatus("error");setToast("No se pudo sincronizar")}
+ }
 
  const expiring=useMemo(()=>state.inventory.filter(i=>daysUntil(i.expires)<=3&&i.stock!=="falta"),[state.inventory]);
  const available=state.budget-state.spent;
