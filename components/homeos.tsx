@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
+import { canStoreAt, classifyProduct, recommendedLocation, storageWarning } from "../lib/product-engine";
+import { ProductGlyph } from "./product-glyph";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -19,6 +21,7 @@ type ShoppingItem = {
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito";
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;date:string;supermarket?:string;requestedBy?:string};
+type ProductPreference = {location?:Location;category?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
 type EventItem = {id:string;title:string;date:string};
 type RecipeIngredient = {name:string;qty:string;key:string};
@@ -33,16 +36,16 @@ type Profile = {
   notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 type AppState = {
-  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; members:Member[]; events:EventItem[];
+  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number;
 };
 
 const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería","Otro supermercado"];
 const KITCHEN_TOOLS=["Placa / inducción","Gas","Horno","Air fryer","Microondas","Thermomix / robot","Batidora"];
-const CATEGORIES=["Todos","Lácteos","Carne","Fruta y verdura","Despensa","Preparados","Suplementos","Limpieza y hogar"];
+const CATEGORIES=["Todos","Fruta y verdura","Carne","Lácteos","Congelados","Preparados","Despensa","Bebidas","Snacks y dulces","Suplementos","Limpieza y hogar","Higiene y cuidado"];
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa"];
-const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Despensa":"Despensa","Preparados":"Preparados","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar"};
-const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Despensa":"🥫","Preparados":"🍱","Suplementos":"＋","Limpieza y hogar":"🧴"};
+const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Congelados":"Congelados","Despensa":"Despensa","Preparados":"Preparados","Bebidas":"Bebidas","Snacks y dulces":"Snacks y dulces","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar","Higiene y cuidado":"Higiene y cuidado"};
+const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧"};
 const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"▦"};
 
 const RECIPES:Recipe[]=[
@@ -70,6 +73,7 @@ const DEFAULT:AppState={
   {id:"s3",name:"Leche semidesnatada",qty:2,unit:"L",category:"Lácteos",supermarket:"Lidl",requestedBy:"Papá",reason:"persona",status:"pendiente"}
  ],
  purchaseHistory:[],
+ productPreferences:{},
  members:[{id:"m1",name:"Tú",relation:"Yo",presence:"fines_semana",appetite:"normal",dislikes:"",notes:"Entre semana casi no está en casa."},{id:"m2",name:"Mamá",relation:"Madre",presence:"fuera_dia",appetite:"normal",dislikes:"",notes:"Suele comer fuera y vuelve por la noche."},{id:"m3",name:"Papá",relation:"Padre",presence:"casa",appetite:"normal",dislikes:"",notes:"Hace parte de la compra familiar."},{id:"m4",name:"Hermano",relation:"Hijo",presence:"casa",appetite:"mucho",dislikes:"queso",notes:"Consume bastante comida preparada."}],
  events:[{id:"e1",title:"Navidad",date:"2026-12-25"}],
  budget:800,spent:486.35,waste:18.4,wasteSaved:27.6,
@@ -82,7 +86,7 @@ function normalizeState(x:any):AppState{
  const profile={...DEFAULT.profile,...(raw.profile||{})};
  const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));
  const members=ensureMembers(baseMembers,profile.householdSize);
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[]};
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],productPreferences:raw.productPreferences&&typeof raw.productPreferences==="object"?raw.productPreferences:{}};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
