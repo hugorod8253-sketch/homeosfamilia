@@ -18,7 +18,7 @@ type AppState = {
 
 const DEFAULT: AppState = {
   inventory: [
-    {id:"i1",name:"Hamburguesas",qty:4,unit:"uds",location:"Nevera",expires:"2026-10-06",confidence:"seguro",price:5.8},
+    {id:"i1",name:"Hamburguesas",qty:4,unit:"uds",location:"Nevera",expires:"2026-10-06",confidence:"seguro" as Confidence,price:5.8},
     {id:"i2",name:"Queso lonchas",qty:6,unit:"lonchas",location:"Nevera",expires:"2026-10-09",confidence:"probable",price:2.4},
     {id:"i3",name:"Yogures",qty:2,unit:"uds",location:"Nevera",expires:"2026-10-07",confidence:"seguro",price:1.8},
     {id:"i4",name:"Leche",qty:3,unit:"L",location:"Despensa",expires:"2026-11-20",confidence:"probable",price:3.2},
