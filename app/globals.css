@@ -369,3 +369,133 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .sync-settings-head{flex-direction:column}
  .join-inline{grid-template-columns:1fr}
 }
+
+/* Product UX pass — faster scanning, clearer hierarchy, denser daily use */
+.nav,.bottom-nav button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.sidebar nav .nav{min-height:48px;padding:11px 13px;border-radius:13px}
+.bottom-nav{z-index:80}
+.bottom-nav button{min-height:58px;padding:7px 4px}
+.bottom-nav button span{font-size:18px}
+.bottom-nav button small{font-size:10px}
+
+/* Home */
+.inventory-trust{min-width:220px;background:#f4f7f4;border:1px solid #e2e7e2;border-radius:16px;padding:14px 16px;display:grid;gap:3px}
+.inventory-trust>span{font-size:9px;letter-spacing:.08em;color:#7f8982;font-weight:800}
+.inventory-trust strong{font-size:14px;color:#2f3933}
+.inventory-trust small{font-size:10px;color:#79827c}
+.home-primary-actions{grid-template-columns:minmax(0,1.45fr) minmax(260px,.75fr)}
+.home-primary-actions .decision-card{min-height:245px}
+.shopping-decision{background:linear-gradient(145deg,#e8f2f8,#f5fafc)!important;color:#263943!important;border:1px solid #d7e5ec!important}
+.shopping-decision .decision-icon{background:white;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:24px;box-shadow:0 7px 18px rgba(62,95,111,.09)}
+.card-cta{display:inline-flex;margin-top:9px;font-size:11px;font-weight:800;opacity:.88}
+.home-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.status-card{border:1px solid var(--line);border-radius:17px;background:white;min-height:112px;padding:14px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:11px;text-align:left}
+.status-card>span{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:#f2f4f2}
+.status-card>div{display:grid;gap:2px}.status-card small{font-size:8px;letter-spacing:.07em;font-weight:800;color:#7e8781}.status-card strong{font-size:19px}.status-card p{font-size:10px;color:var(--muted);margin:0}.status-card>b{font-size:18px;color:#9aa39d}
+.expiry-card{background:#fff8ed}.expiry-card>span{background:#ffedd1}
+.budget-card{background:#f0f7ef}.budget-card>span{background:#dfeedd;color:#356347;font-weight:900}
+.prepared-card{background:#f2f6ff}.prepared-card>span{background:#e4ebfb}
+.event-card{background:#fbf1f4}.event-card>span{background:#f4e1e7}
+.simplified-habits{padding:17px 18px}
+.habit-signal-chips{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0 7px}.habit-signal-chips span{border:1px solid #e3e7e3;background:#f7f9f7;border-radius:999px;padding:7px 10px;font-size:10px;color:#778079}.habit-signal-chips span.known{background:#eaf3ec;border-color:#cfe0d3;color:#3d674d}.habit-signal-chips b{margin-right:4px}
+
+/* Shopping */
+.device-member-select{display:flex!important;align-items:center;gap:7px;background:#f5f7f4;border:1px solid var(--line);border-radius:11px;padding:4px 7px!important}
+.device-member-select>span{font-size:9px;color:#7b847d;font-weight:800;white-space:nowrap}
+.device-member-select select{border:0!important;background:transparent!important;padding:6px 4px!important;min-width:95px}
+.device-member-pill{display:inline-flex;align-items:center;border:1px solid var(--line);background:#f5f7f4;border-radius:11px;padding:8px 10px;font-size:10px;font-weight:750;color:#59635d}
+.shopping-category{padding:13px}
+.shopping-category .list-title h3{display:flex;align-items:center;gap:7px}
+.shopping-card-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:9px!important}
+.shop-visual-card{min-height:150px!important;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:auto 1fr auto!important;align-content:start!important;gap:8px!important;border-radius:15px!important;padding:11px!important;position:relative}
+.shop-visual-card .product-pictogram{width:44px!important;height:44px!important;font-size:22px!important}
+.shop-visual-copy{display:grid;gap:3px;min-width:0}.shop-visual-copy strong{font-size:12px!important;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.shop-visual-copy>span{font-size:10px!important}.shop-visual-copy small{font-size:9px!important}
+.shop-visual-card>em{position:absolute;right:9px;top:9px;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px!important;padding:4px 6px!important}
+.ticket-actions{display:grid;gap:8px}.ticket-camera{background:#eef6f0!important;border-color:#d8e7dc!important}
+.purchase-tools{align-self:start}
+.quick-add.smart{align-items:stretch}
+.quick-add.smart>button{min-width:86px}
+
+/* Inventory */
+.inventory-toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.65fr) auto;gap:12px;align-items:end;background:white;border:1px solid var(--line);border-radius:18px;padding:14px}
+.inventory-filter-block,.inventory-density{display:grid;gap:7px}.inventory-filter-block>small,.inventory-density>small{font-size:8px;letter-spacing:.08em;color:#8a938d;font-weight:850}
+.visual-filter-row{display:flex;gap:6px;flex-wrap:wrap}.visual-filter-row button{border:1px solid #e3e7e3;background:#f8faf8;border-radius:11px;padding:7px 9px;display:flex;align-items:center;gap:5px;font-size:10px}.visual-filter-row button span{font-size:14px}.visual-filter-row button b{font-weight:750}.visual-filter-row button.active{background:#e7f1e9;border-color:#b8d2bf;color:#315c43}
+.visual-filter-row.categories button{padding:7px 8px}
+.inventory-density>div{display:flex;background:#f3f5f3;border-radius:10px;padding:3px}.inventory-density button{border:0;background:transparent;border-radius:8px;padding:7px 9px;font-size:9px;font-weight:800;color:#758079}.inventory-density button.active{background:white;color:#34433a;box-shadow:0 2px 8px rgba(50,65,56,.08)}
+.inventory-grid.compact{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.inventory-grid.compact .inventory-card{padding:11px;min-height:172px}
+.inventory-product-icon{font-size:22px;width:34px;height:34px;border-radius:10px;background:#f5f7f4;display:grid;place-items:center}
+.inventory-name-row{display:grid;gap:3px;margin-top:8px}.inventory-name-row h3{font-size:13px;line-height:1.16;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.location-mini{font-size:8px;color:#869088}
+.inventory-qty{font-size:10px!important;margin:4px 0!important}
+.inventory-badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.inventory-grid.compact .rotation-badge{font-size:8px;padding:4px 6px}.inventory-grid.compact .date-alert{font-size:8px;padding:4px 6px}
+.inventory-grid.compact .prepared-meta{display:none}
+.inventory-grid.compact .inventory-actions{margin-top:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.inventory-grid.compact .inventory-actions button{font-size:8px;padding:6px 5px;min-height:30px}
+.inventory-grid.detail{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.inventory-grid.detail .inventory-card{padding:16px}
+.inventory-grid.detail .inventory-name-row h3{font-size:16px}
+.inventory-top{align-items:center}
+.photo-actions{flex-wrap:wrap}
+
+/* Meal discovery */
+.eat-tabs button{min-width:120px}
+.meal-request{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(260px,1.2fr);gap:14px;align-items:center;border:1px solid #dce6df;background:linear-gradient(135deg,#f1f7f2,#fbfcfb);border-radius:18px;padding:16px;position:relative}
+.meal-request small{font-size:8px;letter-spacing:.08em;font-weight:850;color:#64806d}.meal-request h3{font-size:17px;margin:3px 0}.meal-request p{font-size:11px;color:var(--muted);margin:0}.meal-request>input{border:1px solid #d8dfda;background:white;border-radius:13px;padding:12px 13px;font-size:13px;outline:0}
+.meal-request-results{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.meal-request-results button{border:1px solid var(--line);background:white;border-radius:12px;padding:9px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left}.meal-request-results button>span{font-size:20px}.meal-request-results button div{display:grid;gap:2px}.meal-request-results strong{font-size:11px}.meal-request-results small{font-size:9px;letter-spacing:0;color:var(--muted)}
+.meal-modes{flex-wrap:wrap}
+.recipe-options-head{display:flex;justify-content:space-between;gap:12px;align-items:end}.recipe-options-head small{font-size:8px;letter-spacing:.08em;color:#879089;font-weight:850}.recipe-options-head h3{margin:3px 0 0;font-size:17px}.recipe-options-head>span{font-size:10px;color:var(--muted)}
+.recipe-option-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.recipe-option{padding:0;border:1px solid var(--line);background:white;border-radius:15px;overflow:hidden;text-align:left;min-height:170px}.recipe-option.selected{outline:2px solid #6d947b;outline-offset:1px}.recipe-option img{width:100%;height:90px;object-fit:cover}.recipe-option>div{padding:9px;display:grid;gap:3px}.recipe-option strong{font-size:11px;line-height:1.2}.recipe-option span{font-size:9px;color:#6f7972}.recipe-option small{font-size:8px}.recipe-option small.ready{color:#3c7650}.recipe-option small.needs{color:#9a7040}
+.recipe-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:9px 0}.recipe-tools small{font-size:8px;font-weight:850;color:#89918c;letter-spacing:.07em}.recipe-tools span{border-radius:999px;background:#eef4ef;border:1px solid #dce8df;padding:5px 7px;font-size:9px;color:#486456}
+.family-warning{display:grid!important;gap:4px!important;line-height:1.35}.family-warning span{display:block}
+.ingredient-summary.clearer article{display:grid;align-content:start}.ingredient-summary.clearer article>strong{font-size:21px;margin:4px 0 7px}.ingredient-summary.clearer article>small{font-size:8px;letter-spacing:.08em;font-weight:850;color:#7e8881}
+.modal-tool-note{display:block;margin-top:5px;color:#69756d;font-size:10px}
+.habits-detail{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(230px,.7fr);gap:12px}
+.habit-group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:15px}.habit-group{border:1px solid var(--line);border-radius:13px;padding:10px;display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start}.habit-group>span{font-size:20px}.habit-group>div{display:grid;gap:2px}.habit-group strong{font-size:11px}.habit-group b{font-size:10px;color:#426c50}.habit-group small{font-size:8px;color:var(--muted);line-height:1.35}
+
+/* Finances */
+.finance-page{gap:13px}
+.finance-intro{align-items:start}
+.finance-mode-switch{width:min(360px,100%);background:white;border:1px solid var(--line);border-radius:15px;padding:12px;display:grid;gap:7px}.finance-mode-switch>small{font-size:8px;letter-spacing:.08em;color:#89928c;font-weight:850}.finance-mode-switch>div{display:grid;grid-template-columns:1fr 1fr;background:#f2f4f2;border-radius:10px;padding:3px}.finance-mode-switch button{border:0;background:transparent;border-radius:8px;padding:8px;font-size:10px;font-weight:800}.finance-mode-switch button.active{background:white;box-shadow:0 2px 8px rgba(43,55,48,.08)}.finance-mode-switch p{font-size:9px;color:#737e76;margin:0;line-height:1.45}
+.budget-overview{border-radius:20px;padding:20px;background:linear-gradient(135deg,#1f3228,#395b47);color:white;display:grid;gap:17px;box-shadow:0 14px 35px rgba(35,58,45,.13)}
+.budget-head{display:flex;justify-content:space-between;gap:20px;align-items:start}.budget-head>div{display:grid;gap:3px}.budget-head small{font-size:8px;letter-spacing:.08em;opacity:.7;font-weight:850}.budget-head strong{font-size:36px;letter-spacing:-.04em}.budget-head label{display:grid;gap:4px}.budget-head label>span{font-size:8px;opacity:.7}.budget-head label>div{display:flex;align-items:center;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:0 8px}.budget-head input{width:90px;background:transparent;border:0;color:white;padding:8px 3px;text-align:right;font-weight:800;outline:0}.budget-head b{font-size:10px}
+.budget-progress{height:9px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}.budget-progress span{display:block;height:100%;border-radius:999px;background:#b9dfc2}
+.budget-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.budget-numbers>div{display:grid;gap:3px}.budget-numbers small{font-size:8px;opacity:.68;font-weight:800}.budget-numbers strong{font-size:19px}.budget-numbers .remaining strong{color:#c7f0d0}.budget-numbers .remaining.over strong{color:#ffd0c8}
+.finance-secondary{display:grid;grid-template-columns:1fr 1fr;gap:11px}.waste-card,.finance-data-card{border:1px solid var(--line);border-radius:17px;background:white;padding:15px;display:grid;grid-template-columns:auto 1fr;gap:11px}.waste-card>span,.finance-data-card>span{font-size:22px}.waste-card>div,.finance-data-card>div{display:grid;gap:2px}.waste-card small,.finance-data-card small{font-size:8px;letter-spacing:.07em;color:#8a928c;font-weight:850}.waste-card strong,.finance-data-card strong{font-size:20px}.waste-card p,.finance-data-card p{font-size:9px;color:var(--muted);margin:0;line-height:1.4}
+.category-spend-card{border:1px solid var(--line);border-radius:19px;background:white;padding:18px}.category-spend-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:15px}.category-spend-head small{font-size:8px;letter-spacing:.08em;color:#8b948d;font-weight:850}.category-spend-head h3{margin:3px 0;font-size:18px}.category-spend-head p{font-size:10px;color:var(--muted);margin:0}.category-spend-head>strong{font-size:12px;color:#58655d}
+.category-money-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.money-row{border:1px solid #edf0ed;border-radius:13px;padding:10px;display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:center}.money-icon{width:34px;height:34px;border-radius:10px;background:#f4f7f4;display:grid;place-items:center;font-size:17px}.money-row>div{display:grid;gap:5px}.money-row-top{display:flex;justify-content:space-between;gap:8px}.money-row-top b{font-size:10px}.money-row-top strong{font-size:11px}.money-bar{height:5px;background:#f0f2f0;border-radius:999px;overflow:hidden}.money-bar span{height:100%;display:block;border-radius:999px}.bar-1{background:#648b72}.bar-2{background:#d2936e}.bar-3{background:#7b9dc1}.bar-4{background:#a48abc}.bar-5{background:#c4a45f}.bar-6{background:#8aafa5}.money-row small{font-size:8px;color:#939a95}
+.finance-how{border:1px solid var(--line);border-radius:17px;background:#f8faf8;padding:16px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}.finance-how small{font-size:8px;letter-spacing:.08em;color:#8a938d;font-weight:850}.finance-how h3{margin:3px 0;font-size:15px}.finance-how>p{grid-column:1/-1;font-size:9px;color:var(--muted);margin:0}.finance-example{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.finance-example span{background:white;border:1px solid var(--line);border-radius:10px;padding:8px 9px;font-size:9px}.finance-empty{padding:25px;display:grid;place-items:center;text-align:center;gap:4px}.finance-empty>span{font-size:24px}.finance-empty strong{font-size:13px}.finance-empty p{font-size:10px;color:var(--muted);margin:0}
+
+/* Household settings */
+.household-modal{max-height:min(86vh,820px);display:flex;flex-direction:column;overflow:hidden}
+.household-scroll{overflow:auto;padding-right:2px}
+.sticky-actions{position:sticky;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-top:12px;margin-top:12px;z-index:3}
+.member-profile-card .text-field small,.improved-settings label>small{font-size:8px;color:#8a938d;line-height:1.35;margin-top:3px}
+.kitchen-tools-setting>p{font-size:9px;color:var(--muted);margin:0 0 4px}
+.profile-tabs button{min-height:40px}
+
+/* Mobile */
+@media(max-width:1050px){
+ .inventory-grid.compact{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .shopping-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .home-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .recipe-option-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+ .dashboard-hero{gap:10px}.inventory-trust{width:100%;min-width:0}
+ .home-primary-actions{grid-template-columns:1fr}.home-primary-actions .decision-card{min-height:190px}
+ .home-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.status-card{min-height:96px;padding:10px;grid-template-columns:auto 1fr}.status-card>b{display:none}.status-card>span{width:32px;height:32px;font-size:15px}.status-card strong{font-size:16px}
+ .inventory-toolbar{grid-template-columns:1fr;padding:11px}.visual-filter-row{flex-wrap:nowrap;overflow:auto;padding-bottom:2px;scrollbar-width:none}.visual-filter-row::-webkit-scrollbar{display:none}.visual-filter-row button{flex:none}
+ .inventory-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.inventory-grid.compact .inventory-card{min-height:164px;padding:9px}.inventory-grid.detail{grid-template-columns:1fr}
+ .shopping-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}.shop-visual-card{min-height:140px!important;padding:9px!important}
+ .quick-add.smart{grid-template-columns:1fr auto!important}.quick-add.smart input{grid-column:1/-1}.device-member-select,.device-member-pill{min-height:40px}
+ .meal-request{grid-template-columns:1fr;padding:13px}.meal-request-results{grid-template-columns:1fr}.recipe-option-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.recipe-option{min-height:152px}.recipe-option img{height:76px}
+ .habits-detail{grid-template-columns:1fr}.habit-group-grid{grid-template-columns:1fr}
+ .finance-secondary,.category-money-list{grid-template-columns:1fr}.budget-overview{padding:16px}.budget-head strong{font-size:30px}.budget-numbers{grid-template-columns:1fr 1fr 1fr}.budget-numbers strong{font-size:15px}.category-spend-head{align-items:flex-start;flex-direction:column}.finance-how{grid-template-columns:1fr}.finance-example{justify-content:flex-start}
+ .household-modal{max-height:92vh}.sticky-actions{padding-bottom:max(4px,env(safe-area-inset-bottom))}
+}
+@media(max-width:390px){
+ .home-status-grid{grid-template-columns:1fr}
+ .inventory-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .shopping-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .recipe-option-grid{grid-template-columns:1fr 1fr}
+}
