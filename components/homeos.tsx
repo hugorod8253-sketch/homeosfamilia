@@ -181,13 +181,18 @@ function rotationBand(name:string,cat:string,location?:string){
 function presenceText(p:Member["presence"]){return p==="casa"?"Come habitualmente en casa":p==="fuera_dia"?"Fuera durante el día":p==="fines_semana"?"Principalmente fines de semana":"Rutina variable"}
 function appetiteText(a:Member["appetite"]){return a==="poco"?"Come poco":a==="mucho"?"Come bastante":"Consumo normal"}
 function habitSignals(state:AppState){
- const active=state.inventory.filter(i=>i.stock!=="falta");
- const has=(re:RegExp,cat?:string)=>active.some(i=>(cat&&i.category===cat)||re.test(norm(i.name)));
+ const now=Date.now();
+ const recentPurchases=state.purchaseHistory.filter(x=>{
+  const t=new Date(x.date+"T12:00:00").getTime();
+  return t<=now&&now-t<=28*86400000;
+ });
+ const source=recentPurchases.length?recentPurchases:state.inventory.filter(i=>i.stock!=="falta").map(i=>({name:i.name,category:i.category}));
+ const has=(re:RegExp,cat?:string)=>source.some((i:any)=>(cat&&i.category===cat)||re.test(norm(i.name)));
  return [
-  ["Proteína",has(/pollo|carne|pescado|huevo|proteina|yogur/)],
-  ["Verdura",has(/verdura|tomate|zanahoria|cebolla|aguacate|brocoli/,"Fruta y verdura")],
-  ["Carbohidratos",has(/arroz|pasta|pan|patata|avena/)],
-  ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria/)]
+  ["Proteína",has(/pollo|carne|pescado|huevo|proteina|legumbre|lenteja|garbanzo/,"Carne")],
+  ["Verdura",has(/verdura|tomate|zanahoria|cebolla|aguacate|brocoli|lechuga|pepino/)],
+  ["Carbohidratos",has(/arroz|pasta|pan|patata|avena|cereal/)],
+  ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria|refresco/)]
  ] as [string,boolean][];
 }
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
