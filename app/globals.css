@@ -285,3 +285,8 @@ html,body{overflow-x:hidden}
  .day-events{display:none}
  .apple-day.has-event:after{right:7px;top:auto;bottom:6px}
 }
+
+.event-row{cursor:pointer}
+.event-row.selected{outline:2px solid #315f46;outline-offset:1px;background:#f1f6f2!important}
+.keyboard-hint{display:block;margin-top:8px;color:#969e98;font-size:9px;line-height:1.35}
+@media(max-width:720px){.keyboard-hint{display:none}}
