@@ -259,23 +259,48 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
  const add=()=>{if(!title.trim()||!selectedDate)return;setState(s=>({...s,events:[...s.events,{id:crypto.randomUUID(),title:title.trim(),date:selectedDate}]}));setTitle("")};
  const move=(delta:number)=>setCursor(new Date(year,month+delta,1));
  const goToday=()=>{setCursor(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDate(todayIso)};
- return <article className="calendar-card">
-  <div className="calendar-head">
-   <div><small>CALENDARIO DEL HOGAR</small><div className="calendar-title-row"><button className="calendar-nav" onClick={()=>move(-1)} aria-label="Mes anterior">‹</button><h3>{monthLabel}</h3><button className="calendar-nav" onClick={()=>move(1)} aria-label="Mes siguiente">›</button><button className="calendar-today" onClick={goToday}>Hoy</button></div></div>
-   {selectedDate?<div className="event-add selected"><div><span>Evento para</span><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}</strong></div><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. cena familiar"/><button onClick={add}>Añadir</button></div>:<div className="calendar-hint">Pulsa un día para añadir un evento</div>}
-  </div>
-  <div className="calendar-week">{["L","M","X","J","V","S","D"].map(x=><b key={x}>{x}</b>)}</div>
-  <div className="calendar-grid">
-   {Array.from({length:blank}).map((_,i)=><span key={"b"+i}/>)}
-   {Array.from({length:days}).map((_,i)=>{
-    const d=i+1;
-    const iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const events=state.events.filter(e=>e.date===iso);
-    const cls=["calendar-day",events.length?"has-event":"",iso===todayIso?"today":"",iso===selectedDate?"selected":""].filter(Boolean).join(" ");
-    return <button className={cls} key={d} onClick={()=>setSelectedDate(iso)}><b>{d}</b>{events.slice(0,2).map(ev=><small key={ev.id}>{ev.title}</small>)}{events.length>2&&<small>+{events.length-2} más</small>}</button>
-   })}
-  </div>
- </article>
+ const selectedEvents=selectedDate?state.events.filter(e=>e.date===selectedDate):[];
+ return <article className="calendar-card apple-calendar">
+   <div className="apple-calendar-top">
+    <div>
+      <small>CALENDARIO DEL HOGAR</small>
+      <div className="apple-month-row">
+        <h3>{monthLabel}</h3>
+        <div className="apple-calendar-controls">
+          <button onClick={()=>move(-1)} aria-label="Mes anterior">‹</button>
+          <button onClick={goToday}>Hoy</button>
+          <button onClick={()=>move(1)} aria-label="Mes siguiente">›</button>
+        </div>
+      </div>
+    </div>
+    <div className="apple-calendar-legend"><span className="legend-dot today-dot"/>Hoy <span className="legend-dot event-dot"/>Evento</div>
+   </div>
+
+   <div className="apple-calendar-body">
+    <div className="apple-calendar-main">
+      <div className="calendar-week apple-week">{["L","M","X","J","V","S","D"].map(x=><b key={x}>{x}</b>)}</div>
+      <div className="calendar-grid apple-grid">
+       {Array.from({length:blank}).map((_,i)=><span className="calendar-blank" key={"b"+i}/>)}
+       {Array.from({length:days}).map((_,i)=>{
+        const d=i+1;
+        const iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const events=state.events.filter(e=>e.date===iso);
+        const cls=["apple-day",events.length?"has-event":"",iso===todayIso?"today":"",iso===selectedDate?"selected":""].filter(Boolean).join(" ");
+        return <button className={cls} key={d} onClick={()=>setSelectedDate(iso)}>
+          <span className="day-number">{d}</span>
+          {events.length>0&&<div className="day-events">{events.slice(0,2).map(ev=><span key={ev.id}>{ev.title}</span>)}</div>}
+        </button>
+       })}
+      </div>
+    </div>
+
+    <aside className={selectedDate?"apple-event-panel open":"apple-event-panel"}>
+      {selectedDate?<><div className="event-panel-date"><small>FECHA SELECCIONADA</small><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}</strong></div>
+      {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div key={ev.id}><span className="event-color-dot"/><b>{ev.title}</b></div>)}</div>}
+      <div className="event-compose"><label>Nuevo evento</label><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. comida familiar"/><button onClick={add}>Añadir evento</button></div></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
+    </aside>
+   </div>
+  </article>
 }
 
 function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void}){
