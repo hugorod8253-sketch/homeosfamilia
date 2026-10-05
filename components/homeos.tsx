@@ -202,6 +202,7 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
+ const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared">("all");
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
@@ -393,10 +394,10 @@ export default function HomeOS(){
 
   <main className="main">
    <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Dashboard":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView}/>}
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
-   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast}/>}
+   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
   </main>
 
@@ -427,7 +428,7 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
  </div></div>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared")=>void}){
  const todayIso=new Date().toISOString().slice(0,10);
  const next=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
  const recommended=state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length;
@@ -451,9 +452,9 @@ function Inicio({state,setState,expiring,confidence,available,setView}:{state:Ap
   </div>
 
   <div className="home-status-grid">
-   <button className="status-card expiry-card" onClick={()=>setView("casa")}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
+   <button className="status-card expiry-card" onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
    <button className="status-card budget-card" onClick={()=>setView("finanzas")}><span>€</span><div><small>TE QUEDA ESTE MES</small><strong>{Math.max(0,available).toFixed(0)} €</strong><p>de {state.budget.toFixed(0)} € de presupuesto</p></div><b>›</b></button>
-   <button className="status-card prepared-card" onClick={()=>setView("casa")}><span>🍱</span><div><small>COMIDA PREPARADA</small><strong>{readyServings}</strong><p>raciones listas</p></div><b>›</b></button>
+   <button className="status-card prepared-card" onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span>🍱</span><div><small>COMIDA PREPARADA</small><strong>{readyServings}</strong><p>raciones listas</p></div><b>›</b></button>
    <button className="status-card event-card" onClick={()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"center"})}><span>📅</span><div><small>PRÓXIMO EVENTO</small><strong>{nextDate}</strong><p>{next?.title||"Sin eventos"}</p></div><b>›</b></button>
   </div>
 
@@ -701,7 +702,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  </section>
 }
 
-function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void}){
+function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared";clearFocus:()=>void}){
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const [density,setDensity]=useState<"compact"|"detail">("compact");
  const [preparedOpen,setPreparedOpen]=useState(false);
@@ -712,7 +713,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
  const [preparedLocation,setPreparedLocation]=useState<"Nevera"|"Congelador">("Nevera");
  const [photoStatus,setPhotoStatus]=useState("");
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
- const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat));
+ const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":true));
 
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function freeze(id:string){const frozenAt=new Date().toISOString().slice(0,10);setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",frozenAt,originalExpires:i.originalExpires||i.expires,expires:undefined,dateType:undefined}:i)}));setToast("Producto movido al congelador")}
@@ -753,6 +754,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
  return <section className="stack">
   <div className="page-intro"><div><span className="eyebrow">CASA</span><h2>Encuentra rápido lo que tienes</h2><p>Primero eliges dónde está; después, si quieres, filtras por tipo de producto.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>🍱 Añadir preparado</button><button className="secondary" onClick={()=>cameraRef.current?.click()}>📷 Revisar con foto</button><button className="secondary" onClick={()=>galleryRef.current?.click()}>🖼 Fototeca</button><input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files?.[0];if(f){setPhotoStatus(f.name||"Foto de cámara");setToast("Foto seleccionada")}}}/><input ref={galleryRef} hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f){setPhotoStatus(f.name);setToast("Imagen seleccionada")}}}/>{photoStatus&&<span className="photo-status">Imagen lista: {photoStatus} · análisis automático pendiente</span>}</div></div>
 
+  {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que caducan pronto":"Comida preparada"}</strong><p>{focus==="expiring"?"Solo mostramos productos con fecha próxima para que puedas decidir qué gastar primero.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
   <div className="inventory-toolbar">
    <div className="inventory-filter-block"><small>DÓNDE ESTÁ</small><div className="visual-filter-row">{LOCATIONS.map(x=><button key={x} className={loc===x?"active":""} onClick={()=>setLoc(x)}><span>{LOCATION_ICONS[x]}</span><b>{x}</b></button>)}</div></div>
    <div className="inventory-filter-block"><small>QUÉ ES</small><div className="visual-filter-row categories">{CATEGORIES.map(x=><button key={x} className={cat===x?"active":""} onClick={()=>setCat(x)}><span>{CATEGORY_ICONS[x]||"🛍️"}</span><b>{CATEGORY_LABELS[x]||x}</b></button>)}</div></div>
