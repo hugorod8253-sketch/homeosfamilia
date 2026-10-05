@@ -339,24 +339,31 @@ export default function HomeOS(){
   setState(s=>{
    const inventory=[...s.inventory];
    for(const x of cart){
-    const location:Location=x.category==="Lácteos"||x.category==="Carne"?"Nevera":"Despensa";
+    const profile=classifyProduct(x.name,x.category);
+    const pref=s.productPreferences[profile.canonical]||{};
+    const category=pref.category||profile.category;
+    const location=recommendedLocation(x.name,category,pref.location) as Location;
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location);
     if(idx>=0){
-     inventory[idx]={...inventory[idx],qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket};
+     inventory[idx]={...inventory[idx],category,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket};
     }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category:x.category,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore});
     }
    }
-   const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>({
-    id:crypto.randomUUID(),
-    name:x.name,
-    qty:x.qty,
-    unit:x.unit,
-    category:x.category,
-    date:today,
-    supermarket:x.supermarket||activeStore||undefined,
-    requestedBy:x.requestedBy
-   }))].slice(-600);
+   const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
+    const p=classifyProduct(x.name,x.category);
+    const pref=s.productPreferences[p.canonical]||{};
+    return {
+     id:crypto.randomUUID(),
+     name:x.name,
+     qty:x.qty,
+     unit:x.unit,
+     category:pref.category||p.category,
+     date:today,
+     supermarket:x.supermarket||activeStore||undefined,
+     requestedBy:x.requestedBy
+    };
+   })].slice(-600);
    return {...s,inventory,purchaseHistory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
   });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
