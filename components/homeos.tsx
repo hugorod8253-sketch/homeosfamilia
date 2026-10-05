@@ -388,7 +388,7 @@ export default function HomeOS(){
  return <div className="app-shell">
   <aside className="sidebar">
    <div className="brand">{logo()}<div><strong>HomeOS</strong><span>Tu cocina, sin carga mental</span></div></div>
-   <nav>{nav.map(n=><button key={n.id} className={view===n.id?"nav active":"nav"} onClick={()=>setView(n.id)}><span>{n.icon}</span>{n.label}</button>)}</nav>
+   <nav>{nav.map(n=><button key={n.id} className={view===n.id?"nav active":"nav"} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}><span>{n.icon}</span>{n.label}</button>)}</nav>
    <button className="profile" onClick={()=>setProfileOpen(true)}><span>FR</span><div><strong>Mi hogar</strong><small>{state.profile.householdSize} personas</small></div></button>
   </aside>
 
@@ -401,7 +401,7 @@ export default function HomeOS(){
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
   </main>
 
-  <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>setView(n.id)}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>
+  <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
  </div>
