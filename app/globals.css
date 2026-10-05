@@ -158,3 +158,40 @@ html,body{overflow-x:hidden}
 @media(max-width:720px){
   .profile{position:relative!important;left:auto!important;bottom:auto!important;width:auto!important}
 }
+
+/* Compact shopping cards + mobile density */
+.shopping-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line)}
+.shop-visual-card{border-bottom:0!important;min-width:0}
+.rotation-badge{display:inline-flex;width:max-content;margin-top:4px;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.rotation-badge.alta{background:#fde8e8;color:#9a4b4b}
+.rotation-badge.media{background:#fff1cf;color:#8a6827}
+.rotation-badge.baja{background:#e8effa;color:#4b6788}
+@media(min-width:1250px){
+  .category-list .list-card:nth-child(1n) .shopping-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .shop-visual-card{padding:12px 13px}
+  .product-pictogram{width:42px;height:42px}
+}
+@media(max-width:900px){
+  .shopping-layout{grid-template-columns:1fr}
+  .purchase-tools{display:grid;grid-template-columns:1fr 1fr}
+  .shopping-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .main{padding-left:12px;padding-right:12px}
+  .shopping-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shop-visual-card{grid-template-columns:38px minmax(0,1fr);gap:9px;padding:10px}
+  .product-pictogram{width:38px;height:38px;border-radius:12px;font-size:19px}
+  .shop-visual-copy strong{font-size:13px;line-height:1.2}
+  .shop-visual-copy span{font-size:11px}
+  .shop-visual-copy small{font-size:9px}
+  .shop-visual-card em{grid-column:2;font-size:9px;padding:4px 6px;width:max-content}
+  .list-title{padding:12px 13px}
+  .list-title h3{font-size:15px}
+  .shopping-top h2,.page-intro h2{font-size:27px}
+  .shopping-top p,.page-intro p{font-size:13px}
+  .store-tabs,.segmented,.mode-row,.view-tabs{font-size:12px}
+  .purchase-tools{grid-template-columns:1fr}
+}
+@media(max-width:390px){
+  .shopping-card-grid{grid-template-columns:1fr}
+}
