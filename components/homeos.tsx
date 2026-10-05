@@ -398,8 +398,12 @@ export default function HomeOS(){
  </div>
 }
 
-function Onboarding({state,setState}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>}){
+function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error"}){
  const [step,setStep]=useState(0);
+ const [joinOpen,setJoinOpen]=useState(false);
+ const [joinCode,setJoinCode]=useState("");
+ const [joinError,setJoinError]=useState("");
+ async function joinExisting(){setJoinError("");const ok=await connectHome(joinCode);if(!ok)setJoinError("Código no válido o no se pudo conectar.");}
  const toggleGoal=(g:Goal)=>setState(s=>({...s,profile:{...s.profile,goals:s.profile.goals.includes(g)?s.profile.goals.filter(x=>x!==g):[...s.profile.goals,g]}}));
  const toggleMarket=(m:string)=>setState(s=>({...s,profile:{...s.profile,supermarkets:s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m],mainSupermarket:s.profile.mainSupermarket||m}}));
  return <div className="onboarding"><div className="onboarding-card">
@@ -411,6 +415,7 @@ function Onboarding({state,setState}:{state:AppState;setState:React.Dispatch<Rea
   {step===4&&<div className="ob-panel"><span className="eyebrow">PRIORIDADES</span><h1>¿Qué quieres mejorar?</h1><p>Puedes marcar varias.</p><div className="market-grid">{[["organizar","Organizar la cocina"],["ahorrar","Ahorrar"],["desperdicio","Desperdiciar menos"],["equilibrio","Comer más equilibrado"]].map(([id,label])=><button key={id} className={state.profile.goals.includes(id as Goal)?"choice active":"choice"} onClick={()=>toggleGoal(id as Goal)}>{label}</button>)}</div></div>}
   {step===5&&<div className="ob-panel"><span className="eyebrow">TIENDAS</span><h1>¿Dónde compráis?</h1><p>Puedes cambiarlo después. También admitimos carnicerías y tiendas de barrio.</p><div className="market-grid">{SUPERMARKETS.map(m=><button key={m} className={state.profile.supermarkets.includes(m)?"choice active":"choice"} onClick={()=>toggleMarket(m)}>{m}</button>)}</div></div>}
   <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" disabled={state.profile.supermarkets.length===0} onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>
+  <div className="existing-home">{!joinOpen?<button className="join-link" onClick={()=>setJoinOpen(true)}>Ya tengo HomeOS en otro dispositivo</button>:<div className="join-box"><div><strong>Conectar con mi hogar</strong><small>Pega el código que aparece en HomeOS del otro dispositivo.</small></div><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button className="primary" disabled={!joinCode.trim()||syncStatus==="connecting"} onClick={joinExisting}>{syncStatus==="connecting"?"Conectando…":"Conectar"}</button>{joinError&&<span className="form-error">{joinError}</span>}<button className="join-cancel" onClick={()=>{setJoinOpen(false);setJoinError("")}}>Cancelar</button></div>}</div>
  </div></div>
 }
 
@@ -707,9 +712,12 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
  </section>
 }
 
-function ProfileModal({state,setState,close}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;close:()=>void}){
+function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,copyHomeCode,syncNow}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;close:()=>void;syncCreds:SyncCredentials|null;syncStatus:"local"|"connecting"|"synced"|"error";connectHome:(code:string)=>Promise<boolean>;copyHomeCode:()=>Promise<void>;syncNow:()=>Promise<void>}){
  const [draft,setDraft]=useState<AppState>(state);
  const [tab,setTab]=useState<"miembros"|"ajustes">("miembros");
+ const [joinCode,setJoinCode]=useState("");
+ const [joinError,setJoinError]=useState("");
+ async function joinOther(){setJoinError("");const ok=await connectHome(joinCode);if(ok)close();else setJoinError("No se ha podido conectar con ese hogar.");}
  function updateMember(id:string,patch:Partial<Member>){setDraft(s=>({...s,members:s.members.map(m=>m.id===id?{...m,...patch}:m)}))}
  function save(){setState(draft);close()}
  const members=draft.members.slice(0,draft.profile.householdSize);
@@ -729,6 +737,7 @@ function ProfileModal({state,setState,close}:{state:AppState;setState:React.Disp
     <label><span>Nutrición</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label><div className="profile-market-section"><span>Supermercados habituales</span><div className="profile-market-grid">{SUPERMARKETS.map(m=><button type="button" key={m} className={draft.profile.supermarkets.includes(m)?"active":""} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];return {...s,profile:{...s.profile,supermarkets}}})}>{m}</button>)}</div></div>
    </div>}
+  <section className="sync-settings"><div className="sync-settings-head"><div><small>HOGAR COMPARTIDO</small><h3>Sincronización entre dispositivos</h3><p>{syncCreds?"Los cambios de compra, inventario, calendario y perfiles se guardan para toda la casa.":"HomeOS está preparando el hogar compartido."}</p></div><span className={`sync-state ${syncStatus}`}>{syncStatus==="synced"?"Sincronizado":syncStatus==="connecting"?"Guardando…":syncStatus==="error"?"Sin conexión":"Local"}</span></div>{syncCreds&&<div className="sync-actions"><button className="secondary" onClick={copyHomeCode}>Copiar código para otro dispositivo</button><button className="secondary" onClick={syncNow}>Sincronizar ahora</button></div>}<details className="join-details"><summary>Conectar este dispositivo a otro hogar</summary><div className="join-inline"><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button onClick={joinOther} disabled={!joinCode.trim()||syncStatus==="connecting"}>Conectar</button></div>{joinError&&<span className="form-error">{joinError}</span>}</details></section>
   <div className="modal-actions"><button className="secondary" onClick={close}>Cancelar</button><button className="primary" onClick={save}>Guardar hogar</button></div>
  </div></div>
 }
