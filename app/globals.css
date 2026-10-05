@@ -505,3 +505,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .inventory-focus>div{display:flex;align-items:center;gap:10px}.inventory-focus>div>span{font-size:22px}.inventory-focus>div>div{display:grid;gap:2px}.inventory-focus small{font-size:8px;letter-spacing:.08em;color:#8d8c82;font-weight:850}.inventory-focus strong{font-size:13px}.inventory-focus p{margin:0;font-size:9px;color:var(--muted)}
 .inventory-focus>button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:800}
 @media(max-width:720px){.inventory-focus{align-items:flex-start}.inventory-focus>div{align-items:flex-start}.inventory-focus p{max-width:240px}}
+
+/* Household habits analysis */
+.habits-dashboard{display:grid;gap:12px}
+.habit-orientation{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:18px;background:#f7f9f7}
+.habit-orientation.good{background:#eef6f0;border-color:#d9e8dd}
+.habit-orientation.warn{background:#fff7ec;border-color:#f0dfc2}
+.habit-orientation.learn{background:#f4f6f7}
+.habit-orientation>div:first-child{display:grid;gap:4px}.habit-orientation small{font-size:8px;letter-spacing:.08em;color:#7e8881;font-weight:850}.habit-orientation h3{margin:0;font-size:20px}.habit-orientation p{margin:0;color:var(--muted);font-size:10px;line-height:1.45;max-width:680px}
+.habit-confidence{min-width:190px;border-left:1px solid rgba(80,90,84,.12);padding-left:16px;display:grid;gap:2px}.habit-confidence>span{font-size:9px;color:#7b857e;font-weight:750}.habit-confidence strong{font-size:28px;letter-spacing:-.03em}.habit-confidence small{font-size:8px;letter-spacing:0;font-weight:600;color:#8d958f}
+.habit-source-note{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;border-radius:14px;background:#f7f8f6;border:1px solid #e7eae7;padding:11px 13px}.habit-source-note>span{font-size:15px;color:#6d786f}.habit-source-note p{margin:0;font-size:9px;line-height:1.45;color:#6f7972}.habit-source-note b{color:#3f4943}
+.habit-balance-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.habit-balance-card{border:1px solid var(--line);background:white;border-radius:15px;padding:11px;display:grid;gap:9px;min-height:128px}
+.habit-balance-card.good{background:#fbfdfb}.habit-balance-card.mid{background:#fffdf8}.habit-balance-card.warn{background:#fff9f5}.habit-balance-card.learn{background:#fafbfa}
+.habit-balance-top{display:grid;grid-template-columns:auto 1fr;gap:7px;align-items:start}.habit-balance-top>span{font-size:18px}.habit-balance-top>div{display:grid;gap:2px}.habit-balance-top strong{font-size:10px;line-height:1.2}.habit-balance-top small{font-size:8px;color:#6f7a72}.habit-balance-top>b{grid-column:1/-1;font-size:8px;font-weight:800;color:#7d8780}
+.habit-share-bar{height:6px;background:#eef1ee;border-radius:999px;overflow:hidden}.habit-share-bar span{display:block;height:100%;border-radius:999px;background:#6f9b7d}.habit-balance-card.mid .habit-share-bar span{background:#caa15b}.habit-balance-card.warn .habit-share-bar span{background:#c97e62}.habit-balance-card.learn .habit-share-bar span{background:#aeb6b0}
+.habit-balance-foot{display:flex;justify-content:space-between;gap:8px;align-items:end}.habit-balance-foot span{font-size:8px;color:#879089}.habit-balance-foot strong{font-size:9px}
+.habit-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.habit-insights,.habit-direction{border:1px solid var(--line);border-radius:16px;background:white;padding:15px;display:grid;gap:10px}
+.habit-insights small,.habit-direction>small{font-size:8px;letter-spacing:.08em;color:#879089;font-weight:850}.habit-insights h3,.habit-direction h3{font-size:16px;margin:3px 0 0}
+.habit-insight-list{display:grid;gap:7px}.habit-insight-list p{margin:0;border:1px solid #edf0ed;border-radius:11px;padding:9px;display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:9px;line-height:1.4}.habit-insight-list p span{width:20px;height:20px;border-radius:50%;background:#edf4ef;display:grid;place-items:center;font-weight:850;color:#49705a}
+.habit-direction>div{display:grid;gap:6px}.habit-direction>div>span{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #f0f2f0;padding:7px 0}.habit-direction b{font-size:9px}.habit-direction em{font-style:normal;font-size:8px;font-weight:800;color:#778179}.habit-direction em.up,.habit-direction em.new{color:#4a7b5b}.habit-direction em.down{color:#a26f54}.habit-direction p,.habit-empty-copy{margin:0;font-size:8px;color:#89928c;line-height:1.45}
+@media(max-width:1050px){.habit-balance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){
+ .habit-orientation{grid-template-columns:1fr;padding:14px}.habit-confidence{border-left:0;border-top:1px solid rgba(80,90,84,.12);padding:10px 0 0;min-width:0}
+ .habit-balance-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.habit-balance-card{min-height:120px}
+ .habit-bottom-grid{grid-template-columns:1fr}
+}
