@@ -410,7 +410,7 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Dashboard":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
@@ -487,6 +487,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
  const [selectedDate,setSelectedDate]=useState("");
  const [selectedEventId,setSelectedEventId]=useState("");
  const [title,setTitle]=useState("");
+ const eventInputRef=useRef<HTMLInputElement>(null);
  const year=cursor.getFullYear(),month=cursor.getMonth();
  const days=new Date(year,month+1,0).getDate();
  const blank=(new Date(year,month,1).getDay()+6)%7;
@@ -496,6 +497,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
  const move=(delta:number)=>setCursor(new Date(year,month+delta,1));
  const goToday=()=>{setCursor(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDate(todayIso)};
  const selectedEvents=selectedDate?state.events.filter(e=>e.date===selectedDate):[];
+ useEffect(()=>{if(selectedDate){requestAnimationFrame(()=>eventInputRef.current?.focus())}},[selectedDate]);
  useEffect(()=>{
   const onKey=(e:KeyboardEvent)=>{
    const target=e.target as HTMLElement|null;
@@ -537,7 +539,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
         const iso=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
         const events=state.events.filter(e=>e.date===iso);
         const cls=["apple-day",events.length?"has-event":"",iso===todayIso?"today":"",iso===selectedDate?"selected":""].filter(Boolean).join(" ");
-        return <button className={cls} key={d} onClick={()=>{setSelectedDate(iso);setSelectedEventId("")}}>
+        return <button className={cls} key={d} onClick={()=>{setSelectedDate(iso);setSelectedEventId("");setTitle("")}}>
           <span className="day-number">{d}</span>
           {events.length>0&&<div className="day-events">{events.slice(0,2).map(ev=><span key={ev.id}>{ev.title}</span>)}</div>}
         </button>
@@ -548,7 +550,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
     <aside className={selectedDate?"apple-event-panel open":"apple-event-panel"}>
       {selectedDate?<><div className="event-panel-date"><small>FECHA SELECCIONADA</small><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}</strong></div>
       {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div className={selectedEventId===ev.id?"event-row selected":"event-row"} key={ev.id} onClick={()=>setSelectedEventId(ev.id)}><span className="event-color-dot"/><b>{ev.title}</b><button className="event-delete" onClick={(e)=>{e.stopPropagation();setState(s=>({...s,events:s.events.filter(x=>x.id!==ev.id)}));setSelectedEventId("")}}>Eliminar</button></div>)}<small className="keyboard-hint">Selecciona un evento y pulsa Supr/Delete para eliminarlo.</small></div>}
-      <div className="event-compose"><label>Nuevo evento</label><input value={title} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. comida familiar"/><button onClick={add}>Añadir evento</button></div></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
+      <form className="event-compose" onSubmit={e=>{e.preventDefault();add()}}><label htmlFor="calendar-event-input">Escribe el evento</label><div className="event-compose-row"><input ref={eventInputRef} id="calendar-event-input" value={title} onChange={e=>setTitle(e.target.value)} enterKeyHint="send" autoComplete="off" placeholder="Ej. comida familiar"/><button type="submit" disabled={!title.trim()}>Confirmar</button></div><small>Enter en ordenador · Enviar en móvil</small></form></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
     </aside>
    </div>
   </article>
