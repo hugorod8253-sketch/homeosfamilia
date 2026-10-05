@@ -4,7 +4,7 @@ import { classifyProduct } from "../lib/product-engine";
 
 const E:Record<string,string>={
  "tomato":"🍅","tomato-cherry":"🍅","carrot":"🥕","onion":"🧅","garlic":"🧄","potato":"🥔","sweet-potato":"🍠","avocado":"🥑",
- "banana":"🍌","apple":"🍎","pear":"🍐","orange":"🍊","tangerine":"🍊","lemon":"🍋","strawberry":"🍓","blueberry":"🫐","berries":"🫐","grapes":"🍇","pineapple":"🍍","mango":"🥭","kiwi":"🥝","melon":"🍈","watermelon":"🍉","peach":"🍑",
+ "banana":"🍌","apple":"🍎","pear":"🍐","orange":"🍊","tangerine":"🍊","lemon":"🍋","strawberry":"🍓","blueberry":"🫐","berries":"🫐","grapes":"🍇","pineapple":"🍍","mango":"🥭","kiwi":"🥝","melon":"🍈","watermelon":"🍉","peach":"🍑","papaya":"🥭","passion-fruit":"🟣","pomegranate":"🔴","lychee":"🩷","coconut":"🥥","dragon-fruit":"🐉",
  "eggplant":"🍆","pepper":"🌶️","mushroom":"🍄","broccoli":"🥦","cauliflower":"🥦","cucumber":"🥒","zucchini":"🥒",
  "chicken-leg":"🍗","bacon":"🥓","fish":"🐟","white-fish":"🐟","salmon":"🐟","shrimp":"🍤","shellfish":"🦪","egg":"🥚",
  "cheese":"🧀","butter":"🧈","bread":"🍞","baguette":"🥖","croissant":"🥐","rice":"🍚","pasta":"🍝","salt":"🧂","olive-oil":"🫒",
@@ -12,7 +12,7 @@ const E:Record<string,string>={
  "cookie":"🍪","candy":"🍬","ice-cream":"🍨","water":"💧","juice":"🧃","soda":"🥤","energy-drink":"⚡","coffee":"☕","beer":"🍺","wine":"🍷",
  "toilet-paper":"🧻","kitchen-roll":"🧻","napkins":"🍽️","trash-bags":"🗑️","vitamins":"💊","fresh-cheese":"🧀","cheese-slices":"🧀","cheese-shredded":"🧀",
  "milk-bottle":"🥛","milk-carton":"🥛","kefir":"🥛","cream":"🥛","hummus":"🫘","guacamole":"🥑","tuna-can":"🥫","tomato-can":"🥫","can":"🥫",
- "cereal-box":"🥣","dark-chocolate":"🍫","milk-chocolate":"🍫","chocolate":"🍫","chips":"🥔","drink":"🥤","snack":"🍪","pantry":"🥫","prepared":"🍱","frozen":"🧊","dairy":"🥛","meat":"🥩","leafy":"🥬","spinach":"🥬"
+ "cereal-box":"🥣","dark-chocolate":"🍫","milk-chocolate":"🍫","chocolate":"🍫","chips":"🥔","drink":"🥤","snack":"🍪","pantry":"🥫","prepared":"🍱","frozen":"🧊","frozen-vegetables":"🧊","frozen-fish":"❄️","dairy":"🥛","meat":"🥩","leafy":"🥬","spinach":"🥬","body-lotion":"🧴","face-cream":"🫙","sunscreen":"☀️"
 };
 
 function Svg({children,label}:{children:React.ReactNode;label?:string}){
@@ -142,6 +142,7 @@ function custom(kind:string){
 export function ProductGlyph({name,category,className=""}:{name:string;category?:string;className?:string}){
  const p=classifyProduct(name,category);
  const icon=custom(p.icon);
+ const categorySlug=p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
  const emoji=E[p.icon]||({Congelados:"🧊","Snacks y dulces":"🍪","Bebidas":"🥤","Higiene y cuidado":"🧴","Limpieza y hogar":"🧽",Suplementos:"💪",Preparados:"🍱",Carne:"🥩","Fruta y verdura":"🥬","Lácteos":"🥛",Despensa:"🥫"} as Record<string,string>)[p.category]||"•";
- return <span className={"product-glyph "+className+" glyph-"+p.category.toLowerCase().replace(/[^a-z0-9]+/g,"-")} title={p.canonical} aria-label={p.canonical}>{icon||emoji}</span>;
+ return <span className={"product-glyph "+className+" glyph-"+categorySlug} title={p.canonical} aria-label={p.canonical}>{icon||emoji}</span>;
 }
