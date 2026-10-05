@@ -38,7 +38,10 @@ type AppState = {
 
 const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería","Otro supermercado"];
 const CATEGORIES=["Todos","Lácteos","Carne","Fruta y verdura","Despensa","Preparados","Suplementos"];
-const LOCATIONS=["Todo","Nevera","Congelador","Despensa","Suplementos"];
+const LOCATIONS=["Todo","Nevera","Congelador","Despensa"];
+const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Despensa":"Despensa","Preparados":"Preparados","Suplementos":"Suplementos"};
+const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Despensa":"🥫","Preparados":"🍱","Suplementos":"＋"};
+const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"▦"};
 
 const RECIPES:Recipe[]=[
  {id:"r1",title:"Hamburguesa casera",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=76",time:20,difficulty:"Fácil",mode:["rapido","normal"],servings:4,calories:620,protein:36,carbs:52,fat:28,description:"Rápida y pensada para aprovechar lo que ya tienes.",ingredients:[{name:"Hamburguesas",qty:"4 uds",key:"hamburguesas"},{name:"Queso",qty:"4 lonchas",key:"queso"},{name:"Pan de hamburguesa",qty:"4 uds",key:"pan"},{name:"Tomates",qty:"2 uds",key:"tomate"}],steps:["Calienta una sartén a fuego medio-alto.","Cocina las hamburguesas 3–4 min por lado.","Añade el queso al final.","Monta con pan y tomate y sirve."]},
@@ -197,6 +200,7 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
+ const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
  const cameraRef=useRef<HTMLInputElement>(null),galleryRef=useRef<HTMLInputElement>(null),receiptRef=useRef<HTMLInputElement>(null);
@@ -207,6 +211,8 @@ export default function HomeOS(){
  const stateRef=useRef(state);
 
  useEffect(()=>{stateRef.current=state},[state]);
+ useEffect(()=>{if(!hydrated)return;const saved=localStorage.getItem("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
+ useEffect(()=>{if(hydrated&&deviceMemberId)localStorage.setItem("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId]);
 
  useEffect(()=>{
   let alive=true;
@@ -387,13 +393,13 @@ export default function HomeOS(){
    <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Dashboard":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe}/>}
-   {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast}/>}
+   {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
    {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
   </main>
 
   <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>setView(n.id)}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>
-  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow}/>}
+  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
  </div>
 }
