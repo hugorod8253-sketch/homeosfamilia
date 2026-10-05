@@ -195,3 +195,38 @@ html,body{overflow-x:hidden}
 @media(max-width:390px){
   .shopping-card-grid{grid-template-columns:1fr}
 }
+
+/* Interactive household calendar */
+.calendar-title-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.calendar-title-row h3{margin:0;text-transform:capitalize;min-width:170px}
+.calendar-nav,.calendar-today{border:0;background:#eef2ee;color:#31493a;border-radius:10px;height:34px;padding:0 11px;font-weight:800}
+.calendar-nav{width:34px;padding:0;font-size:20px;line-height:1}
+.calendar-today{font-size:11px}
+.calendar-hint{color:var(--muted);font-size:12px;background:#f5f7f4;border-radius:12px;padding:10px 12px}
+.event-add.selected{align-items:end;display:grid;grid-template-columns:auto minmax(180px,260px) auto;gap:8px}
+.event-add.selected>div{display:grid;gap:2px}.event-add.selected span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}.event-add.selected strong{font-size:12px}
+.calendar-grid button.calendar-day{border:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer}
+.calendar-day{transition:.15s ease;position:relative}
+.calendar-day:hover{background:#eef3ef;transform:translateY(-1px)}
+.calendar-day.today{box-shadow:inset 0 0 0 2px #466f58;background:#edf5ef}
+.calendar-day.today b{color:#2f5e44}
+.calendar-day.selected{box-shadow:inset 0 0 0 2px #1f2923}
+.calendar-day.has-event:after{content:"";position:absolute;right:7px;top:7px;width:6px;height:6px;border-radius:50%;background:#5c8a6d}
+.calendar-day small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){
+ .calendar-head{align-items:flex-start;flex-direction:column}
+ .event-add.selected{width:100%;grid-template-columns:1fr auto}
+ .event-add.selected>div{grid-column:1/-1}
+ .event-add.selected input{min-width:0}
+}
+@media(max-width:720px){
+ .calendar-title-row{flex-wrap:wrap}
+ .calendar-title-row h3{min-width:0;flex:1;font-size:18px}
+ .calendar-today{order:5}
+ .calendar-day{min-height:48px!important;padding:6px!important}
+ .calendar-day b{font-size:10px}
+ .calendar-day small{font-size:7px!important;display:block!important}
+ .event-add.selected{grid-template-columns:1fr}
+ .event-add.selected>div,.event-add.selected input,.event-add.selected button{grid-column:1}
+ .event-add.selected button{width:100%}
+}
