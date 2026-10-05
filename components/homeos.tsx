@@ -181,7 +181,7 @@ function Inicio({state,setState,expiring,confidence,available,setView}:{state:Ap
   <div className="card-grid four">
    <article className="soft-card amber"><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></article>
    <article className="soft-card green"><small>DISPONIBLE MES</small><strong>{available.toFixed(0)} €</strong><p>Seguimiento {state.profile.financeMode}</p></article>
-   <article className="soft-card blue-soft"><small>PREPARADO</small><strong>{state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0)}</strong><p>Raciones listas en nevera/congelador</p></article>
+   <article className="soft-card blue-soft"><small>PREPARADOS</small><strong>{state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0)}</strong><p>Raciones listas en nevera/congelador</p></article>
    <article className="soft-card rose"><small>PRÓXIMO EVENTO</small><strong>{next?new Date(next.date+"T12:00:00").getDate():"—"}</strong><p>{next?.title||"Sin eventos"}</p></article>
   </div>
   <div className="home-secondary-grid">
@@ -278,12 +278,47 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const [preparedOpen,setPreparedOpen]=useState(false);
  const [preparedName,setPreparedName]=useState("");
+ const [voiceDraft,setVoiceDraft]=useState("");
+ const [voiceListening,setVoiceListening]=useState(false);
  const [preparedServings,setPreparedServings]=useState(1);
  const [preparedLocation,setPreparedLocation]=useState<"Nevera"|"Congelador">("Nevera");
  const shown=state.inventory.filter(i=>(loc==="Todo"||i.location===loc)&&(cat==="Todos"||i.category===cat));
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function freeze(id:string){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",stock:"hay"}:i)}));setToast("Producto movido al congelador")}
  function addToBuy(i:InventoryItem){setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a recomendaciones de compra")}
+ function parsePreparedVoice(text:string){
+  const t=norm(text);
+  const rMatch=t.match(/(\d+)\s*(raciones|tuppers|tuperes|tuppers?)/);
+  const servings=rMatch?Math.max(1,Number(rMatch[1])):1;
+  const location=t.includes("congela")?"Congelador":"Nevera";
+  let name=text
+    .replace(/he preparado/ig,"")
+    .replace(/han sobrado/ig,"")
+    .replace(/sobraron/ig,"")
+    .replace(/guardo/ig,"")
+    .replace(/dejo/ig,"")
+    .replace(/congelo/ig,"")
+    .replace(/\d+\s*(raciones|tuppers?|tuperes)/ig,"")
+    .replace(/en la nevera/ig,"")
+    .replace(/en el congelador/ig,"")
+    .replace(/al congelador/ig,"")
+    .trim();
+  if(!name) name="Comida preparada";
+  setPreparedName(name.charAt(0).toUpperCase()+name.slice(1));
+  setPreparedServings(servings);
+  setPreparedLocation(location);
+ }
+ function startPreparedVoice(){
+  const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+  if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
+  const recognition=new W();
+  recognition.lang="es-ES"; recognition.interimResults=false; recognition.maxAlternatives=1;
+  setVoiceListening(true);
+  recognition.onresult=(e:any)=>{const text=e.results?.[0]?.[0]?.transcript||"";setVoiceDraft(text);parsePreparedVoice(text)};
+  recognition.onerror=()=>setToast("No he podido entender la voz");
+  recognition.onend=()=>setVoiceListening(false);
+  recognition.start();
+ }
  function savePrepared(){
   const name=preparedName.trim(); if(!name)return;
   const today=new Date();
@@ -299,7 +334,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast}:{state:AppState;set
   <div className="page-intro"><div><span className="eyebrow">INVENTARIO DE CASA</span><h2>Qué hay, qué queda poco y qué conviene revisar</h2><p>Una vista visual por ubicación y categoría. HomeOS estima cuando no tiene confirmación reciente.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>🍱 Añadir preparado</button><button className="secondary" onClick={()=>cameraRef.current?.click()}>Hacer foto</button><button className="secondary" onClick={()=>galleryRef.current?.click()}>Fototeca</button><input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>e.target.files?.[0]&&setToast("Foto recibida para recalibrar inventario")}/><input ref={galleryRef} hidden type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&setToast("Imagen recibida para recalibrar inventario")}/></div></div>
   <div className="inventory-controls"><div className="segmented">{LOCATIONS.map(x=><button key={x} className={loc===x?"active":""} onClick={()=>setLoc(x)}>{x}</button>)}</div><div className="segmented categories">{CATEGORIES.map(x=><button key={x} className={cat===x?"active":""} onClick={()=>setCat(x)}>{x}</button>)}</div></div>
   <div className="inventory-grid">{shown.map(i=><article className="inventory-card" key={i.id}><div className="inventory-top"><span className="food-dot">{i.location==="Nevera"?"❄":i.location==="Congelador"?"◈":i.location==="Suplementos"?"＋":"▦"}</span><span className={`stock-badge ${i.stock}`}>{statusLabel(i.stock)}</span></div><h3>{i.name}</h3><p>{i.stock==="incierto"?"Cantidad estimada":`${i.qty} ${i.unit}`} · {i.location}</p>{i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 Preparado</span><span>{i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span></div>}{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca":"Consumo pref."}: {new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}<div className="inventory-actions"><button onClick={()=>setStock(i.id,"falta")}>Se acabó</button><button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div></article>)}</div>
-  {preparedOpen&&<div className="modal-backdrop" onMouseDown={()=>setPreparedOpen(false)}><div className="modal prepared-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">PLATO PREPARADO</span><h2>Guardar sobras o un tupper</h2><p>No hace falta pesar todo: nombre, raciones y dónde lo guardas.</p></div><button onClick={()=>setPreparedOpen(false)}>×</button></div><div className="prepared-form"><label><span>¿Qué es?</span><input autoFocus value={preparedName} onChange={e=>setPreparedName(e.target.value)} placeholder="Ej. pollo con arroz, lentejas…"/></label><label><span>Raciones aproximadas</span><div className="stepper"><button onClick={()=>setPreparedServings(n=>Math.max(1,n-1))}>−</button><b>{preparedServings}</b><button onClick={()=>setPreparedServings(n=>n+1)}>+</button></div></label><label><span>¿Dónde lo guardas?</span><div className="storage-choice"><button className={preparedLocation==="Nevera"?"active":""} onClick={()=>setPreparedLocation("Nevera")}>❄️ Nevera</button><button className={preparedLocation==="Congelador"?"active":""} onClick={()=>setPreparedLocation("Congelador")}>🧊 Congelador</button></div></label><div className="prepared-note">HomeOS lo tratará como comida lista y priorizará consumirla antes que cocinar algo nuevo.</div></div><button className="primary modal-save" onClick={savePrepared}>Guardar preparado</button></div></div>}
+  {preparedOpen&&<div className="modal-backdrop" onMouseDown={()=>setPreparedOpen(false)}><div className="modal prepared-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">PREPARADOS</span><h2>Guardar comida ya hecha</h2><p>Sobras, tuppers y meal prep viven en el mismo sitio.</p></div><button onClick={()=>setPreparedOpen(false)}>×</button></div><div className="voice-prepared-box"><button className={voiceListening?"voice-main listening":"voice-main"} onClick={startPreparedVoice}>{voiceListening?"Escuchando…":"🎙 Añadir por voz"}</button><span>Ej.: “Han sobrado 3 raciones de pollo con arroz y van a la nevera”.</span>{voiceDraft&&<small>Entendido: “{voiceDraft}”</small>}</div><div className="prepared-divider"><span>o manualmente</span></div><div className="prepared-form"><label><span>¿Qué es?</span><input autoFocus value={preparedName} onChange={e=>setPreparedName(e.target.value)} placeholder="Ej. pollo con arroz, lentejas…"/></label><label><span>Raciones aproximadas</span><div className="stepper"><button onClick={()=>setPreparedServings(n=>Math.max(1,n-1))}>−</button><b>{preparedServings}</b><button onClick={()=>setPreparedServings(n=>n+1)}>+</button></div></label><label><span>¿Dónde lo guardas?</span><div className="storage-choice"><button className={preparedLocation==="Nevera"?"active":""} onClick={()=>setPreparedLocation("Nevera")}>❄️ Nevera</button><button className={preparedLocation==="Congelador"?"active":""} onClick={()=>setPreparedLocation("Congelador")}>🧊 Congelador</button></div></label><div className="prepared-note">HomeOS lo tratará como comida lista y priorizará consumirla antes que cocinar algo nuevo.</div></div><button className="primary modal-save" onClick={savePrepared}>Guardar preparado</button></div></div>}
  </section>
 }
 
