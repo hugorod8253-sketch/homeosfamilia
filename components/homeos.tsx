@@ -37,7 +37,7 @@ type Profile = {
 };
 type AppState = {
   inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
-  profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number;
+  profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number; productEngineVersion:number;
 };
 
 const SUPERMARKETS=["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Condis","Carnicería","Frutería","Otro supermercado"];
@@ -76,7 +76,7 @@ const DEFAULT:AppState={
  productPreferences:{},
  members:[{id:"m1",name:"Tú",relation:"Yo",presence:"fines_semana",appetite:"normal",dislikes:"",notes:"Entre semana casi no está en casa."},{id:"m2",name:"Mamá",relation:"Madre",presence:"fuera_dia",appetite:"normal",dislikes:"",notes:"Suele comer fuera y vuelve por la noche."},{id:"m3",name:"Papá",relation:"Padre",presence:"casa",appetite:"normal",dislikes:"",notes:"Hace parte de la compra familiar."},{id:"m4",name:"Hermano",relation:"Hijo",presence:"casa",appetite:"mucho",dislikes:"queso",notes:"Consume bastante comida preparada."}],
  events:[{id:"e1",title:"Navidad",date:"2026-12-25"}],
- budget:800,spent:486.35,waste:18.4,wasteSaved:27.6,
+ budget:800,spent:486.35,waste:18.4,wasteSaved:27.6,productEngineVersion:1,
  profile:{householdSize:4,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goals:["organizar","desperdicio"],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo",kitchenTools:[]}
 };
 
@@ -86,7 +86,24 @@ function normalizeState(x:any):AppState{
  const profile={...DEFAULT.profile,...(raw.profile||{})};
  const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));
  const members=ensureMembers(baseMembers,profile.householdSize);
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory:raw.inventory||DEFAULT.inventory,shopping:raw.shopping||DEFAULT.shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],productPreferences:raw.productPreferences&&typeof raw.productPreferences==="object"?raw.productPreferences:{}};
+ const productPreferences=raw.productPreferences&&typeof raw.productPreferences==="object"?raw.productPreferences:{};
+ const needsProductMigration=(Number(raw.productEngineVersion)||0)<1;
+ const baseInventory=(raw.inventory||DEFAULT.inventory) as InventoryItem[];
+ const baseShopping=(raw.shopping||DEFAULT.shopping) as ShoppingItem[];
+ const inventory=needsProductMigration?baseInventory.map(i=>{
+  const p=classifyProduct(i.name,i.category);
+  const pref=productPreferences[p.canonical]||{};
+  const category=pref.category||p.category;
+  const preserveFrozen=i.location==="Congelador"&&Boolean(i.frozenAt);
+  const location=preserveFrozen?i.location:recommendedLocation(i.name,category,pref.location) as Location;
+  return {...i,category,location};
+ }):baseInventory;
+ const shopping=needsProductMigration?baseShopping.map(i=>{
+  const p=classifyProduct(i.name,i.category);
+  const pref=productPreferences[p.canonical]||{};
+  return {...i,category:pref.category||p.category};
+ }):baseShopping;
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],productPreferences,productEngineVersion:1};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
