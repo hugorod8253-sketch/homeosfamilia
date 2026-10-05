@@ -5,8 +5,11 @@ type View = "inicio" | "comer" | "comprar" | "casa" | "finanzas";
 type Goal = "ahorrar" | "desperdicio" | "comer-mejor";
 type Confidence = "seguro" | "probable" | "duda";
 type InventoryItem = { id:string; name:string; qty:number; unit:string; location:string; expires:string; confidence:Confidence; price?:number };
-type ShoppingItem = { id:string; name:string; qty:number; checked:boolean; requestedBy?:string; estimated?:boolean };
+type ShoppingItem = { id:string; name:string; qty:number; checked:boolean; requestedBy?:string; estimated?:boolean; supermarket?:string };
 type Profile = { householdSize:number; supermarkets:string[]; mainSupermarket:string; goal:Goal; notifications:boolean; onboardingDone:boolean };
+type Member = { id:string; name:string };
+type EventItem = { id:string; title:string; date:string };
+type Meal = { title:string; subtitle:string; time:string; level:"rápido"|"cocinar"; image:string; ingredients:{name:string;qty:string}[]; steps:string[] };
 type AppState = {
   inventory: InventoryItem[];
   shopping: ShoppingItem[];
@@ -15,6 +18,8 @@ type AppState = {
   waste: number;
   wasteSaved: number;
   profile: Profile;
+  members: Member[];
+  events: EventItem[];
 };
 
 const SUPERMARKETS = ["Mercadona","Lidl","Aldi","Carrefour","Alcampo","Dia","Consum","Bonpreu / Esclat","Caprabo","Eroski","Ahorramás","Condis","Gadis","Froiz","Hipercor","Supercor","Costco"];
@@ -24,10 +29,11 @@ const GOALS: {id:Goal;label:string;desc:string}[] = [
   {id:"comer-mejor",label:"Comer mejor",desc:"Prioriza variedad y comidas caseras sencillas."},
 ];
 
-const MEALS = [
-  {title:"Hamburguesa casera",subtitle:"Aprovecha hamburguesas y queso",time:"20 min",missing:"Pan y tomate",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85"},
-  {title:"Pasta cremosa con tomate",subtitle:"Rápida y con productos de despensa",time:"18 min",missing:"Nada imprescindible",image:"https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1200&q=85"},
-  {title:"Boniato con pico de gallo",subtitle:"Ligero, visual y fácil de preparar",time:"30 min",missing:"Boniato y aguacate",image:"https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=85"},
+const MEALS: Meal[] = [
+  {title:"Hamburguesa casera",subtitle:"Fácil y pensada para aprovechar lo que ya tienes",time:"20 min",level:"rápido",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85",ingredients:[{name:"Hamburguesas",qty:"4 uds"},{name:"Queso lonchas",qty:"4 lonchas"},{name:"Pan de hamburguesa",qty:"4 uds"},{name:"Tomates",qty:"2 uds"}],steps:["Calienta una sartén.","Cocina las hamburguesas 3-4 minutos por lado.","Añade el queso al final.","Monta con pan y tomate."]},
+  {title:"Pasta cremosa con queso",subtitle:"Una opción de despensa sencilla",time:"18 min",level:"rápido",image:"https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1200&q=85",ingredients:[{name:"Pasta",qty:"320 g"},{name:"Queso lonchas",qty:"4 lonchas"},{name:"Leche",qty:"200 ml"}],steps:["Cuece la pasta.","Calienta la leche.","Añade el queso y remueve.","Mezcla con la pasta."]},
+  {title:"Bol de yogur rápido",subtitle:"Para comer algo en cinco minutos",time:"5 min",level:"rápido",image:"https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=1200&q=85",ingredients:[{name:"Yogures",qty:"2 uds"}],steps:["Pon el yogur en un bol.","Añade fruta o cereal si tienes.","Mezcla y sirve."]},
+  {title:"Hamburguesa completa",subtitle:"Para cuando te apetece cocinar",time:"40 min",level:"cocinar",image:"https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1200&q=85",ingredients:[{name:"Hamburguesas",qty:"4 uds"},{name:"Queso lonchas",qty:"4 lonchas"},{name:"Pan de hamburguesa",qty:"4 uds"},{name:"Tomates",qty:"2 uds"},{name:"Cebolla",qty:"1 ud"}],steps:["Pocha la cebolla.","Marca las hamburguesas.","Añade el queso.","Tuesta el pan.","Monta y sirve."]},
 ];
 
 const DEFAULT: AppState = {
@@ -47,14 +53,16 @@ const DEFAULT: AppState = {
   spent: 486.35,
   waste: 18.40,
   wasteSaved: 27.60,
-  profile: {householdSize:4,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goal:"ahorrar",notifications:true,onboardingDone:false}
+  profile: {householdSize:4,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goal:"ahorrar",notifications:true,onboardingDone:false},
+  members:[{id:"m1",name:"Tú"},{id:"m2",name:"Mamá"},{id:"m3",name:"Papá"},{id:"m4",name:"Casa"}],
+  events:[{id:"e1",title:"Navidad",date:"2026-12-25"}]
 };
 
 function loadState():AppState {
   if (typeof window === "undefined") return DEFAULT;
   try {
     const saved = JSON.parse(localStorage.getItem("homeos:v3") || "{}");
-    return {...DEFAULT,...saved,profile:{...DEFAULT.profile,...saved.profile}};
+    return {...DEFAULT,...saved,profile:{...DEFAULT.profile,...saved.profile},members:saved.members||DEFAULT.members,events:saved.events||DEFAULT.events};
   } catch { return DEFAULT; }
 }
 
@@ -67,6 +75,9 @@ function daysUntil(date:string){
 function formatDate(){
   return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date());
 }
+function hasIngredient(inventory:InventoryItem[],name:string){const n=name.toLowerCase();return inventory.some(i=>i.qty>0&&(i.name.toLowerCase().includes(n)||n.includes(i.name.toLowerCase())))}
+function missingIngredients(meal:Meal,inventory:InventoryItem[]){return meal.ingredients.filter(i=>!hasIngredient(inventory,i.name))}
+function mealScore(meal:Meal,inventory:InventoryItem[]){return meal.ingredients.length-missingIngredients(meal,inventory).length}
 
 const nav: {id:View; label:string; icon:string}[] = [
   {id:"inicio",label:"Inicio",icon:"⌂"},
@@ -86,6 +97,7 @@ export default function HomeOS(){
   const [mealIndex,setMealIndex] = useState(0);
   const receiptRef = useRef<HTMLInputElement>(null);
   const pantryPhotoRef = useRef<HTMLInputElement>(null);
+  const pantryGalleryRef = useRef<HTMLInputElement>(null);
 
   useEffect(()=>setState(loadState()),[]);
   useEffect(()=>{ if(typeof window!=="undefined") localStorage.setItem("homeos:v3",JSON.stringify(state)); },[state]);
@@ -147,10 +159,10 @@ export default function HomeOS(){
         <button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button>
       </header>
 
-      {view==="inicio" && <Inicio state={state} expiring={expiring} available={available} budgetPct={budgetPct} setView={setView}/>}
-      {view==="comer" && <Comer mealIndex={mealIndex} setMealIndex={setMealIndex} expiring={expiring}/>}
-      {view==="comprar" && <Comprar state={state} quick={quick} setQuick={setQuick} addQuick={addQuick} toggleShopping={toggleShopping} shoppingActive={shoppingActive} startShopping={startShopping} finishShopping={finishShopping} receiptRef={receiptRef} handleReceipt={handleReceipt}/>}
-      {view==="casa" && <Casa inventory={state.inventory} setState={setState} pantryPhotoRef={pantryPhotoRef} handlePantryPhoto={handlePantryPhoto}/>}
+      {view==="inicio" && <Inicio state={state} setState={setState} expiring={expiring} available={available} budgetPct={budgetPct} setView={setView}/>}
+      {view==="comer" && <Comer state={state} setState={setState} mealIndex={mealIndex} setMealIndex={setMealIndex} expiring={expiring}/>}
+      {view==="comprar" && <Comprar state={state} setState={setState} quick={quick} setQuick={setQuick} toggleShopping={toggleShopping} shoppingActive={shoppingActive} startShopping={startShopping} finishShopping={finishShopping} receiptRef={receiptRef} handleReceipt={handleReceipt}/>}
+      {view==="casa" && <Casa inventory={state.inventory} setState={setState} pantryPhotoRef={pantryPhotoRef} pantryGalleryRef={pantryGalleryRef} handlePantryPhoto={handlePantryPhoto}/>}
       {view==="finanzas" && <Finanzas state={state} setState={setState} available={available} budgetPct={budgetPct}/>}
     </main>
 
