@@ -71,7 +71,7 @@ const DEFAULT:AppState={
 
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
- try{const x=JSON.parse(localStorage.getItem("homeos:v5")||"{}");const rawMembers=x.members||DEFAULT.members;const members=rawMembers.map((m:any,i:number)=>({...DEFAULT.members[Math.min(i,DEFAULT.members.length-1)],...m}));return {...DEFAULT,...x,profile:{...DEFAULT.profile,...x.profile},members,events:x.events||DEFAULT.events,inventory:x.inventory||DEFAULT.inventory,shopping:x.shopping||DEFAULT.shopping};}catch{return DEFAULT}
+ try{const x=JSON.parse(localStorage.getItem("homeos:v5")||"{}");const rawMembers=x.members||DEFAULT.members;const profile={...DEFAULT.profile,...x.profile};const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));const members=ensureMembers(baseMembers,profile.householdSize);return {...DEFAULT,...x,profile,members,events:x.events||DEFAULT.events,inventory:x.inventory||DEFAULT.inventory,shopping:x.shopping||DEFAULT.shopping};}catch{return DEFAULT}
 }
 function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:00:00");return Math.ceil((d.getTime()-Date.now())/86400000)}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
@@ -201,7 +201,7 @@ export default function HomeOS(){
  function addFromRecipe(recipe:Recipe){
   const miss=missing(recipe,state.inventory);
   if(!miss.length){setToast("Tienes todo para esta receta");return}
-  setState(s=>({...s,shopping:[...s.shopping,...miss.filter(m=>!s.shopping.some(q=>norm(q.name).includes(norm(m.key)))).map(m=>({id:crypto.randomUUID(),name:m.name,qty:1,unit:"ud",category:"Despensa",requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const}))]}));
+  setState(s=>({...s,shopping:[...s.shopping,...miss.filter(m=>!s.shopping.some(q=>norm(q.name).includes(norm(m.key)))).map(m=>({id:crypto.randomUUID(),name:m.name,qty:1,unit:inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const}))]}));
   setToast(`${miss.length} ingredientes añadidos a la compra`);
  }
 
@@ -276,7 +276,7 @@ function Inicio({state,setState,expiring,confidence,available,setView}:{state:Ap
   </div>
   <div className="home-secondary-grid">
    <button className="home-recipes-card" onClick={()=>setView("comer")}><div><small>RECETAS</small><h3>Cocina con lo que ya tienes</h3><p>Recetas rápidas, meal prep y nutrición por ración.</p></div><span>Ver recetas →</span></button>
-   {state.profile.nutrition!=="off"&&<article className="home-habits-card"><div className="home-habits-head"><div><small>HÁBITOS · 7 DÍAS</small><h3>Cómo está comiendo el hogar</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-mini"><span>Proteína<b style={{width:"76%"}}/></span><span>Verdura<b style={{width:"58%"}}/></span><span>Carbohidratos<b style={{width:"71%"}}/></span><span>Dulces/snacks<b style={{width:"34%"}}/></span></div><p>Proteína estable · menos verdura que tu media reciente.</p></article>}
+   {state.profile.nutrition!=="off"&&<article className="home-habits-card"><div className="home-habits-head"><div><small>HÁBITOS · APRENDIENDO</small><h3>Cómo está comiendo el hogar</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-mini">{habitSignals(state).map(([label,seen])=><span key={label}>{label}<b style={{width:seen?"72%":"18%",opacity:seen?1:.35}}/></span>)}</div><p>{habitSignals(state).filter(([,seen])=>seen).length} grupos con señales recientes. HomeOS evita inventar porcentajes de consumo.</p></article>}
   </div>
   <CalendarCard state={state} setState={setState}/>
  </section>
@@ -537,7 +537,7 @@ function ProfileModal({state,setState,close}:{state:AppState;setState:React.Disp
     <label className="text-field"><span>Nota útil</span><textarea value={m.notes} onChange={e=>updateMember(m.id,{notes:e.target.value})} placeholder="Ej. come preparados, solo cena en casa…"/></label>
     <div className="member-summary"><b>{presenceText(m.presence)}</b><span>{appetiteText(m.appetite)}</span></div>
    </article>)}</div>:<div className="settings-list">
-    <label><span>Personas</span><select value={draft.profile.householdSize} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,householdSize:Number(e.target.value)}}))}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label>
+    <label><span>Personas</span><select value={draft.profile.householdSize} onChange={e=>setDraft(s=>{const householdSize=Number(e.target.value);return {...s,profile:{...s.profile,householdSize},members:ensureMembers(s.members,householdSize)}})}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label>
     <label><span>Cocina</span><select value={draft.profile.cooking} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,cooking:e.target.value as CookingStyle}}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label>
     <label><span>Nutrición</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Mixta</option><option value="diaria">Frecuente</option></select></label>
