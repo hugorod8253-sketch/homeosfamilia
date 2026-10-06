@@ -913,3 +913,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .inventory-filter-block .visual-filter-row.categories{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
+/* Approximate shelf-life dates */
+.date-alert.estimate{background:#f4f1e8;color:#7a693d;border:1px dashed #d8cba7;border-radius:8px;padding:4px 6px;font-weight:700}
+
