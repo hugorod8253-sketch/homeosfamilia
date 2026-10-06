@@ -139,7 +139,7 @@ function missing(recipe:Recipe,inv:InventoryItem[]){
 function shoppingSources(i:ShoppingItem):ShoppingSource[]{
  if(i.sources?.length)return i.sources;
  const ids=[...(i.recipePlanIds||[]),...(i.recipePlanId?[i.recipePlanId]:[])];
- if(ids.length)return ids.map((planId,idx)=>({id:"legacy-recipe:"+planId+":"+i.id+":"+idx,type:"recipe",label:i.requestedBy||"Receta",qty:idx===0?i.qty:0,unit:i.unit,planId,recipeId:i.recipeId})).filter(x=>x.qty>0);
+ if(ids.length)return ids.map((planId,idx)=>({id:"legacy-recipe:"+planId+":"+i.id+":"+idx,type:"recipe" as const,label:i.requestedBy||"Receta",qty:idx===0?i.qty:0,unit:i.unit,planId,recipeId:i.recipeId})).filter(x=>x.qty>0);
  const type=i.reason==="recomienda"||i.reason==="reposicion"?"restock":i.reason==="receta"?"recipe":"manual";
  return [{id:"legacy:"+i.id,type,label:i.requestedBy||"Compra",qty:i.qty,unit:i.unit,recipeId:i.recipeId} as ShoppingSource];
 }
