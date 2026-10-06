@@ -56,8 +56,8 @@ const KITCHEN_TOOLS=["Placa / inducción","Gas","Horno","Air fryer","Microondas"
 const CATEGORIES=["Todos","Fruta y verdura","Carne","Lácteos","Congelados","Preparados","Despensa","Bebidas","Snacks y dulces","Suplementos","Limpieza y hogar","Higiene y cuidado","Por clasificar"];
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa","Revisar"];
 const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Congelados":"Congelados","Despensa":"Despensa","Preparados":"Preparados","Bebidas":"Bebidas","Snacks y dulces":"Snacks y dulces","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar","Higiene y cuidado":"Higiene y cuidado","Por clasificar":"Revisar"};
-const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Por clasificar":"?"};
-const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"🥫","Revisar":"?"};
+const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Por clasificar":"📦"};
+const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"🥫","Revisar":"◌"};
 
 const BASE_RECIPES:Recipe[]=[
  {id:"r1",title:"Hamburguesa casera",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=76",time:20,difficulty:"Fácil",mode:["rapido","normal"],servings:4,calories:620,protein:36,carbs:52,fat:28,description:"Rápida y pensada para aprovechar lo que ya tienes.",tools:["Placa / inducción","Gas","Air fryer"],ingredients:[{name:"Hamburguesas",qty:"4 uds",key:"hamburguesas"},{name:"Queso",qty:"4 lonchas",key:"queso"},{name:"Pan de hamburguesa",qty:"4 uds",key:"pan"},{name:"Tomates",qty:"2 uds",key:"tomate"}],steps:["Calienta una sartén a fuego medio-alto.","Cocina las hamburguesas 3–4 min por lado.","Añade el queso al final.","Monta con pan y tomate y sirve."]},
@@ -961,6 +961,9 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const habitStatus=habitLearning?"Aprendiendo":habitGood>=3?"Va bien":habitGood>=2?"Mejorable":"Conviene revisar";
  const householdConfigured=state.profile.householdSize>0&&state.members.length>=state.profile.householdSize;
  const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}):"Sin eventos";
+ const currentMonthKey=todayIso.slice(0,7);
+ const monthSpentBrief=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(currentMonthKey)).reduce((n,x)=>n+x.total,0):state.spent;
+ const openCalendar=()=>{setCalendarOpen(true);requestAnimationFrame(()=>setTimeout(()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"start"}),60))};
 
  return <section className="stack home-brief">
   <header className="home-brief-head">
@@ -975,10 +978,10 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    </article>
 
    <aside className="home-brief-status">
-    <button onClick={()=>setView("comprar")}><small>COMPRA</small><strong>{pending}</strong><span>{pending?pending===1?"pendiente":"pendientes":"todo al día"}</span></button>
-    <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><small>USAR PRONTO</small><strong>{expiring.length}</strong><span>{expiring[0]?.name||"sin urgencias"}</span></button>
-    <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><small>PREPARADO</small><strong>{readyServings}</strong><span>{readyServings===1?"ración":"raciones"}</span></button>
-    <button onClick={()=>setView("finanzas")}><small>PRESUPUESTO</small><strong>{state.budget>0?Math.max(0,available).toFixed(0)+" €":"—"}</strong><span>{state.budget>0?"disponible":"sin configurar"}</span></button>
+    <button onClick={()=>setView("comprar")}><small>COMPRA</small><strong>{pending}</strong><span>{pending?pending===1?"pendiente":"pendientes":"todo al día"}</span><b>Comprar ›</b></button>
+    <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><small>USAR PRONTO</small><strong>{expiring.length}</strong><span>{expiring[0]?.name||"sin urgencias"}</span><b>Casa ›</b></button>
+    <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><small>PREPARADO</small><strong>{readyServings}</strong><span>{readyServings===1?"ración":"raciones"}</span><b>Casa ›</b></button>
+    <button onClick={()=>setView("finanzas")}><small>ESTE MES</small><strong>{monthSpentBrief.toFixed(0)} €</strong><span>{state.budget>0?Math.max(0,state.budget-monthSpentBrief).toFixed(0)+" € disponibles":"gasto registrado"}</span><b>Finanzas ›</b></button>
    </aside>
   </section>
 
@@ -1001,8 +1004,8 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    </article>
 
    <article className="home-agenda-card">
-    <div className="home-brief-section-head"><div><small>AGENDA</small><h3>{nextDate}</h3></div><button onClick={()=>setCalendarOpen(v=>!v)}>{calendarOpen?"Cerrar":"Calendario →"}</button></div>
-    {nextEvents.length?<div className="home-agenda-list">{nextEvents.map(ev=><div key={ev.id}><time>{new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><strong>{ev.title}</strong></div>)}</div>:<div className="home-agenda-empty"><span>Sin eventos próximos</span><button onClick={()=>setCalendarOpen(true)}>Añadir uno</button></div>}
+    <div className="home-brief-section-head"><div><small>AGENDA</small><h3>{nextDate}</h3></div><button onClick={()=>calendarOpen?setCalendarOpen(false):openCalendar()}>{calendarOpen?"Cerrar":"Calendario →"}</button></div>
+    {nextEvents.length?<div className="home-agenda-list">{nextEvents.map(ev=><button key={ev.id} onClick={openCalendar}><time>{new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><strong>{ev.title}</strong><b>›</b></button>)}</div>:<div className="home-agenda-empty"><span>Sin eventos próximos</span><button onClick={openCalendar}>Añadir uno</button></div>}
     <div className="home-agenda-foot"><span>🍱 {readyServings} raciones listas</span><span>❄️ {reserveDue.length} reservas por revisar</span></div>
    </article>
   </section>
@@ -1016,7 +1019,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
 
   {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS GUARDADAS</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" listas para preparar":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("Faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
 
-  {state.profile.nutrition!=="off"&&<article className="home-habit-brief home-habit-balance"><div className="home-habit-copy"><small>HÁBITOS · COMIDAS CONFIRMADAS</small><strong>{habitStatus}</strong><p>{habitLearning?"Necesito algunas comidas más para valorar tendencias sin inventar datos.":"Lectura orientativa del patrón reciente; no es una valoración médica."}</p></div><div className="home-habit-indicators">{habitBalance.map(x=><span className={"habit-indicator "+x.tone} key={x.key}><b>{x.label}</b><em>{x.status}</em></span>)}</div><button onClick={openHabits}>Ver detalle →</button></article>}
+  {state.profile.nutrition!=="off"&&<article className="home-habit-brief home-habit-balance"><div className="home-habit-copy"><small>HÁBITOS · COMIDAS CONFIRMADAS</small><strong>{habitStatus}</strong><p>{habitLearning?"Necesito algunas comidas más para valorar tendencias sin inventar datos.":"Lectura orientativa del patrón reciente; no es una valoración médica."}</p></div><div className="home-habit-indicators">{habitBalance.map(x=><button className={"habit-indicator "+x.tone} key={x.key} onClick={openHabits}><b>{x.label}</b><em>{x.status}</em><i>›</i></button>)}</div><button onClick={openHabits}>Ver detalle →</button></article>}
 
   {!householdConfigured&&<button className="family-warning" onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Completa el perfil del hogar para mejorar cantidades y sugerencias.</button>}
   {calendarOpen&&<CalendarCard state={state} setState={setState}/>}
