@@ -36,6 +36,23 @@ export function parseReceiptText(text:string):ReceiptParse{
  return {items:dedup.slice(0,80),total,text};
 }
 
+export function mergeReceiptCandidates(existing:ReceiptCandidate[],incoming:ReceiptCandidate[]){
+ const normName=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+ const out=existing.map(x=>({...x}));
+ for(const item of incoming){
+  const key=normName(item.name);
+  const exact=out.find(x=>normName(x.name)===key&&Math.abs(x.qty-item.qty)<.001&&Math.abs((x.price||0)-(item.price||0))<.01);
+  if(exact)continue;
+  const same=out.find(x=>normName(x.name)===key);
+  if(same){
+   same.qty=Math.round((same.qty+item.qty)*100)/100;
+   if(typeof item.price==="number")same.price=Math.round(((same.price||0)+item.price)*100)/100;
+   same.raw=[same.raw,item.raw].filter(Boolean).join(" | ");
+  }else out.push({...item});
+ }
+ return out.slice(0,120);
+}
+
 export async function readReceiptImage(file:File,onProgress?:(pct:number)=>void):Promise<ReceiptParse>{
  if(!file.type.startsWith("image/"))throw new Error("image_required");
  const {createWorker}=await import("tesseract.js");
