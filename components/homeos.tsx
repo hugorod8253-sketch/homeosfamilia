@@ -728,7 +728,7 @@ export default function HomeOS(){
     return {
      id:crypto.randomUUID(),
      name:x.name,
-     qty:buyQty,
+     qty:Math.max(.01,x.boughtQty??x.qty),
      unit:x.unit,
      category:pref.category||p.category,
      subcategory:p.subcategory,
