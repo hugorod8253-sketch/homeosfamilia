@@ -9,7 +9,7 @@ import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
-import { freeInventoryAfterReservations, planUnitFamily, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
+import { freeInventoryAfterReservations, planFromBase, planToBase, planUnitFamily, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
@@ -1558,8 +1558,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
    if(duplicate){
     const sources=shoppingSources(duplicate);
     const manualId="manual:"+duplicate.id+":"+norm(requestedBy);
+    const convertedQty=Math.round(planFromBase(planToBase(qty,unit),duplicate.unit)*100)/100;
     const idx=sources.findIndex(src=>src.id===manualId);
-    const nextSources=idx>=0?sources.map((src,j)=>j===idx?{...src,qty:Math.round((src.qty+qty)*100)/100}:src):[...sources,{id:manualId,type:"manual" as const,label:requestedBy,qty,unit:duplicate.unit}];
+    const nextSources=idx>=0?sources.map((src,j)=>j===idx?{...src,qty:Math.round((src.qty+convertedQty)*100)/100}:src):[...sources,{id:manualId,type:"manual" as const,label:requestedBy,qty:convertedQty,unit:duplicate.unit}];
     const updated=withShoppingSources(duplicate,nextSources);
     return updated?{...s,shopping:s.shopping.map(i=>i.id===duplicate.id?updated:i)}:s;
    }
@@ -1617,7 +1618,8 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
     const p=classifyProduct(item.name);
     const existing=shopping.findIndex(x=>norm(classifyProduct(x.name,x.category).canonical)===norm(p.canonical)&&p.category!=="Por clasificar");
     if(existing>=0){
-     shopping[existing]={...shopping[existing],qty:Math.max(shopping[existing].qty,item.qty),price:item.price??shopping[existing].price,status:shoppingActive?"carrito":shopping[existing].status,boughtQty:shoppingActive?item.qty:shopping[existing].boughtQty,supermarket:activeStore||shopping[existing].supermarket};
+     const current=shopping[existing];
+     shopping[existing]={...current,qty:shoppingActive?current.qty:Math.max(current.qty,item.qty),price:item.price??current.price,status:shoppingActive?"carrito":current.status,boughtQty:shoppingActive?item.qty:current.boughtQty,supermarket:activeStore||current.supermarket};
     }else{
      shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty||1,unit:inferUnit(item.name),category:p.category,subcategory:p.subcategory,supermarket:activeStore||undefined,requestedBy:"Ticket",reason:"persona",status:shoppingActive?"carrito":"pendiente",boughtQty:shoppingActive?(item.qty||1):undefined,price:item.price});
     }
@@ -1689,9 +1691,11 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const todayShopping=new Date().toISOString().slice(0,10);
  const shoppingRank=(i:ShoppingItem)=>{
   if(!planLine(i))return 1;
-  if(shoppingSources(i).some(src=>src.type==="weekly"))return 0;
-  const due=shoppingRecipeDue(i);
-  return due<="9998-12-31"&&due>todayShopping?2:0;
+  const sources=shoppingSources(i);
+  if(sources.some(src=>src.type==="weekly"))return 0;
+  const hasDate=sources.some(src=>src.type==="recipe"&&Boolean(src.buyAfter||src.plannedFor));
+  if(!hasDate)return 2;
+  return shoppingRecipeDue(i)>todayShopping?2:0;
  };
  const mainItems=intentBase.filter(i=>shoppingIntentFilter==="todos"||(shoppingIntentFilter==="planes"?planLine(i):!planLine(i))).slice().sort((a,b)=>shoppingRank(a)-shoppingRank(b)||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
  const hasPlanLines=state.shopping.some(planLine);
