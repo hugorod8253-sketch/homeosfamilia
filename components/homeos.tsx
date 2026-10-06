@@ -257,6 +257,8 @@ function median(values:number[]){
  return xs.length%2?xs[m]:(xs[m-1]+xs[m])/2;
 }
 function inventoryEstimate(state:AppState,item:InventoryItem){
+ if(item.location!=="Congelador"&&item.expires&&item.dateType==="caducidad"&&daysUntil(item.expires)<0)return {prob:.01,label:"Caducado",tone:"falta",basis:"La fecha de caducidad registrada ya ha pasado"};
+ if(item.location!=="Congelador"&&item.expires&&item.dateType==="consumo_preferente"&&daysUntil(item.expires)<0)return {prob:.55,label:"Revisar calidad",tone:"review",basis:"El consumo preferente ha pasado; revisa calidad antes de usarlo"};
  if(item.stock==="falta"||item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
  if(item.storageMode==="reserva"){
   const reviewDue=item.qualityReviewAt&&daysUntil(item.qualityReviewAt)<=0;
@@ -580,7 +582,7 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
   {step===3&&<div className="ob-panel"><span className="eyebrow">NUTRICIÓN</span><h1>¿Cuánta información quieres ver?</h1><div className="goal-grid">{[["off","Solo cocina e inventario","Sin gráficos nutricionales."],["basica","Hábitos sencillos","Tendencias semanales sin contar cada caloría."],["detallada","Nutrición detallada","Calorías y macros en recetas y análisis."]].map(([id,label,desc])=><button key={id} className={state.profile.nutrition===id?"goal-choice active":"goal-choice"} onClick={()=>setState(s=>({...s,profile:{...s.profile,nutrition:id as NutritionMode}}))}><strong>{label}</strong><span>{desc}</span></button>)}</div></div>}
   {step===4&&<div className="ob-panel"><span className="eyebrow">PRIORIDADES</span><h1>¿Qué quieres mejorar?</h1><p>Puedes marcar varias.</p><div className="market-grid">{[["organizar","Organizar la cocina"],["ahorrar","Ahorrar"],["desperdicio","Desperdiciar menos"],["equilibrio","Comer más equilibrado"]].map(([id,label])=><button key={id} className={state.profile.goals.includes(id as Goal)?"choice active":"choice"} onClick={()=>toggleGoal(id as Goal)}>{label}</button>)}</div></div>}
   {step===5&&<div className="ob-panel"><span className="eyebrow">TIENDAS</span><h1>¿Dónde compráis?</h1><p>Opcional. Si no quieres configurarlo ahora, HomeOS usará “Compra general”.</p><div className="market-grid">{SUPERMARKETS.map(m=><button key={m} className={state.profile.supermarkets.includes(m)?"choice active":"choice"} onClick={()=>toggleMarket(m)}>{m}</button>)}</div></div>}
-  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>
+  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>{step===0&&<button className="onboarding-skip" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar rápido · lo configuro después</button>}
   <div className="existing-home">{!joinOpen?<button className="join-link" onClick={()=>setJoinOpen(true)}>Ya tengo HomeOS en otro dispositivo</button>:<div className="join-box"><div><strong>Conectar con mi hogar</strong><small>Pega el código que aparece en HomeOS del otro dispositivo.</small></div><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button className="primary" disabled={!joinCode.trim()||syncStatus==="connecting"} onClick={joinExisting}>{syncStatus==="connecting"?"Conectando…":"Conectar"}</button>{joinError&&<span className="form-error">{joinError}</span>}<button className="join-cancel" onClick={()=>{setJoinOpen(false);setJoinError("")}}>Cancelar</button></div>}</div>
  </div></div>
 }
@@ -1032,8 +1034,10 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  const currentMember=members.find(m=>m.id===deviceMemberId)||members[0];
  const requestedBy=currentMember?.name||"Tú";
  const estimatedTotal=state.shopping.filter(i=>i.status==="carrito").reduce((sum,item)=>{
-  const known=state.inventory.find(x=>norm(x.name)===norm(item.name)&&typeof x.price==="number");
-  return sum+(known?.price||0);
+  const canonical=norm(classifyProduct(item.name,item.category).canonical);
+  const last=[...state.purchaseHistory].reverse().find(x=>typeof x.price==="number"&&x.qty>0&&norm(classifyProduct(x.name,x.category).canonical)===canonical);
+  if(!last||typeof last.price!=="number")return sum;
+  return sum+(last.price/Math.max(.01,last.qty))*item.qty;
  },0);
  const recommendedMissing=state.inventory.filter(i=>{
   if(i.storageMode==="reserva"||i.category==="Preparados")return false;
@@ -1074,7 +1078,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   if(!entries.length)return;
   entries.forEach(addOne);
   setQuick("");
-  if(entries.length>1)setToast(entries.length+" productos añadidos");
+  setToast(entries.length===1?entries[0]+" añadido":entries.length+" productos añadidos");
  } function startShoppingVoice(){
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
@@ -1083,7 +1087,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   setShoppingListening(true);
   recognition.onresult=(e:any)=>{
    const text=e.results?.[0]?.[0]?.transcript||"";
-   if(text){add(text);setToast("Añadido por voz");}
+   if(text)add(text);
   };
   recognition.onerror=()=>setToast("No he podido entender la voz");
   recognition.onend=()=>setShoppingListening(false);
@@ -1240,11 +1244,12 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,ope
  }
 
  function parsePreparedVoice(text:string){
-  const t=norm(text);
+  const spoken=normalizeSpokenShoppingText(text);
+  const t=norm(spoken);
   const rMatch=t.match(/(\d+)\s*(raciones|tuppers|tuperes|tuppers?)/);
   const servings=rMatch?Math.max(1,Number(rMatch[1])):1;
   const location=t.includes("congela")?"Congelador":"Nevera";
-  let name=text
+  let name=spoken
     .replace(/he preparado/ig,"").replace(/han sobrado/ig,"").replace(/sobraron/ig,"")
     .replace(/guardo/ig,"").replace(/dejo/ig,"").replace(/congelo/ig,"")
     .replace(/\d+\s*(raciones|tuppers?|tuperes)/ig,"")
