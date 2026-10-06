@@ -1,0 +1,82 @@
+export type LocalAiProgress={progress:number;text:string};
+export type LocalAiRecipe={
+ title:string;
+ description:string;
+ time:number;
+ servings:number;
+ ingredients:{name:string;qty:string;key:string}[];
+ steps:string[];
+ tools:string[];
+};
+
+const MODEL_ID="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+let enginePromise:Promise<any>|null=null;
+
+export function localAiSupported(){
+ if(typeof window==="undefined")return false;
+ return "gpu" in navigator;
+}
+
+async function getEngine(onProgress?:(p:LocalAiProgress)=>void){
+ if(!localAiSupported())throw new Error("webgpu_unavailable");
+ if(!enginePromise){
+  enginePromise=(async()=>{
+   const webllm=await import("@mlc-ai/web-llm");
+   return webllm.CreateMLCEngine(MODEL_ID,{
+    initProgressCallback:(report:any)=>{
+     const p=typeof report?.progress==="number"?Math.round(report.progress*100):0;
+     onProgress?.({progress:p,text:report?.text||"Preparando IA local"});
+    },
+    logLevel:"WARN"
+   },{context_window_size:2048});
+  })();
+ }
+ return enginePromise;
+}
+
+function extractJson(text:string){
+ const cleaned=text.trim().replace(/^```json\s*/i,"").replace(/^```/,"").replace(/```$/,"").trim();
+ const first=cleaned.indexOf("[");
+ const last=cleaned.lastIndexOf("]");
+ if(first<0||last<=first)throw new Error("bad_json");
+ return JSON.parse(cleaned.slice(first,last+1));
+}
+
+export async function generateLocalRecipes(input:{
+ request:string;
+ inventory:string[];
+ people:number;
+ dislikes:string[];
+ tools:string[];
+ mode:string;
+},onProgress?:(p:LocalAiProgress)=>void):Promise<LocalAiRecipe[]>{
+ const engine=await getEngine(onProgress);
+ const inventory=input.inventory.slice(0,60).join(", ")||"sin inventario fiable";
+ const dislikes=input.dislikes.filter(Boolean).join(", ")||"ninguna";
+ const tools=input.tools.join(", ")||"equipamiento no indicado";
+ const system="Eres el asistente culinario local de HomeOS Familia. Responde SOLO con un array JSON válido de 3 recetas. No uses markdown. No inventes que un alimento caducado o estropeado es seguro. Si un ingrediente no aparece en inventario pero el usuario afirma explícitamente que lo tiene en su petición, trátalo como disponible para esta consulta. Prioriza aprovechar lo que hay en casa y reducir compras. Mantén recetas domésticas realistas para España. No des consejos médicos ni nutricionales. Cada receta debe tener: title, description, time (minutos, entero), servings (entero), ingredients [{name,qty,key}], steps [strings], tools [strings]. Las cantidades deben ser razonables y los pasos breves.";
+ const user="Petición: "+(input.request||"Dame ideas para comer con lo que tengo")+"\nPersonas: "+input.people+"\nModo: "+input.mode+"\nInventario conocido: "+inventory+"\nNo gusta / evitar: "+dislikes+"\nEquipamiento disponible: "+tools+"\nGenera 3 opciones distintas.";
+ const reply=await engine.chat.completions.create({
+  messages:[{role:"system",content:system},{role:"user",content:user}],
+  temperature:.45,
+  max_tokens:900
+ });
+ const raw=reply?.choices?.[0]?.message?.content||"";
+ const parsed=extractJson(raw);
+ if(!Array.isArray(parsed))throw new Error("bad_json");
+ return parsed.slice(0,3).map((r:any,i:number)=>({
+  title:String(r?.title||("Idea "+(i+1))).slice(0,80),
+  description:String(r?.description||"").slice(0,220),
+  time:Math.max(5,Math.min(180,Number(r?.time)||25)),
+  servings:Math.max(1,Math.min(12,Number(r?.servings)||Math.max(1,input.people))),
+  ingredients:Array.isArray(r?.ingredients)?r.ingredients.slice(0,12).map((x:any)=>({
+   name:String(x?.name||"Ingrediente").slice(0,80),
+   qty:String(x?.qty||"al gusto").slice(0,40),
+   key:String(x?.key||x?.name||"ingrediente").toLowerCase().slice(0,60)
+  })):[],
+  steps:Array.isArray(r?.steps)?r.steps.slice(0,10).map((x:any)=>String(x).slice(0,240)):[],
+  tools:Array.isArray(r?.tools)?r.tools.slice(0,6).map((x:any)=>String(x).slice(0,60)):[]
+ }));
+}
+
+export const LOCAL_AI_MODEL=MODEL_ID;
