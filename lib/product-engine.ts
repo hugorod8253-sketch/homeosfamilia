@@ -224,6 +224,150 @@ const RULES:Rule[]=[
  P("protector solar",/protector\s+solar|fotoprotector|spf\s*\d+/,"Higiene y cuidado","Solar","Despensa","baja","sunscreen","household"),
 ];
 
+
+/* Specific supermarket references checked before the broad family rules.
+   Brand/flavour variants collapse into these household-level product types. */
+const EXTRA_RULES:Rule[]=[
+ // Quesos y lácteos
+ P("queso manchego",/queso.*manchego|manchego.*queso/,"Lácteos","Queso curado","Nevera","baja","cheese","flex"),
+ P("queso cheddar",/cheddar/,"Lácteos","Queso","Nevera","media","cheddar","cold-required"),
+ P("queso gouda",/gouda/,"Lácteos","Queso","Nevera","media","gouda","cold-required"),
+ P("queso edam",/\bedam\b/,"Lácteos","Queso","Nevera","media","edam","cold-required"),
+ P("queso emmental",/emmental/,"Lácteos","Queso","Nevera","media","emmental","cold-required"),
+ P("queso havarti",/havarti/,"Lácteos","Queso","Nevera","media","havarti","cold-required"),
+ P("queso brie",/\bbrie\b/,"Lácteos","Queso blando","Nevera","alta","brie","cold-required"),
+ P("queso camembert",/camembert/,"Lácteos","Queso blando","Nevera","alta","camembert","cold-required"),
+ P("queso azul",/queso.*azul|roquefort|gorgonzola/,"Lácteos","Queso azul","Nevera","media","blue-cheese","cold-required"),
+ P("queso de cabra",/queso.*cabra|rulo.*cabra/,"Lácteos","Queso","Nevera","media","goat-cheese","cold-required"),
+ P("queso feta",/\bfeta\b/,"Lácteos","Queso","Nevera","media","feta","cold-required"),
+ P("parmesano",/parmesano|parmigiano|grana padano/,"Lácteos","Queso curado","Nevera","baja","parmesan","flex"),
+ P("ricotta",/ricotta/,"Lácteos","Queso fresco","Nevera","alta","ricotta","cold-required"),
+ P("mascarpone",/mascarpone/,"Lácteos","Queso fresco","Nevera","alta","mascarpone","cold-required"),
+ P("queso crema",/queso.*crema|cream cheese/,"Lácteos","Queso crema","Nevera","alta","cream-cheese","cold-required"),
+ P("cottage",/cottage/,"Lácteos","Queso fresco","Nevera","alta","cottage","cold-required"),
+ P("skyr",/\bskyr\b/,"Lácteos","Yogur","Nevera","alta","yogurt","cold-required"),
+ P("yogur griego",/yogur.*griego|griego.*yogur/,"Lácteos","Yogur","Nevera","alta","greek-yogurt","cold-required"),
+ P("yogur natural",/yogur.*natural|natural.*yogur/,"Lácteos","Yogur","Nevera","alta","yogurt","cold-required"),
+ P("yogur bífidus",/bifidus|yogur.*bifid/,"Lácteos","Yogur","Nevera","alta","yogurt","cold-required"),
+ P("postre lácteo",/natilla|flan.*(huevo|vainilla)|postre.*lacteo/,"Lácteos","Postre lácteo","Nevera","alta","dairy-dessert","cold-required"),
+
+ // Carne, aves y charcutería
+ P("chuleta de cerdo",/chuleta.*cerdo/,"Carne","Cerdo","Nevera","alta","pork-chop","cold-required"),
+ P("aguja de cerdo",/aguja.*cerdo/,"Carne","Cerdo","Nevera","alta","steak","cold-required"),
+ P("carrillera",/carrillera/,"Carne","Vacuno o cerdo","Nevera","alta","stew-meat","cold-required"),
+ P("carne para guisar",/carne.*guisar|estofado.*ternera|ragout/,"Carne","Vacuno","Nevera","alta","stew-meat","cold-required"),
+ P("osobuco",/osobuco/,"Carne","Vacuno","Nevera","alta","osso-buco","cold-required"),
+ P("chuletón",/chuleton|chuleta.*vacuno/,"Carne","Vacuno","Nevera","alta","steak","cold-required"),
+ P("albóndigas frescas",/albondiga.*(fresca|refrigerad)|albondigas$/,"Carne","Carne picada","Nevera","alta","meatballs","cold-required"),
+ P("salchicha fresca",/salchicha.*fresca|butifarra/,"Carne","Salchicha","Nevera","alta","sausage-fresh","cold-required"),
+ P("mortadela",/mortadela/,"Carne","Embutido","Nevera","media","cold-cuts","cold-required"),
+ P("fuet",/\bfuet\b|espetec/,"Carne","Embutido","Nevera","baja","sausage-cured","flex"),
+ P("salami",/salami/,"Carne","Embutido","Nevera","media","sausage-cured","flex"),
+ P("sobrasada",/sobrasada/,"Carne","Embutido","Nevera","media","sobrasada","cold-required"),
+ P("pechuga de pavo lonchas",/pavo.*loncha|pechuga.*pavo.*loncha/,"Carne","Fiambre","Nevera","media","turkey-slices","cold-required"),
+ P("pollo asado preparado",/pollo.*asado.*(preparad|listo)|pollo\\s+asado$/,"Preparados","Pollo preparado","Nevera","alta","roast-chicken","cold-required"),
+
+ // Pescado y marisco
+ P("dorada",/dorada/,"Carne","Pescado","Nevera","alta","fish","cold-required"),
+ P("lubina",/lubina/,"Carne","Pescado","Nevera","alta","fish","cold-required"),
+ P("sardinas",/sardina/,"Carne","Pescado","Nevera","alta","fish","cold-required"),
+ P("boquerones",/boqueron|anchoa.*fresca/,"Carne","Pescado","Nevera","alta","fish-small","cold-required"),
+ P("caballa",/caballa/,"Carne","Pescado","Nevera","alta","fish","cold-required"),
+ P("trucha",/trucha/,"Carne","Pescado","Nevera","alta","fish","cold-required"),
+ P("calamar",/calamar|chipiron/,"Carne","Marisco","Nevera","alta","squid","cold-required"),
+ P("pulpo",/pulpo/,"Carne","Marisco","Nevera","alta","octopus","cold-required"),
+ P("sepia",/sepia/,"Carne","Marisco","Nevera","alta","squid","cold-required"),
+ P("surimi",/surimi|palitos.*cangrejo/,"Preparados","Surimi","Nevera","media","surimi","cold-required"),
+
+ // Verduras, frutas y aromáticas
+ P("judías verdes",/judia.*verde/,"Fruta y verdura","Verdura","Nevera","alta","green-beans","flex"),
+ P("guisantes frescos",/guisante.*fresc/,"Fruta y verdura","Verdura","Nevera","alta","peas","flex"),
+ P("puerro",/puerro/,"Fruta y verdura","Verdura","Nevera","media","leek","flex"),
+ P("apio",/apio/,"Fruta y verdura","Verdura","Nevera","media","celery","flex"),
+ P("alcachofa",/alcachofa/,"Fruta y verdura","Verdura","Nevera","alta","artichoke","flex"),
+ P("espárragos",/esparrago.*fresc/,"Fruta y verdura","Verdura","Nevera","alta","asparagus","flex"),
+ P("remolacha",/remolacha/,"Fruta y verdura","Verdura","Nevera","media","beet","flex"),
+ P("calabaza",/calabaza/,"Fruta y verdura","Verdura","Despensa","media","pumpkin","flex"),
+ P("maíz dulce",/maiz.*(dulce|mazorca)|mazorca/,"Fruta y verdura","Verdura","Nevera","media","corn","flex"),
+ P("hierbas frescas",/perejil|cilantro|albahaca|menta|hierbabuena/,"Fruta y verdura","Hierbas","Nevera","alta","herbs","flex"),
+ P("ciruela",/ciruela/,"Fruta y verdura","Fruta","Nevera","media","plum","flex"),
+ P("cereza",/cereza/,"Fruta y verdura","Fruta","Nevera","alta","cherry","flex"),
+ P("higo",/\bhigo|higos/,"Fruta y verdura","Fruta","Nevera","alta","fig","flex"),
+ P("caqui",/caqui|kaki/,"Fruta y verdura","Fruta","Despensa","media","persimmon","flex"),
+
+ // Despensa, salsas y condimentos
+ P("pasta fresca",/pasta.*fresca|ravioli.*fresc|tortellini.*fresc/,"Preparados","Pasta fresca","Nevera","alta","fresh-pasta","cold-required"),
+ P("cuscús",/cuscus|couscous/,"Despensa","Cereales","Despensa","baja","couscous","shelf"),
+ P("quinoa",/quinoa/,"Despensa","Cereales","Despensa","baja","quinoa","shelf"),
+ P("bulgur",/bulgur/,"Despensa","Cereales","Despensa","baja","grain","shelf"),
+ P("pan rallado",/pan.*rallado/,"Despensa","Pan rallado","Despensa","baja","breadcrumbs","shelf"),
+ P("levadura",/levadura/,"Despensa","Repostería","Despensa","baja","yeast","shelf"),
+ P("maicena",/maicena|almidon.*maiz/,"Despensa","Harinas","Despensa","baja","cornstarch","shelf"),
+ P("miel",/\bmiel\b/,"Despensa","Endulzante","Despensa","baja","honey","shelf"),
+ P("mermelada",/mermelada|confitura/,"Despensa","Untable","Despensa","baja","jam","shelf"),
+ P("crema de cacahuete",/crema.*cacahuete|mantequilla.*cacahuete/,"Despensa","Untable","Despensa","baja","peanut-butter","shelf"),
+ P("ketchup",/ketchup/,"Despensa","Salsas","Despensa","baja","ketchup","shelf"),
+ P("mayonesa",/mayonesa/,"Despensa","Salsas","Despensa","baja","mayonnaise","shelf"),
+ P("mostaza",/mostaza/,"Despensa","Salsas","Despensa","baja","mustard","shelf"),
+ P("salsa barbacoa",/salsa.*barbacoa|bbq/,"Despensa","Salsas","Despensa","baja","bbq-sauce","shelf"),
+ P("pesto",/\bpesto\b/,"Despensa","Salsas","Despensa","media","pesto","shelf"),
+ P("salsa de soja",/salsa.*soja/,"Despensa","Salsas","Despensa","baja","soy-sauce","shelf"),
+ P("vinagre",/vinagre/,"Despensa","Condimentos","Despensa","baja","vinegar","shelf"),
+ P("caldo",/caldo.*(pollo|verdura|carne|pescado)|brick.*caldo/,"Despensa","Caldos","Despensa","baja","broth","shelf"),
+ P("cubitos de caldo",/cubito.*caldo|pastilla.*caldo/,"Despensa","Condimentos","Despensa","baja","stock-cube","shelf"),
+ P("especias",/pimienta|oregano|comino|curcuma|curry|paprika|pimenton|canela/,"Despensa","Especias","Despensa","baja","spices","shelf"),
+
+ // Desayuno y repostería
+ P("muesli",/muesli/,"Despensa","Cereales","Despensa","baja","muesli","shelf"),
+ P("granola",/granola/,"Despensa","Cereales","Despensa","baja","granola","shelf"),
+ P("tostadas",/tostada.*envasad|biscote/,"Despensa","Panadería","Despensa","baja","toast","shelf"),
+ P("tortitas de arroz",/tortita.*arroz/,"Despensa","Snack","Despensa","baja","rice-cakes","shelf"),
+ P("cacao soluble",/cacao.*soluble|cacao.*polvo/,"Despensa","Cacao","Despensa","baja","cocoa","shelf"),
+ P("siropes",/sirope|jarabe.*(arce|agave)/,"Despensa","Endulzante","Despensa","baja","syrup","shelf"),
+
+ // Congelados y preparados
+ P("empanadillas congeladas",/empanadilla.*congelad/,"Congelados","Empanadillas","Congelador","baja","frozen-pastry","frozen"),
+ P("calamares rebozados",/calamar.*rebozad/,"Congelados","Marisco rebozado","Congelador","baja","breaded-squid","frozen"),
+ P("varitas de pescado",/varita.*pescado/,"Congelados","Pescado rebozado","Congelador","baja","fish-sticks","frozen"),
+ P("verduras salteadas congeladas",/salteado.*verdura.*congelad/,"Congelados","Verdura congelada","Congelador","baja","frozen-vegetables","frozen"),
+ P("fruta congelada",/(fruta|fresa|arandano|mango|frutos.*rojos).*congelad/,"Congelados","Fruta congelada","Congelador","baja","frozen-fruit","frozen"),
+ P("gazpacho",/gazpacho|salmorejo/,"Preparados","Sopa fría","Nevera","alta","gazpacho","cold-required"),
+ P("crema de verduras preparada",/crema.*verdura.*(preparad|refrigerad)|sopa.*refrigerad/,"Preparados","Sopa","Nevera","alta","soup","cold-required"),
+ P("canelones",/canelon/,"Preparados","Pasta preparada","Nevera","alta","cannelloni","cold-required"),
+ P("ensaladilla rusa",/ensaladilla/,"Preparados","Ensalada preparada","Nevera","alta","prepared-salad","cold-required"),
+ P("tortilla de trigo",/tortilla.*trigo|wraps?/,"Despensa","Pan plano","Despensa","media","wrap","shelf"),
+
+ // Bebidas
+ P("leche sin lactosa",/leche.*sin\\s+lactosa/,"Lácteos","Leche","Despensa","media","milk-carton","shelf"),
+ P("bebida de avena",/bebida.*avena/,"Bebidas","Bebida vegetal","Despensa","media","oat-drink","shelf"),
+ P("bebida de soja",/bebida.*soja/,"Bebidas","Bebida vegetal","Despensa","media","soy-drink","shelf"),
+ P("bebida de almendra",/bebida.*almendra/,"Bebidas","Bebida vegetal","Despensa","media","almond-drink","shelf"),
+ P("té e infusiones",/\bte\b|infusion|manzanilla|rooibos/,"Despensa","Infusiones","Despensa","baja","tea","shelf"),
+ P("agua con gas",/agua.*gas/,"Bebidas","Agua","Despensa","baja","sparkling-water","shelf"),
+
+ // Limpieza y hogar
+ P("detergente en polvo",/detergente.*polvo/,"Limpieza y hogar","Lavandería","Despensa","baja","laundry-powder","household"),
+ P("cápsulas de lavadora",/capsula.*lavadora|pods.*lavadora/,"Limpieza y hogar","Lavandería","Despensa","baja","laundry-pods","household"),
+ P("quitamanchas",/quitamanchas/,"Limpieza y hogar","Lavandería","Despensa","baja","stain-remover","household"),
+ P("limpiacristales",/limpiacristal/,"Limpieza y hogar","Limpieza","Despensa","baja","glass-cleaner","household"),
+ P("limpiador de baño",/limpiador.*bano|antical/,"Limpieza y hogar","Baño","Despensa","baja","bath-cleaner","household"),
+ P("limpiador de suelo",/limpiador.*suelo|friegasuelos/,"Limpieza y hogar","Suelo","Despensa","baja","floor-cleaner","household"),
+ P("esponjas",/esponja.*(cocina|lavar)|estropajo/,"Limpieza y hogar","Consumibles","Despensa","baja","sponge","household"),
+ P("film transparente",/film.*transparente|papel.*film/,"Limpieza y hogar","Cocina","Despensa","baja","cling-film","household"),
+ P("papel aluminio",/papel.*aluminio/,"Limpieza y hogar","Cocina","Despensa","baja","foil","household"),
+ P("bolsas congelación",/bolsa.*congel/,"Limpieza y hogar","Cocina","Despensa","baja","freezer-bags","household"),
+
+ // Higiene y cuidado
+ P("gel hidroalcohólico",/gel.*hidroalcohol/,"Higiene y cuidado","Higiene","Despensa","baja","sanitizer","household"),
+ P("enjuague bucal",/enjuague.*bucal|colutorio/,"Higiene y cuidado","Dental","Despensa","baja","mouthwash","household"),
+ P("cepillo de dientes",/cepillo.*dient/,"Higiene y cuidado","Dental","Despensa","baja","toothbrush","household"),
+ P("hilo dental",/hilo.*dental/,"Higiene y cuidado","Dental","Despensa","baja","dental-floss","household"),
+ P("algodón",/algodon.*(disco|desmaquill)|disco.*algodon/,"Higiene y cuidado","Facial","Despensa","baja","cotton-pads","household"),
+ P("toallitas húmedas",/toallita.*humed/,"Higiene y cuidado","Higiene","Despensa","baja","wipes","household"),
+ P("cuchillas de afeitar",/cuchilla.*afeit|maquinilla.*afeit/,"Higiene y cuidado","Afeitado","Despensa","baja","razor","household"),
+ P("espuma de afeitar",/espuma.*afeit|gel.*afeit/,"Higiene y cuidado","Afeitado","Despensa","baja","shaving","household")
+];
+
 const CATEGORY_FALLBACKS:Record<string,ProductProfile>={
  "Fruta y verdura":{canonical:"fruta o verdura",category:"Fruta y verdura",subcategory:"Fresco",location:"Nevera",rotation:"alta",icon:"leafy",safety:"flex"},
  "Lácteos":{canonical:"lácteo",category:"Lácteos",subcategory:"Lácteo",location:"Nevera",rotation:"media",icon:"dairy",safety:"cold-required"},
@@ -240,7 +384,7 @@ const CATEGORY_FALLBACKS:Record<string,ProductProfile>={
 
 export function classifyProduct(name:string,currentCategory?:string):ProductProfile{
  const n=normalizeProductText(name);
- const found=RULES.find(r=>r.match.test(n));
+ const found=EXTRA_RULES.find(r=>r.match.test(n))||RULES.find(r=>r.match.test(n));
  if(found){
   const {match,...profile}=found;
   return profile;
@@ -275,5 +419,5 @@ export function storageWarning(name:string,category:string,location:string){
 }
 
 export function catalogStats(){
- return {rules:RULES.length,categories:new Set(RULES.map(r=>r.category)).size,subcategories:new Set(RULES.map(r=>r.subcategory)).size};
+ const all=[...EXTRA_RULES,...RULES]; return {rules:all.length,categories:new Set(all.map(r=>r.category)).size,subcategories:new Set(all.map(r=>r.subcategory)).size};
 }
