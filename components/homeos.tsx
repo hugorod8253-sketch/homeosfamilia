@@ -83,16 +83,22 @@ const DEFAULT:AppState={
 };
 
 function normalizeState(x:any):AppState{
- const raw=x&&typeof x==="object"?x:{};
- const rawMembers=raw.members||DEFAULT.members;
- const profile={...DEFAULT.profile,...(raw.profile||{})};
+ const raw=x&&typeof x==="object"&&!Array.isArray(x)?x:{};
+ const rawMembers=Array.isArray(raw.members)?raw.members:DEFAULT.members;
+ const rawProfile=raw.profile&&typeof raw.profile==="object"&&!Array.isArray(raw.profile)?raw.profile:{};
+ const profile={...DEFAULT.profile,...rawProfile};
+ profile.householdSize=Math.max(1,Math.min(12,Math.round(Number(profile.householdSize)||1)));
+ profile.supermarkets=Array.isArray(profile.supermarkets)?profile.supermarkets.filter((v:any)=>typeof v==="string"&&v.trim()).slice(0,30):[];
+ profile.kitchenTools=Array.isArray(profile.kitchenTools)?profile.kitchenTools.filter((v:any)=>typeof v==="string").slice(0,20):[];
+ profile.goals=Array.isArray(profile.goals)?profile.goals.filter((v:any)=>["organizar","ahorrar","desperdicio","equilibrio"].includes(v)):DEFAULT.profile.goals;
+ profile.mainSupermarket=typeof profile.mainSupermarket==="string"?profile.mainSupermarket:"";
  if(profile.nutrition==="detallada")profile.nutrition="basica";
- const baseMembers=rawMembers.map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...m}));
+ const baseMembers=rawMembers.slice(0,12).map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...(m&&typeof m==="object"?m:{})}));
  const members=ensureMembers(baseMembers,profile.householdSize);
- const productPreferences=raw.productPreferences&&typeof raw.productPreferences==="object"?raw.productPreferences:{};
+ const productPreferences=raw.productPreferences&&typeof raw.productPreferences==="object"&&!Array.isArray(raw.productPreferences)?raw.productPreferences:{};
  const needsProductMigration=(Number(raw.productEngineVersion)||0)<1;
- const baseInventory=(raw.inventory||DEFAULT.inventory) as InventoryItem[];
- const baseShopping=(raw.shopping||DEFAULT.shopping) as ShoppingItem[];
+ const baseInventory=(Array.isArray(raw.inventory)?raw.inventory:DEFAULT.inventory) as InventoryItem[];
+ const baseShopping=(Array.isArray(raw.shopping)?raw.shopping:DEFAULT.shopping) as ShoppingItem[];
  const migratedInventory=needsProductMigration?baseInventory.map(i=>{
   const p=classifyProduct(i.name,i.category);
   const pref=productPreferences[p.canonical]||{};
@@ -112,7 +118,7 @@ function normalizeState(x:any):AppState{
   return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
  const shopping=migratedShopping.map(i=>i.sources?.length?i:{...i,sources:shoppingSources(i)});
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done").slice(-80):[],productPreferences,productEngineVersion:1};
+ return {...DEFAULT,...raw,profile,members,events:Array.isArray(raw.events)?raw.events.slice(-200):[],inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory.slice(-600):[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions.slice(-240):[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory.slice(-400):[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done").slice(-80):[],productPreferences,budget:Math.max(0,Number(raw.budget)||0),spent:Math.max(0,Number(raw.spent)||0),waste:Math.max(0,Number(raw.waste)||0),wasteSaved:Math.max(0,Number(raw.wasteSaved)||0),productEngineVersion:1};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
@@ -975,7 +981,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
  const allRecipes=[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i);
- const options=allRecipes.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
+ const options=allRecipes.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,planningInventory(state,state.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===b.id)?.id))-score(a,planningInventory(state,state.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===a.id)?.id)));
  const pool=options.length?options:allRecipes;
  const autoRecipe=pool[index%pool.length];
  const recipe=(selectedRecipeId?allRecipes.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
@@ -1005,7 +1011,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   return points;
  };
  const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
- const missingForQuery=(r:Recipe)=>missing(r,planningInventory(state)).filter(ing=>!confirmedForQuery(ing));
+ const missingForQuery=(r:Recipe)=>{const ownPlan=state.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===r.id);return missing(r,planningInventory(state,ownPlan?.id)).filter(ing=>!confirmedForQuery(ing))};
  const miss=missingForQuery(recipe);
  const cravingMatches=craving.trim()?allRecipes.map(r=>{
   const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
@@ -1030,14 +1036,15 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   return {name:member.name,matches};
  }).filter(x=>x.matches.length);
 
+ const reuseInventory=planningInventory(state);
  const reuseIdeasBase=REUSE_IDEAS.map(idea=>{
-  const matched=idea.needs.filter(n=>needAvailable(state.inventory,n)).length;
+  const matched=idea.needs.filter(n=>needAvailable(reuseInventory,n)).length;
   const mentionedHits=mentionedProducts.filter(p=>idea.needs.some(n=>norm(n.key).includes(norm(p.canonical))||norm(p.canonical).includes(norm(n.key))||norm(n.label).includes(norm(p.canonical)))).length;
   return {...idea,matched,ready:matched===idea.needs.length,mentionedHits};
  }).sort((a,b)=>Number(b.ready)-Number(a.ready)||b.mentionedHits-a.mentionedHits||b.matched-a.matched);
  const reuseIdeas=mentionedProducts.length?reuseIdeasBase.filter(x=>requireAllMentioned?x.mentionedHits===mentionedProducts.length:x.mentionedHits>0):reuseIdeasBase;
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
- const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
+ const expiringForReuse=reuseInventory.filter(usableInventoryItem).filter(i=>daysUntil(i.expires)<=5||i.stock==="mucho").sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
  const preferenceMembers=state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes.trim());
  const savedPlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
  const weeklyPlan=state.weeklyMenu;
@@ -1299,7 +1306,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    {expiringForReuse.length>0&&<div className="reuse-priority"><div className="recipe-options-head"><div><small>GASTAR PRIMERO</small><h3>Productos que merecen atención</h3></div></div><div className="reuse-priority-grid">{expiringForReuse.map(i=><button key={i.id} onClick={()=>{const found=reuseIdeas.find(x=>reuseIdeaMatchesProduct(x,i.name,i.category));if(found){setSelectedReuseId(found.id);setReuseOpen(true)}}}><span>{productIcon(i.name,i.category)}</span><div><strong>{i.name}</strong><small>{i.expires&&daysUntil(i.expires)<=5?("Fecha próxima · "+Math.max(0,daysUntil(i.expires))+" días"):i.stock==="mucho"?"Hay bastante":"Conviene revisar"}</small></div><b>›</b></button>)}</div></div>}
 
    <div className="reuse-section-head"><div><small>CON LO QUE HAY EN CASA</small><h3>Aprovechar o transformar</h3><p>Las ideas listas aparecen primero. Las demás te enseñan qué ingrediente falta.</p></div></div>
-   <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(state.inventory,n)?"have":hasNeed(state.inventory,n)?"some":"missing"} key={n.key}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
+   <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(reuseInventory,n)?"have":hasNeed(reuseInventory,n)?"some":"missing"} key={n.key}>{needAvailable(reuseInventory,n)?"✓":hasNeed(reuseInventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:tab==="menu"?<>
    <article className="weekly-menu-hero">
     <div><small>MENÚ SEMANAL</small><h3>14 comidas pensadas para tu casa</h3><p>Combina variedad, lo que probablemente tienes, gustos del hogar, tiempo y equipamiento. No es una dieta médica: es planificación doméstica práctica.</p></div>
@@ -1319,7 +1326,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   </>:<Habitos state={state}/>} 
 
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{recipe.source==="local-ai"?<div className="recipe-total"><span>Receta generada localmente</span><b>Sin cálculo nutricional automático</b></div>:<div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>}{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>Math.min(recipe.servings,n+1))}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
-  {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={needAvailable(state.inventory,n)?"need-ok":hasNeed(state.inventory,n)?"need-some":"need-missing"}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"cantidad insuficiente":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>needAvailable(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
+  {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={needAvailable(reuseInventory,n)?"need-ok":hasNeed(reuseInventory,n)?"need-some":"need-missing"}>{needAvailable(reuseInventory,n)?"✓":hasNeed(reuseInventory,n)?"cantidad insuficiente":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>needAvailable(reuseInventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
 
  </section>
 }
@@ -1514,9 +1521,18 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   const productProfile=classifyProduct(value);
   const name=value;
   setState(s=>{
-   const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente");
-   if(duplicate)return {...s,shopping:s.shopping.map(i=>i.id===duplicate.id?{...i,qty:Math.round((i.qty+qty)*100)/100}:i)};
-   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category:productProfile.category,subcategory:productProfile.subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
+   const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente"&&planUnitFamily(i.unit)===planUnitFamily(unit));
+   if(duplicate){
+    const sources=shoppingSources(duplicate);
+    const manualId="manual:"+duplicate.id+":"+norm(requestedBy);
+    const idx=sources.findIndex(src=>src.id===manualId);
+    const nextSources=idx>=0?sources.map((src,j)=>j===idx?{...src,qty:Math.round((src.qty+qty)*100)/100}:src):[...sources,{id:manualId,type:"manual" as const,label:requestedBy,qty,unit:duplicate.unit}];
+    const updated=withShoppingSources(duplicate,nextSources);
+    return updated?{...s,shopping:s.shopping.map(i=>i.id===duplicate.id?updated:i)}:s;
+   }
+   const id=crypto.randomUUID();
+   const source:ShoppingSource={id:"manual:"+id+":"+norm(requestedBy),type:"manual",label:requestedBy,qty,unit};
+   return {...s,shopping:[...s.shopping,{id,name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category:productProfile.category,subcategory:productProfile.subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente",sources:[source]}]};
   });
  }
  function add(input=quick){
