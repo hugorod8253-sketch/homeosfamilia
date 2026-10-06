@@ -88,9 +88,16 @@ function monthMid(monthYear:string){
 
 export function shelfLifeSample(name:string){
  const n=norm(name);
+ const aliases=[
+  {test:(x:string)=>/pan.*hamburguesa|brioche.*hamburguesa/.test(x),keys:["brioche hamburguesa"]},
+  {test:(x:string)=>/bebida.*avena.*barista|leche.*avena.*barista/.test(x),keys:["bebida de avena barista"]},
+  {test:(x:string)=>/maiz|blat de moro/.test(x),keys:["maiz conserva"]},
+  {test:(x:string)=>/atun.*(lata|conserva)/.test(x),keys:["atun conserva"]}
+ ];
+ const alias=aliases.find(a=>a.test(n));
  const matches=LIDL_2026_SHELF_LIFE.filter(s=>{
   const k=norm(s.name);
-  return n===k||n.includes(k)||k.includes(n);
+  return n===k||n.includes(k)||k.includes(n)||Boolean(alias?.keys.some(x=>k===x));
  }).sort((a,b)=>norm(b.name).length-norm(a.name).length);
  return matches[0]||null;
 }
