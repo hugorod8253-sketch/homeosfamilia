@@ -24,7 +24,7 @@ type InventoryItem = {
 };
 type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
-  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean;
+  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipeId?:string;
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
@@ -38,13 +38,14 @@ type Recipe = {
   mode:CookingStyle[]; servings:number; calories:number; protein:number; carbs:number; fat:number;
   ingredients:RecipeIngredient[]; steps:string[]; description:string; tools?:string[]; source?:"local-ai";
 };
+type RecipePlan = {id:string;recipe:Recipe;createdAt:string;plannedFor?:string;status:"saved"|"done"};
 type Profile = {
   householdSize:number; supermarkets:string[]; mainSupermarket:string; goals:Goal[];
   nutrition:NutritionMode; cooking:CookingStyle; shoppingCycle:"diaria"|"semanal"|"quincenal"|"mensual"|"mixta";
   notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 type AppState = {
-  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; mealHistory:MealRecord[]; weeklyMenu:WeeklyMenuPlan|null; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
+  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; mealHistory:MealRecord[]; weeklyMenu:WeeklyMenuPlan|null; recipePlans:RecipePlan[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number; productEngineVersion:number;
 };
 
@@ -72,6 +73,7 @@ const DEFAULT:AppState={
  purchaseSessions:[],
  mealHistory:[],
  weeklyMenu:null,
+ recipePlans:[],
  productPreferences:{},
  members:[{id:"m1",name:"Tú",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:""}],
  events:[],
@@ -108,7 +110,7 @@ function normalizeState(x:any):AppState{
   const pref=productPreferences[p.canonical]||{};
   return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,productPreferences,productEngineVersion:1};
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done").slice(-80):[],productPreferences,productEngineVersion:1};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
@@ -530,16 +532,40 @@ export default function HomeOS(){
  const available=state.budget-monthlySpent;
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
 
- function addFromRecipe(recipe:Recipe){
+ function ensureRecipePlan(s:AppState,recipe:Recipe,plannedFor?:string){
+  const existing=s.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===recipe.id);
+  if(existing){
+   return {plans:s.recipePlans.map(p=>p.id===existing.id?{...p,recipe,plannedFor:plannedFor||p.plannedFor}:p),planId:existing.id};
+  }
+  const planId=crypto.randomUUID();
+  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:new Date().toISOString().slice(0,10),plannedFor,status:"saved" as const}].slice(-80),planId};
+ }
+ function saveRecipePlan(recipe:Recipe,plannedFor?:string){
+  setState(s=>{
+   const saved=ensureRecipePlan(s,recipe,plannedFor);
+   return {...s,recipePlans:saved.plans};
+  });
+  setToast(plannedFor?"Receta guardada para "+new Date(plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"}):"Receta guardada para más adelante");
+ }
+ function addFromRecipe(recipe:Recipe,plannedFor?:string){
   const miss=missing(recipe,state.inventory);
-  if(!miss.length){setToast("Tienes todo para esta receta");return}
-  const toAdd=miss.filter(m=>!state.shopping.some(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key))));
-  if(!toAdd.length){setToast("Los ingredientes que faltan ya están en la compra");return}
-  setState(s=>({...s,shopping:[...s.shopping,...toAdd.map(m=>{
-   const parsed=parseQty(m.qty);
-   return {id:crypto.randomUUID(),name:m.name,qty:parsed?.amount||1,unit:parsed?.unit||inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const};
-  })]}));
-  setToast(`${toAdd.length} ingredientes añadidos a la compra`);
+  setState(s=>{
+   const saved=ensureRecipePlan(s,recipe,plannedFor);
+   if(!miss.length)return {...s,recipePlans:saved.plans};
+   const shopping=[...s.shopping];
+   for(const m of miss){
+    const parsed=parseQty(m.qty);
+    const existing=shopping.findIndex(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key)));
+    if(existing>=0){
+     const q=shopping[existing];
+     shopping[existing]={...q,recipePlanId:q.recipePlanId||saved.planId,recipeId:q.recipeId||recipe.id};
+    }else{
+     shopping.push({id:crypto.randomUUID(),name:m.name,qty:parsed?.amount||1,unit:parsed?.unit||inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Receta · "+recipe.title,reason:"receta" as const,status:"pendiente" as const,recipePlanId:saved.planId,recipeId:recipe.id});
+    }
+   }
+   return {...s,recipePlans:saved.plans,shopping};
+  });
+  setToast(miss.length?recipe.title+" guardada · faltantes añadidos a Comprar":"Receta guardada · ya tienes todo para hacerla");
  }
 
  function finishShopping(total?:number){
@@ -602,7 +628,7 @@ export default function HomeOS(){
   <main className="main">
    <header className="topbar"><div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
-   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
+   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
    {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
@@ -768,7 +794,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
   </article>
 }
 
-function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,focusTab,clearFocusTab}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void;focusTab:"ideas"|"aprovechar"|"menu"|"habitos"|null;clearFocusTab:()=>void}){
+function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,clearMealSeed,focusTab,clearFocusTab}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;saveRecipePlan:(r:Recipe,plannedFor?:string)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void;focusTab:"ideas"|"aprovechar"|"menu"|"habitos"|null;clearFocusTab:()=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
  const [tab,setTab]=useState<"ideas"|"aprovechar"|"menu"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
@@ -790,7 +816,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  const [catalogQuery,setCatalogQuery]=useState("");
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
- const allRecipes=[...RECIPES,...aiRecipes];
+ const allRecipes=[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i);
  const options=allRecipes.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:allRecipes;
  const autoRecipe=pool[index%pool.length];
