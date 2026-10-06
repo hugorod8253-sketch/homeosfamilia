@@ -457,6 +457,14 @@ export default function HomeOS(){
  useEffect(()=>{stateRef.current=state},[state]);
  useEffect(()=>{
   if(!hydrated)return;
+  setState(s=>{
+   const next=reconcileWeeklyShopping(reconcileRecipeShopping(s));
+   const before=JSON.stringify(s.shopping),after=JSON.stringify(next.shopping);
+   return before===after?s:next;
+  });
+ },[hydrated,state.inventory]);
+ useEffect(()=>{
+  if(!hydrated)return;
   const readyNow=new Set(state.recipePlans.filter(p=>p.status==="saved"&&missing(p.recipe,planningInventory(state,p.id)).length===0).map(p=>p.id));
   if(!readyPlansInitializedRef.current){readyPlansRef.current=readyNow;readyPlansInitializedRef.current=true;return}
   const newlyReady=state.recipePlans.filter(p=>readyNow.has(p.id)&&!readyPlansRef.current.has(p.id));
@@ -699,7 +707,7 @@ export default function HomeOS(){
     const frozenAt=reserveAllowed?today:undefined;
     const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
     const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
-    const planReservations=shoppingSources(x).filter(src=>Boolean(src.planId)&&src.qty>0);
+    const planReservations=shoppingSources(x).filter(src=>src.type==="recipe"&&Boolean(src.planId)&&src.qty>0);
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed));
     if(idx>=0){
      const current=inventory[idx];
@@ -1411,6 +1419,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const [storeFilter,setStoreFilter]=useState("Todos");
  const [newStoreName,setNewStoreName]=useState("");
  const [addingStore,setAddingStore]=useState(false);
+ const [shoppingIntentFilter,setShoppingIntentFilter]=useState<"todos"|"habitual"|"planes">("todos");
  const [purchaseTotal,setPurchaseTotal]=useState("");
  const [receiptName,setReceiptName]=useState("");
  const [shoppingListening,setShoppingListening]=useState(false);
@@ -1569,7 +1578,10 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   return ids.map(id=>state.recipePlans.find(p=>p.id===id)?.plannedFor||"9999-12-31").sort()[0]||"9999-12-31";
  }
  const filteredList=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
- const mainItems=(shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList).slice().sort((a,b)=>Number(Boolean(b.recipePlanIds?.length||b.recipePlanId))-Number(Boolean(a.recipePlanIds?.length||a.recipePlanId))||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
+ const planLine=(i:ShoppingItem)=>shoppingSources(i).some(src=>src.type==="recipe"||src.type==="weekly");
+ const intentBase=(shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList);
+ const mainItems=intentBase.filter(i=>shoppingIntentFilter==="todos"||(shoppingIntentFilter==="planes"?planLine(i):!planLine(i))).slice().sort((a,b)=>Number(planLine(b))-Number(planLine(a))||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
+ const hasPlanLines=state.shopping.some(planLine);
  const grouped=mainItems.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
  const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
  return <section className="stack">
@@ -1579,6 +1591,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. leche, 2 yogures y 1 kg de pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":micIcon()}</button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
 
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button><button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Supermercado</button></div>}
+  {hasPlanLines&&<div className="shopping-intent-tabs"><button className={shoppingIntentFilter==="todos"?"active":""} onClick={()=>setShoppingIntentFilter("todos")}>Todo</button><button className={shoppingIntentFilter==="habitual"?"active":""} onClick={()=>setShoppingIntentFilter("habitual")}>Compra habitual</button><button className={shoppingIntentFilter==="planes"?"active":""} onClick={()=>setShoppingIntentFilter("planes")}>Recetas y menú</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
   {addingStore&&<div className="inline-store-add"><div><strong>Añadir supermercado</strong><small>Se guardará para futuras compras.</small></div><input autoFocus value={newStoreName} onChange={e=>setNewStoreName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSupermarket(shoppingActive);if(e.key==="Escape"){setAddingStore(false);setNewStoreName("")}}} placeholder="Ej. BonÀrea, Ametller, tienda del barrio…"/><button className="primary" onClick={()=>addSupermarket(shoppingActive)} disabled={!newStoreName.trim()}>Guardar</button><button className="secondary" onClick={()=>{setAddingStore(false);setNewStoreName("")}}>Cancelar</button></div>}
 
