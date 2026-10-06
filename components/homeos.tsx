@@ -452,6 +452,34 @@ function habitSignals(state:AppState){
   ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria|refresco|helado/)]
  ] as [string,boolean][];
 }
+
+type HabitBalanceTone="good"|"low"|"high"|"learning";
+function habitBalanceSignals(state:AppState){
+ const now=Date.now();
+ const meals=state.mealHistory.filter(m=>{const t=new Date(m.date+"T12:00:00").getTime();return t<=now&&now-t<=28*86400000});
+ const patterns=[
+  {key:"protein",label:"Proteína",icon:"P",re:/pollo|carne|pescado|huevo|proteina|legumbre|lenteja|garbanzo|tofu|seitan/},
+  {key:"veg",label:"Verdura",icon:"V",re:/verdura|tomate|zanahoria|cebolla|aguacate|brocoli|lechuga|pepino|espinaca/},
+  {key:"carbs",label:"Carbohidratos",icon:"C",re:/arroz|pasta|pan|patata|avena|cereal|quinoa|cuscus/},
+  {key:"sweets",label:"Dulces",icon:"D",re:/chocolate|galleta|chuche|gominola|snack|bolleria|refresco|helado/}
+ ] as const;
+ if(meals.length<4)return patterns.map(p=>({...p,tone:"learning" as HabitBalanceTone,status:"Aprendiendo",ratio:0}));
+ const mealHas=(m:MealHistoryItem,re:RegExp)=>m.ingredients.some(i=>re.test(norm(i.name)));
+ return patterns.map(p=>{
+  const ratio=meals.filter(m=>mealHas(m,p.re)).length/Math.max(1,meals.length);
+  let tone:HabitBalanceTone="good",status="Bien";
+  if(p.key==="protein"||p.key==="veg"){if(ratio<.4){tone="low";status="Bajo"}}
+  else if(p.key==="carbs"){if(ratio<.25){tone="low";status="Bajo"}else if(ratio>.9){tone="high";status="Alto"}}
+  else if(p.key==="sweets"){if(ratio>.4){tone="high";status="Alto"}}
+  return {...p,tone,status,ratio};
+ });
+}
+function suspiciousRepeatedText(value:string){
+ const words=norm(value).split(/\s+/).filter(Boolean);
+ if(words.length<3)return false;
+ const unique=new Set(words);
+ return unique.size===1||words.every((w,i)=>i===0||w===words[0]);
+}
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
 function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.25" y="2.75" width="7.5" height="12.5" rx="3.75" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M5.75 11.75v.5a6.25 6.25 0 0 0 12.5 0v-.5M12 18.5v2.75M8.75 21.25h6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
 function navIcon(id:View,icon:string){return id==="inicio"?<span className="nav-logo-mini">{logo()}</span>:<span>{icon}</span>}
@@ -476,6 +504,7 @@ export default function HomeOS(){
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
+ const [ticketCameraRequest,setTicketCameraRequest]=useState(0);
  const receiptRef=useRef<HTMLInputElement>(null);
  const syncRevisionRef=useRef(0);
  const lastSyncedJsonRef=useRef("");
@@ -831,9 +860,9 @@ export default function HomeOS(){
 
   <main className="main">
    <header className="topbar"><div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("ideas");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
-   {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
+   {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
    {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
@@ -884,7 +913,7 @@ function QuickStartGuide({close}:{close:()=>void}){
  </div></div>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openHabits,openWeekly}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openHabits:()=>void;openWeekly:()=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openWeekly}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openWeekly:()=>void}){
  const [now,setNow]=useState(()=>new Date());
  const [spotlightIndex,setSpotlightIndex]=useState(0);
  const [calendarOpen,setCalendarOpen]=useState(false);
@@ -1602,7 +1631,7 @@ function Habitos({state}:{state:AppState}){
   </article>
  </div>
 }
-function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void}){
+function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
  const [quick,setQuick]=useState("");
  const [storeFilter,setStoreFilter]=useState("Todos");
  const [newStoreName,setNewStoreName]=useState("");
@@ -1616,6 +1645,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
  const [ocrTotal,setOcrTotal]=useState<number|undefined>(undefined);
  const receiptCameraRef=useRef<HTMLInputElement>(null);
+ useEffect(()=>{if(cameraRequest>0)requestAnimationFrame(()=>setTimeout(()=>receiptCameraRef.current?.click(),60))},[cameraRequest]);
  const members=state.members.slice(0,state.profile.householdSize);
  const currentMember=members.find(m=>m.id===deviceMemberId)||members[0];
  const requestedBy=currentMember?.name||"Tú";
@@ -1653,6 +1683,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   }
   value=value.replace(/^de\s+/i,"").trim();
   if(!value)return;
+  if(suspiciousRepeatedText(value)){setToast("Revisa el nombre del producto antes de añadirlo");return}
   const productProfile=classifyProduct(value);
   const name=value;
   setState(s=>{
