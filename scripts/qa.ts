@@ -4,7 +4,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
-import { recipeShortages, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
+import { freeInventoryAfterReservations, recipeShortages, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
@@ -116,6 +116,12 @@ const sourceTotal=sumSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:
 assert(sourceTotal===1.5,"shopping sources should merge compatible recipe and manual quantities");
 const remainingSources=removePlanFromSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"p1");
 assert(remainingSources.length===1&&remainingSources[0].type==="manual","cancelling a recipe must preserve manual shopping demand");
+const reservedMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"]);
+assert(reservedMilk[0].qty===0.5,"general suggestions must not spend milk reserved for a recipe");
+const ownerMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"],"p1");
+assert(ownerMilk[0].qty===1,"the owning recipe must see its own reserved ingredient");
+const mixedReservations=freeInventoryAfterReservations([{name:"Huevos",qty:6,unit:"ud",category:"Lácteos",stock:"hay",planReservations:[{id:"a",type:"recipe",label:"A",qty:2,unit:"ud",planId:"p1"},{id:"b",type:"recipe",label:"B",qty:3,unit:"ud",planId:"p2"}]}],["p1","p2"],"p1");
+assert(mixedReservations[0].qty===3,"a recipe may use its own reservation but must respect another recipe reservation");
 
 
 console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 14/14");
