@@ -247,8 +247,16 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  for(let i=1;i<purchases.length;i++)intervals.push((purchases[i]-purchases[i-1])/86400000);
  const learned=intervals.length>=2?median(intervals):0;
  const rotation=classifyProduct(item.name,item.category).rotation;
- let expected=learned||(rotation==="alta"?8:rotation==="media"?20:60);
- if(item.location==="Congelador")expected=learned?Math.max(learned,30):120;
+ const cycleDays={diaria:3,semanal:7,quincenal:14,mensual:30,mixta:10}[state.profile.shoppingCycle]||7;
+ const activeMembers=state.members.slice(0,state.profile.householdSize);
+ const presenceWeight:Record<Member["presence"],number>={casa:1,fuera_dia:.65,fines_semana:.38,variable:.65};
+ const appetiteWeight:Record<Member["appetite"],number>={poco:.82,normal:1,mucho:1.22};
+ const demand=Math.max(.55,activeMembers.reduce((sum,m)=>sum+presenceWeight[m.presence]*appetiteWeight[m.appetite],0));
+ const baseline=Math.max(1.2,state.profile.householdSize*.68);
+ const demandFactor=Math.max(.7,Math.min(1.45,demand/baseline));
+ let expected=learned||(rotation==="alta"?cycleDays:rotation==="media"?cycleDays*2.4:cycleDays*7);
+ if(!learned)expected/=demandFactor;
+ if(item.location==="Congelador")expected=learned?Math.max(learned,30):Math.max(90,cycleDays*10);
  else if(item.location==="Despensa")expected*=1.35;
  if(["Suplementos","Limpieza y hogar","Higiene y cuidado"].includes(item.category))expected*=1.6;
  const start=item.frozenAt||item.purchasedAt;
@@ -259,7 +267,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.stock==="mucho")prob=Math.max(prob,.9);
  const label=prob>=.78?(age<=2?"Hay":"Probablemente hay"):prob>=.42?"Revisar":"Probablemente falta";
  const tone=prob>=.78?"hay":prob>=.42?"incierto":"falta";
- const basis=learned?"Aprende de una reposición típica de ~"+Math.max(1,Math.round(expected))+" días":"Estimación inicial · mejorará con tus compras";
+ const basis=learned?"Aprende de una reposición típica de ~"+Math.max(1,Math.round(expected))+" días":"Estimación inicial según hogar y ritmo de compra · mejorará con tus tickets";
  return {prob,label,tone,basis};
 }
 
