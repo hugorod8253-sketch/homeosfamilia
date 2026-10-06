@@ -118,3 +118,18 @@ export function shelfLifeBandFromReference(name:string):"corta"|"media"|"larga"|
  if(days<=180)return "media";
  return "larga";
 }
+
+export function estimateShelfLifeFromReference(name:string,purchasedAt:string){
+ const sample=shelfLifeSample(name);
+ const days=shelfLifeReferenceDays(name);
+ if(!sample||days==null||sample.confidence==="dudosa")return null;
+ const base=new Date(purchasedAt+"T12:00:00");
+ if(Number.isNaN(base.getTime()))return null;
+ base.setDate(base.getDate()+days);
+ return {
+  date:base.toISOString().slice(0,10),
+  kind:sample.kind==="caducidad"?"caducidad" as const:"preferente" as const,
+  confidence:sample.confidence,
+  basis:"Estimación orientativa basada en una referencia real observada en tienda; manda siempre la fecha del envase."
+ };
+}
