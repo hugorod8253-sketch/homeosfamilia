@@ -484,9 +484,9 @@ export default function HomeOS(){
     const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed));
     if(idx>=0){
-     inventory[idx]={...inventory[idx],category,subcategory:profile.subcategory,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore||inventory[idx].supermarket,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined}:{})};
+     inventory[idx]={...inventory[idx],category,subcategory:profile.subcategory,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:inventory[idx].price,supermarket:x.supermarket||activeStore||inventory[idx].supermarket,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined}:{})};
     }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,supermarket:x.supermarket||activeStore,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:{})});
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:{})});
     }
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
@@ -501,7 +501,8 @@ export default function HomeOS(){
      subcategory:p.subcategory,
      date:today,
      supermarket:x.supermarket||activeStore||undefined,
-     requestedBy:x.requestedBy
+     requestedBy:x.requestedBy,
+     price:x.price
     };
    })].slice(-600);
    return {...s,inventory,purchaseHistory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
