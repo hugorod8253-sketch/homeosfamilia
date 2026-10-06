@@ -592,3 +592,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .reuse-output{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:10px;background:#f4f6f4;border-radius:11px;padding:10px 11px}.reuse-output span{font-size:8px;color:#78827b;font-weight:800}.reuse-output strong{font-size:10px}
 @media(max-width:1050px){.reuse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reuse-priority-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.eat-tabs{overflow:auto;flex-wrap:nowrap}.eat-tabs button{flex:none}.reuse-hero{padding:14px}.reuse-grid,.reuse-priority-grid{grid-template-columns:1fr}.reuse-card{min-height:0}.reuse-modal-grid{grid-template-columns:1fr}.reuse-output{align-items:flex-start;flex-direction:column}}
+
+.date-alert.reserve{background:#edf0fb;color:#5d628f;border-color:#daddf0}
+.date-alert.quality{background:#fff4df;color:#8b6a31;border-color:#edddb9}
+.learn-location{gap:8px!important}
+.learn-location label{display:grid;gap:5px}
+.learn-location label>span{font-size:8px;letter-spacing:.04em;font-weight:850;color:#7f8982}
+.learn-location label+label{padding-top:7px;border-top:1px solid #f0f2f0}
