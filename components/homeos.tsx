@@ -815,7 +815,34 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  });
  const weeklySlots=weeklyPlan?.slots||[];
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
- const weeklyMissing=weeklyRecipes.flatMap(x=>missing(x.recipe,state.inventory).map(i=>({...i,recipeTitle:x.recipe.title})));
+ const weeklyNeedMap=new Map<string,{name:string;key:string;amountBase:number;unit:string;family:string}>();
+ for(const {recipe:r} of weeklyRecipes){
+  for(const ing of r.ingredients){
+   const parsed=parseQty(ing.qty);
+   if(!parsed)continue;
+   const family=unitFamily(parsed.unit);
+   const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
+   const key=canonical+"|"+family+"|"+(family==="count"?normalizedUnit(parsed.unit):"");
+   const base=toBase(parsed.amount,parsed.unit);
+   const prev=weeklyNeedMap.get(key);
+   if(prev)prev.amountBase+=base;
+   else weeklyNeedMap.set(key,{name:ing.name,key:ing.key,amountBase:base,unit:parsed.unit,family});
+  }
+ }
+ const weeklyMissing=[...weeklyNeedMap.values()].map(need=>{
+  const candidates=state.inventory.filter(i=>productMatchesNeed(i,need.key)&&usableInventoryItem(i));
+  let availableBase=0;
+  for(const i of candidates){
+   const itemFamily=unitFamily(i.unit);
+   if(itemFamily!==need.family)continue;
+   if(need.family==="count"&&normalizedUnit(need.unit)!=="ud"&&normalizedUnit(i.unit)!==normalizedUnit(need.unit))continue;
+   availableBase+=toBase(Math.max(0,i.qty),i.unit);
+  }
+  const shortBase=Math.max(0,need.amountBase-availableBase);
+  if(shortBase<=0)return null;
+  const amount=Math.round(fromBase(shortBase,need.unit)*100)/100;
+  return {name:need.name,key:need.key,qty:String(amount)+" "+need.unit};
+ }).filter(Boolean) as RecipeIngredient[];
 
  function generateWeek(){
   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
