@@ -9,29 +9,42 @@ export type LocalAiRecipe={
  tools:string[];
 };
 
-const MODEL_ID="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+const DESKTOP_MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+const MOBILE_MODEL="SmolLM2-360M-Instruct-q4f16_1-MLC";
 let enginePromise:Promise<any>|null=null;
+let activeModel="";
 
 export function localAiSupported(){
  if(typeof window==="undefined")return false;
- return "gpu" in navigator;
+ return "gpu" in navigator && Boolean((navigator as any).gpu);
+}
+export function preferredLocalAiModel(){
+ if(typeof window==="undefined")return DESKTOP_MODEL;
+ const mobile=/iphone|ipad|ipod|android/i.test(navigator.userAgent)||window.innerWidth<820;
+ return mobile?MOBILE_MODEL:DESKTOP_MODEL;
 }
 
+async function createEngine(modelId:string,onProgress?:(p:LocalAiProgress)=>void){
+ const webllm=await import("@mlc-ai/web-llm");
+ return webllm.CreateMLCEngine(modelId,{
+  initProgressCallback:(report:any)=>{
+   const p=typeof report?.progress==="number"?Math.round(report.progress*100):0;
+   onProgress?.({progress:p,text:report?.text||"Preparando IA local"});
+  },
+  logLevel:"WARN"
+ },{context_window_size:2048});
+}
 async function getEngine(onProgress?:(p:LocalAiProgress)=>void){
  if(!localAiSupported())throw new Error("webgpu_unavailable");
- if(!enginePromise){
-  enginePromise=(async()=>{
-   const webllm=await import("@mlc-ai/web-llm");
-   return webllm.CreateMLCEngine(MODEL_ID,{
-    initProgressCallback:(report:any)=>{
-     const p=typeof report?.progress==="number"?Math.round(report.progress*100):0;
-     onProgress?.({progress:p,text:report?.text||"Preparando IA local"});
-    },
-    logLevel:"WARN"
-   },{context_window_size:2048});
-  })();
- }
- return enginePromise;
+ const preferred=preferredLocalAiModel();
+ if(enginePromise&&activeModel===preferred)return enginePromise;
+ activeModel=preferred;
+ enginePromise=createEngine(preferred,onProgress).catch(async()=>{
+  if(preferred===MOBILE_MODEL){enginePromise=null;activeModel="";throw new Error("model_load_failed")}
+  activeModel=MOBILE_MODEL;
+  return createEngine(MOBILE_MODEL,onProgress);
+ });
+ try{return await enginePromise}catch(err){enginePromise=null;activeModel="";throw err}
 }
 
 function extractJson(text:string){
@@ -56,13 +69,20 @@ export async function generateLocalRecipes(input:{
  const tools=input.tools.join(", ")||"equipamiento no indicado";
  const system="Eres el asistente culinario local de HomeOS Familia. Responde SOLO con un array JSON válido de 3 recetas. No uses markdown. No inventes que un alimento caducado o estropeado es seguro. Si un ingrediente no aparece en inventario pero el usuario afirma explícitamente que lo tiene en su petición, trátalo como disponible para esta consulta. Prioriza aprovechar lo que hay en casa y reducir compras. Mantén recetas domésticas realistas para España. No des consejos médicos ni nutricionales. Cada receta debe tener: title, description, time (minutos, entero), servings (entero), ingredients [{name,qty,key}], steps [strings], tools [strings]. Las cantidades deben ser razonables y los pasos breves.";
  const user="Petición: "+(input.request||"Dame ideas para comer con lo que tengo")+"\nPersonas: "+input.people+"\nModo: "+input.mode+"\nInventario conocido: "+inventory+"\nNo gusta / evitar: "+dislikes+"\nEquipamiento disponible: "+tools+"\nGenera 3 opciones distintas.";
- const reply=await engine.chat.completions.create({
-  messages:[{role:"system",content:system},{role:"user",content:user}],
-  temperature:.45,
-  max_tokens:900
- });
- const raw=reply?.choices?.[0]?.message?.content||"";
- const parsed=extractJson(raw);
+ let parsed:any=null;
+ let lastRaw="";
+ for(let attempt=0;attempt<2;attempt++){
+  const reply=await engine.chat.completions.create({
+   messages:[
+    {role:"system",content:system+(attempt?" IMPORTANTE: tu respuesta anterior no fue JSON válido. Devuelve únicamente el array JSON, sin texto antes ni después.":"")},
+    {role:"user",content:user}
+   ],
+   temperature:attempt?0.15:.35,
+   max_tokens:900
+  });
+  lastRaw=reply?.choices?.[0]?.message?.content||"";
+  try{parsed=extractJson(lastRaw);if(Array.isArray(parsed))break}catch{}
+ }
  if(!Array.isArray(parsed))throw new Error("bad_json");
  return parsed.slice(0,3).map((r:any,i:number)=>({
   title:String(r?.title||("Idea "+(i+1))).slice(0,80),
@@ -79,4 +99,5 @@ export async function generateLocalRecipes(input:{
  }));
 }
 
-export const LOCAL_AI_MODEL=MODEL_ID;
+export const LOCAL_AI_MODEL=DESKTOP_MODEL;
+export const LOCAL_AI_MOBILE_MODEL=MOBILE_MODEL;
