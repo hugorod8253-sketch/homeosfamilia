@@ -7,7 +7,7 @@ import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reu
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
-import { shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
+import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
@@ -20,7 +20,7 @@ type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 type InventoryItem = {
   id:string; name:string; qty:number; unit:string; location:Location; category:string; subcategory?:string;
   stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
-  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string;
+  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string;
 };
 type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
@@ -90,7 +90,7 @@ function normalizeState(x:any):AppState{
  const needsProductMigration=(Number(raw.productEngineVersion)||0)<1;
  const baseInventory=(raw.inventory||DEFAULT.inventory) as InventoryItem[];
  const baseShopping=(raw.shopping||DEFAULT.shopping) as ShoppingItem[];
- const inventory=needsProductMigration?baseInventory.map(i=>{
+ const migratedInventory=needsProductMigration?baseInventory.map(i=>{
   const p=classifyProduct(i.name,i.category);
   const pref=productPreferences[p.canonical]||{};
   const category=pref.category||p.category;
@@ -98,6 +98,11 @@ function normalizeState(x:any):AppState{
   const location=preserveFrozen?i.location:recommendedLocation(i.name,category,pref.location) as Location;
   return {...i,category,subcategory:i.subcategory||p.subcategory,location};
  }):baseInventory;
+ const inventory=migratedInventory.map(i=>{
+  if(i.expires||i.estimatedExpires||i.location==="Congelador"||!i.purchasedAt)return i;
+  const estimated=estimateShelfLifeFromReference(i.name,i.purchasedAt);
+  return estimated?{...i,estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:i;
+ });
  const shopping=needsProductMigration?baseShopping.map(i=>{
   const p=classifyProduct(i.name,i.category);
   const pref=productPreferences[p.canonical]||{};
@@ -544,11 +549,14 @@ export default function HomeOS(){
     const guide=reserveAllowed?freezerQualityGuide(x.name,category,profile.subcategory):null;
     const frozenAt=reserveAllowed?today:undefined;
     const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
+    const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed));
     if(idx>=0){
-     inventory[idx]={...inventory[idx],category,subcategory:profile.subcategory,qty:Math.max(0,inventory[idx].qty)+x.qty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:inventory[idx].price,supermarket:x.supermarket||activeStore||inventory[idx].supermarket,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined}:{})};
+     const current=inventory[idx];
+     const estimatedExpires=current.expires?current.estimatedExpires:(current.estimatedExpires&&estimated?.date?(current.estimatedExpires<estimated.date?current.estimatedExpires:estimated.date):(current.estimatedExpires||estimated?.date));
+     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+x.qty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
     }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:{})});
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
     }
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
@@ -853,7 +861,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  function generateWeek(){
   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
   const inventory=state.inventory.filter(usableInventoryItem).map(i=>i.name);
-  const plan=buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize});
+  const priority=state.inventory.filter(usableInventoryItem).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
+  const plan=buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority});
   setState(s=>({...s,weeklyMenu:plan}));
   setToast("Menú semanal preparado con lo que hay en casa");
  }
@@ -1481,7 +1490,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
     <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
     <div className="inventory-name-row"><h3>{i.name}</h3><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>
     <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}{density==="detail"&&<small className="estimate-basis">{estimate.basis}</small>}</p>
-    <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
+    <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{!i.expires&&i.estimatedExpires&&<small className="date-alert estimate" title={i.estimateBasis}>≈ {i.estimatedDateType==="caducidad"?"Caducidad":"Consumo pref."} {new Date(i.estimatedExpires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · revisa envase</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}
     <div className="inventory-actions">{i.stock!=="falta"&&<button className="action-out" onClick={()=>setStock(i.id,"falta")}><span>🔴</span> Se acabó</button>}{i.stock!=="falta"&&<button className="action-low" onClick={()=>setStock(i.id,"poco")}><span>🟡</span> Queda poco</button>}{estimate.tone==="incierto"&&i.stock!=="falta"&&<button className="action-confirm" onClick={()=>confirmStillHere(i.id)}>✓ Sigue aquí</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button className="action-freeze" onClick={()=>freeze(i.id)}>🧊 Congelar</button>}{i.stock==="falta"&&<button className="action-buy" onClick={()=>addToBuy(i)}>🛒 Comprar</button>}{i.category==="Preparados"&&i.stock!=="falta"&&<button className="action-eat" onClick={()=>eatPrepared(i)}>🍽 Comer 1</button>}{i.stock!=="falta"&&<button className="recipe-from-product" onClick={()=>openRecipes(i.name)}>🍴 Hacer receta</button>}{density==="detail"&&i.stock!=="falta"&&<button className="discard-product" onClick={()=>discardProduct(i)}>Tirar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
    </article>
