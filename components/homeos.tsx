@@ -148,7 +148,7 @@ function withShoppingSources(i:ShoppingItem,sources:ShoppingSource[]):ShoppingIt
  if(!positive.length)return null;
  const qty=sumSources(positive,i.unit);
  if(qty<=0)return null;
- const recipeIds=[...new Set(positive.filter(x=>x.planId).map(x=>x.planId!))];
+ const recipeIds=[...new Set(positive.filter(x=>x.type==="recipe"&&x.planId).map(x=>x.planId!))];
  return {...i,qty,sources:positive,recipePlanIds:recipeIds,recipePlanId:recipeIds[0],reason:positive.some(x=>x.type==="recipe")?"receta":positive.some(x=>x.type==="weekly")?"receta":positive.some(x=>x.type==="restock")?"recomienda":"persona"};
 }
 function cleanPlanReservations(item:InventoryItem,planId:string){
@@ -728,7 +728,13 @@ export default function HomeOS(){
     if(idx>=0){
      const current=inventory[idx];
      const estimatedExpires=current.expires?current.estimatedExpires:(current.estimatedExpires&&estimated?.date?(current.estimatedExpires<estimated.date?current.estimatedExpires:estimated.date):(current.estimatedExpires||estimated?.date));
-     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:[...(current.planReservations||[]).filter(r=>!planReservations.some(n=>n.id===r.id)),...planReservations],...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
+     const mergedPlanReservations=[...(current.planReservations||[])];
+     for(const incoming of planReservations){
+      const ri=mergedPlanReservations.findIndex(r=>r.id===incoming.id);
+      if(ri>=0)mergedPlanReservations[ri]={...mergedPlanReservations[ri],qty:Math.round((mergedPlanReservations[ri].qty+incoming.qty)*100)/100};
+      else mergedPlanReservations.push(incoming);
+     }
+     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:mergedPlanReservations.length?mergedPlanReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
     }else{
      inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:buyQty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
     }
@@ -1466,7 +1472,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   return inventoryEstimate(state,i).prob<.32;
  }).slice(0,8);
  const pendingRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).filter(p=>p.missing.length>0);
- const recipeShoppingItems=state.shopping.filter(i=>i.status==="pendiente"&&Boolean(i.recipePlanIds?.length||i.recipePlanId)).length;
+ const recipeShoppingItems=state.shopping.filter(i=>i.status==="pendiente"&&shoppingSources(i).some(src=>src.type==="recipe")).length;
 
 
  function addOne(rawInput:string){
