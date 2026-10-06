@@ -9,7 +9,7 @@ import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
-import { planUnitFamily, recipeShortages, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
+import { freeInventoryAfterReservations, planUnitFamily, recipeShortages, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -156,6 +156,10 @@ function cleanPlanReservations(item:InventoryItem,planId:string){
  return {...item,planReservations:planReservations.length?planReservations:undefined};
 }
 function score(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.length-missing(recipe,inv).length}
+function planningInventory(state:AppState,exceptPlanId?:string){
+ const active=[...state.recipePlans.filter(p=>p.status==="saved").map(p=>p.id),...(state.weeklyMenu?[state.weeklyMenu.id]:[])];
+ return freeInventoryAfterReservations(state.inventory.filter(usableInventoryItem),active,exceptPlanId) as InventoryItem[];
+}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
 function inferCategory(name:string){return classifyProduct(name).category}
 function inferUnit(name:string){
@@ -402,7 +406,7 @@ export default function HomeOS(){
  useEffect(()=>{stateRef.current=state},[state]);
  useEffect(()=>{
   if(!hydrated)return;
-  const readyNow=new Set(state.recipePlans.filter(p=>p.status==="saved"&&missing(p.recipe,state.inventory).length===0).map(p=>p.id));
+  const readyNow=new Set(state.recipePlans.filter(p=>p.status==="saved"&&missing(p.recipe,planningInventory(state,p.id)).length===0).map(p=>p.id));
   if(!readyPlansInitializedRef.current){readyPlansRef.current=readyNow;readyPlansInitializedRef.current=true;return}
   const newlyReady=state.recipePlans.filter(p=>readyNow.has(p.id)&&!readyPlansRef.current.has(p.id));
   readyPlansRef.current=readyNow;
@@ -584,7 +588,7 @@ export default function HomeOS(){
  function addFromRecipe(recipe:Recipe,plannedFor?:string){
   setState(s=>{
    const saved=ensureRecipePlan(s,recipe,plannedFor);
-   const shortages=recipeShortages(recipe.ingredients,s.inventory.filter(usableInventoryItem));
+   const shortages=recipeShortages(recipe.ingredients,planningInventory(s,saved.planId));
    let shopping=[...s.shopping];
    for(const shortage of shortages){
     const unit=shortage.unit||inferUnit(shortage.name);
@@ -613,7 +617,8 @@ export default function HomeOS(){
    });
    return {...s,recipePlans:saved.plans,shopping};
   });
-  const currentShortages=recipeShortages(recipe.ingredients,state.inventory.filter(usableInventoryItem));
+  const currentPlan=state.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===recipe.id);
+  const currentShortages=recipeShortages(recipe.ingredients,planningInventory(state,currentPlan?.id));
   setToast(currentShortages.length?recipe.title+" guardada · Comprar se ha ajustado a lo que realmente falta":"Receta guardada · ya tienes todo para hacerla");
  }
  function cancelRecipePlan(planId:string){
@@ -752,7 +757,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const reserveDue=state.inventory.filter(i=>i.storageMode==="reserva"&&i.qualityReviewAt&&daysUntil(i.qualityReviewAt)<=0);
  const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"—";
  const peopleAtHome=state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="casa").length;
- const savedRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,state.inventory)})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
+ const savedRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
  const readyRecipePlans=savedRecipePlans.filter(p=>p.missing.length===0);
  const nextRecipePlan=savedRecipePlans[0];
  return <section className="stack">
@@ -913,7 +918,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   return points;
  };
  const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
- const missingForQuery=(r:Recipe)=>missing(r,state.inventory).filter(ing=>!confirmedForQuery(ing));
+ const missingForQuery=(r:Recipe)=>missing(r,planningInventory(state)).filter(ing=>!confirmedForQuery(ing));
  const miss=missingForQuery(recipe);
  const cravingMatches=craving.trim()?allRecipes.map(r=>{
   const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
@@ -947,7 +952,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
  const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
  const preferenceMembers=state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes.trim());
- const savedPlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,state.inventory)})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
+ const savedPlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
  const weeklyPlan=state.weeklyMenu;
  const weekStart=weeklyPlan?.startDate||weeklyPlan?.createdAt||new Date().toISOString().slice(0,10);
  const weekDates=Array.from({length:7},(_,i)=>{
@@ -1168,7 +1173,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
 
    <div className="ingredient-summary clearer"><article><small>YA TIENES EN CASA</small><strong>{recipe.ingredients.length-miss.length} de {recipe.ingredients.length}</strong>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>NECESITAS PARA COMPLETARLA</small><strong>{miss.length?String(miss.length)+" ingredientes":"Nada"}</strong>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>✓ Está todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>{miss.length?"Guardar receta + añadir faltantes":"Ya tienes todo"}</button></article></div>
 
-   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Qué quieres gastar antes?</h3><p>Escribe un producto que tengas de sobra y te mostramos recetas donde realmente se usa.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" por completar":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
+   <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Qué quieres gastar antes?</h3><p>Escribe un producto que tengas de sobra y te mostramos recetas donde realmente se usa.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,planningInventory(state)).length?String(missing(r,planningInventory(state)).length)+" por completar":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
   </>:tab==="aprovechar"?<>
    <article className="reuse-hero"><div><small>APROVECHAMIENTO INTELIGENTE</small><h3>Ideas para gastar, transformar y no tirar</h3><p>Dilo por voz si quieres: “tengo leche y yogur y quiero usar los dos”. Los ingredientes que confirmas tú mandan sobre una estimación antigua del inventario.</p><div className="reuse-query"><input value={craving} onChange={e=>setCraving(e.target.value)} placeholder="Ej. tengo tomates y queso y quiero gastar ambos"/><button className={mealListening?"meal-mic listening":"meal-mic"} onClick={startMealVoice}>{mealListening?"…":micIcon()}</button></div>{mentionedProducts.length>0&&<div className="meal-confirmed-products">{mentionedProducts.map(p=><span key={p.canonical}>✓ {p.canonical}</span>)}</div>}</div><span>♻️</span></article>
 
@@ -1188,7 +1193,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
     return <article className="weekly-day" key={day.iso}><div className="weekly-day-head"><span>{dayIndex+1}</span><div><strong>{day.label.charAt(0).toUpperCase()+day.label.slice(1)}</strong><small>{day.date}</small></div></div>{dayEvents.length>0&&<div className="weekly-event-note">📅 {dayEvents.map(e=>e.title).join(" · ")}</div>}{["Comida","Cena"].map(meal=>{
      const slot=daySlots.find(s=>s.meal===meal);
      const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
-     return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<button onClick={()=>openWeekRecipe(r)}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><b>{r.title}</b><em>{r.time} min · {missing(r,state.inventory).length?missing(r,state.inventory).length+" por completar":"encaja con Casa"}</em></div><strong>›</strong></button>:<p>Sin propuesta</p>}{slot?.why&&<i>{slot.why}</i>}</div>
+     return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<button onClick={()=>openWeekRecipe(r)}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><b>{r.title}</b><em>{r.time} min · {missing(r,planningInventory(state)).length?missing(r,planningInventory(state)).length+" por completar":"encaja con Casa"}</em></div><strong>›</strong></button>:<p>Sin propuesta</p>}{slot?.why&&<i>{slot.why}</i>}</div>
     })}</article>
    })}</div>}
    {weeklyPlan&&<article className="weekly-menu-summary"><div><small>COMPRA DE LA SEMANA</small><h3>{weeklyMissing.length?weeklyMissing.length+" ingredientes por completar":"Tienes lo necesario"}</h3><p>HomeOS calcula los faltantes contra Casa. Los productos repetidos se agrupan al enviarlos a Comprar.</p></div><button disabled={!weeklyMissing.length} onClick={addWeekMissing}>🛒 Pasar faltantes a Comprar</button></article>}
@@ -1363,7 +1368,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente"))return false;
   return inventoryEstimate(state,i).prob<.32;
  }).slice(0,8);
- const pendingRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,state.inventory)})).filter(p=>p.missing.length>0);
+ const pendingRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).filter(p=>p.missing.length>0);
  const recipeShoppingItems=state.shopping.filter(i=>i.status==="pendiente"&&Boolean(i.recipePlanIds?.length||i.recipePlanId)).length;
 
 
