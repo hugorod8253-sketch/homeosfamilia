@@ -228,6 +228,31 @@ const RULES:Rule[]=[
 /* Specific supermarket references checked before the broad family rules.
    Brand/flavour variants collapse into these household-level product types. */
 const EXTRA_RULES:Rule[]=[
+ // More common supermarket products and modern plant-based ranges
+ P("burrata",/\bburrata\b/,"Lácteos","Queso fresco","Nevera","alta","mozzarella-ball","cold-required"),
+ P("provolone",/\bprovolone\b/,"Lácteos","Queso","Nevera","media","cheese","cold-required"),
+ P("raclette",/\braclette\b/,"Lácteos","Queso","Nevera","media","cheese","cold-required"),
+ P("kale",/\bkale\b|col\s+rizada/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
+ P("pak choi",/pak\s*choi|bok\s*choy/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
+ P("yuca",/\byuca\b|mandioca/,"Fruta y verdura","Verdura","Despensa","media","potato","flex"),
+ P("chirivía",/chirivia/,"Fruta y verdura","Verdura","Nevera","media","carrot","flex"),
+ P("nabo",/\bnabo\b|nabos/,"Fruta y verdura","Verdura","Nevera","media","turnip","flex"),
+ P("edamame",/\bedamame\b/,"Congelados","Legumbre congelada","Congelador","baja","frozen-vegetables","frozen"),
+ P("kimchi",/\bkimchi\b/,"Preparados","Fermentado","Nevera","media","prepared","cold-required"),
+ P("kombucha",/\bkombucha\b/,"Bebidas","Fermentada","Nevera","media","drink","cold-required"),
+ P("tahini",/\btahini\b|pasta\s+de\s+sesamo/,"Despensa","Untable","Despensa","baja","pantry","shelf"),
+ P("semillas de chía",/chia/,"Despensa","Semillas","Despensa","baja","grain","shelf"),
+ P("semillas de lino",/semillas.*lino|linaza/,"Despensa","Semillas","Despensa","baja","grain","shelf"),
+ P("soja texturizada",/soja.*texturiz|proteina.*vegetal.*texturiz/,"Despensa","Proteína vegetal","Despensa","baja","pantry","shelf"),
+ P("hamburguesa vegetal",/(hamburguesa|burger).*(vegetal|vegana|veggie|plant)/,"Preparados","Proteína vegetal","Nevera","media","burger-patty","cold-required"),
+ P("salchicha vegetal",/salchicha.*(vegetal|vegana|veggie|plant)/,"Preparados","Proteína vegetal","Nevera","media","sausage-fresh","cold-required"),
+ P("proteína vegetal preparada",/\bheura\b|bocados.*vegetales|tiras.*vegetales/,"Preparados","Proteína vegetal","Nevera","media","seitan","cold-required"),
+ P("leche evaporada",/leche.*evaporada/,"Despensa","Lácteo en conserva","Despensa","baja","milk-carton","shelf"),
+ P("leche condensada",/leche.*condensada/,"Despensa","Repostería","Despensa","baja","milk-carton","shelf"),
+ P("focaccia",/\bfocaccia\b/,"Despensa","Panadería","Despensa","alta","bread","shelf"),
+ P("pan de pita",/pan.*pita|\bpita\b/,"Despensa","Panadería","Despensa","media","bread","shelf"),
+ P("sriracha",/\bsriracha\b/,"Despensa","Salsas","Despensa","baja","bbq-sauce","shelf"),
+
  // High-priority compound names that must beat broad family matches
  P("pan de hamburguesa",/pan.*hamburguesa|burger\s+bun|brioche.*hamburguesa/,"Despensa","Panadería","Despensa","alta","burger-bun","shelf"),
  P("chocolate con almendras",/chocolate.*almendra/,"Snacks y dulces","Chocolate","Despensa","baja","chocolate-almond","shelf"),
