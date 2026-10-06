@@ -1038,8 +1038,8 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  }).slice(0,8);
 
 
- function add(input=quick){
-  let value=input.trim();if(!value)return;
+ function addOne(rawInput:string){
+  let value=normalizeSpokenShoppingText(rawInput.trim());if(!value)return;
   let supermarket:string|undefined;
   const lower=norm(value);
   for(const s of state.profile.supermarkets){
@@ -1048,25 +1048,30 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
    }
   }
   let qty=1,unit=inferUnit(value);
-  const m=value.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|uds?|unidades?|rollos?|packs?|paquetes?|bricks?)/i);
+  const m=value.match(/(\d+(?:[.,]\d+)?)\s*(kg|kilos?|g|gramos?|l|litros?|ml|mililitros?|uds?|unidades?|rollos?|packs?|paquetes?|bricks?)/i);
   if(m){
    qty=Number(m[1].replace(",","."))||1;
    const raw=m[2].toLowerCase();
-   unit=raw==="l"?"L":raw.startsWith("ud")||raw.startsWith("unidad")?"uds":raw.startsWith("rollo")?"rollos":raw.startsWith("brick")?"bricks":raw.startsWith("pack")||raw.startsWith("paquete")?"pack":raw;
+   unit=raw==="l"||raw.startsWith("litro")?"L":raw==="kg"||raw.startsWith("kilo")?"kg":raw==="g"||raw.startsWith("gramo")?"g":raw==="ml"||raw.startsWith("mililitro")?"ml":raw.startsWith("ud")||raw.startsWith("unidad")?"uds":raw.startsWith("rollo")?"rollos":raw.startsWith("brick")?"bricks":raw.startsWith("pack")||raw.startsWith("paquete")?"pack":raw;
    value=value.replace(m[0]," ").replace(/\s+/g," ").trim();
   }
+  value=value.replace(/^de\s+/i,"").trim();
+  if(!value)return;
   const productProfile=classifyProduct(value);
-  const category=productProfile.category;
-  const subcategory=productProfile.subcategory;
-  const name=(value||quick.trim()).replace(/^de\s+/i,"").trim();
+  const name=value;
   setState(s=>{
    const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente");
-   if(duplicate)return {...s,shopping:s.shopping.map(i=>i.id===duplicate.id?{...i,qty:i.qty+qty}:i)};
-   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category,subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
+   if(duplicate)return {...s,shopping:s.shopping.map(i=>i.id===duplicate.id?{...i,qty:Math.round((i.qty+qty)*100)/100}:i)};
+   return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category:productProfile.category,subcategory:productProfile.subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
   });
-  setQuick("");
  }
- function startShoppingVoice(){
+ function add(input=quick){
+  const entries=splitShoppingEntries(input);
+  if(!entries.length)return;
+  entries.forEach(addOne);
+  setQuick("");
+  if(entries.length>1)setToast(entries.length+" productos añadidos");
+ } function startShoppingVoice(){
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
   const recognition=new W();
