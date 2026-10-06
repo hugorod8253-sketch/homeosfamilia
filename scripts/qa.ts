@@ -121,6 +121,12 @@ const threeMealPlan=buildWeeklyMenu([
 ],{inventory:[],dislikes:[],tools:[],people:2,dailyCalories:2000,balancedGoal:true});
 assert(threeMealPlan.slots.length===21,"three-meal weekly planning should fill all 21 moments");
 assert(threeMealPlan.slots.filter(x=>x.meal==="Desayuno").every(x=>x.recipeId==="breakfast"),"breakfast slots should prefer breakfast-like recipes when available");
+const defaultCaloriePlan=buildWeeklyMenu([
+ {id:"breakfast-ref",title:"Avena con fruta",time:8,servings:2,calories:500,protein:16,ingredients:[{name:"Avena",qty:"100 g",key:"avena"}],mode:["rapido"]},
+ {id:"lunch-ref",title:"Pollo con arroz y verduras",time:30,servings:2,calories:800,protein:40,ingredients:[{name:"Pollo",qty:"300 g",key:"pollo"},{name:"Arroz",qty:"160 g",key:"arroz"}],mode:["normal"]},
+ {id:"dinner-ref",title:"Pescado con verduras",time:20,servings:2,calories:700,protein:35,ingredients:[{name:"Pescado",qty:"300 g",key:"pescado"},{name:"Verduras",qty:"250 g",key:"verdura"}],mode:["normal"]}
+],{inventory:[],dislikes:[],tools:[],people:1,balancedGoal:true});
+assert(defaultCaloriePlan.slots.length===21,"weekly menu should still use a calorie reference when the user does not know their target");
 const savingMenu=buildWeeklyMenu([
  {id:"cheap",title:"Plato sencillo",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]},
  {id:"expensive",title:"Plato premium",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]}
