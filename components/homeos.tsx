@@ -931,7 +931,7 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
      {Array.from({length:days},(_,i)=>i+1).map(d=><button key={d} className={(d===today.getDate()?"today ":"")+(eventDays.has(d)?"has-event":"")} onClick={e=>{e.stopPropagation();onOpen()}}>{d}</button>)}
     </div>
    </div>
-   <div className="home-mini-events">{events.length?events.map(ev=><button key={ev.id} onClick={onOpen}><time>{new Date(ev.date+"T12:00:00").toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</time><span>{ev.title}</span><b>›</b></button>):<button className="empty" onClick={onOpen}>Sin eventos próximos · añadir uno</button>}
+   <div className="home-mini-events">{events.length?events.map(ev=><button key={ev.id} onClick={onOpen}><time>{new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><span>{ev.title}</span><b>›</b></button>):<button className="empty" onClick={onOpen}>Sin eventos próximos · añadir uno</button>}
    </div>
   </div>
   <button className="home-mini-add" onClick={onOpen}>＋ Añadir evento</button>
@@ -1023,7 +1023,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    <article className="home-final-actions">
     <div className="home-card-head"><div><small>ACCESOS RÁPIDOS</small><strong>Hazlo en un toque</strong></div></div>
     <div className="home-final-action-grid">
-     <button onClick={()=>{setView("comer")}}><span>⚡</span><strong>Cenas rápidas</strong></button>
+     <button onClick={()=>openRecipeIdea("Quiero una cena rápida")}><span>⚡</span><strong>Cenas rápidas</strong></button>
      <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong></button>
      <button onClick={scanTicket}><span>▣</span><strong>Escanear ticket</strong></button>
      <button onClick={()=>setView("casa")}><span>⌂</span><strong>Añadir a Casa</strong></button>
