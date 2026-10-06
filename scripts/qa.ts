@@ -6,6 +6,7 @@ import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
 import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
+import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
 import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
@@ -136,8 +137,7 @@ const aiCasaPrompt=buildLocalAiPrompt({request:"Quiero cenar",inventory:["Huevos
 const aiPlanPrompt=buildLocalAiPrompt({request:"Quiero una lasaña",inventory:["Huevos"],people:2,dislikes:[],tools:["Horno"],mode:"normal",scope:"planear"});
 assert(aiCasaPrompt.system.includes("CON LO QUE HAY")&&aiCasaPrompt.system.includes("minimiza ingredientes faltantes"),"Casa AI mode must strongly prefer current inventory");
 assert(aiPlanPrompt.system.includes("PLANIFICANDO")&&aiPlanPrompt.system.includes("puedes incluir ingredientes faltantes"),"planning AI mode must allow sensible missing ingredients");
-const webllm=await import("@mlc-ai/web-llm");
-const webllmModels=new Set((webllm.prebuiltAppConfig?.model_list||[]).map((m:any)=>m.model_id));
+const webllmModels=new Set((prebuiltAppConfig?.model_list||[]).map((m:any)=>m.model_id));
 assert(webllmModels.has(LOCAL_AI_MODEL),"desktop local AI model must exist in installed WebLLM catalog");
 assert(webllmModels.has(LOCAL_AI_MOBILE_MODEL),"mobile local AI model must exist in installed WebLLM catalog");
 const syncBase={shopping:[{id:"a",name:"Leche",qty:1}],profile:{cooking:"rapido"}};
