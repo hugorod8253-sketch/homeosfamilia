@@ -58,27 +58,14 @@ const RECIPES:Recipe[]=[
 ];
 
 const DEFAULT:AppState={
- inventory:[
-  {id:"i1",name:"Leche semidesnatada",qty:3,unit:"L",location:"Despensa",category:"Lácteos",stock:"hay",purchasedAt:"2026-10-01",expires:"2027-02-20",dateType:"preferente",price:3.2},
-  {id:"i2",name:"Yogures naturales",qty:2,unit:"uds",location:"Nevera",category:"Lácteos",stock:"poco",purchasedAt:"2026-10-02",expires:"2026-10-09",dateType:"preferente",price:1.8},
-  {id:"i3",name:"Hamburguesas",qty:4,unit:"uds",location:"Nevera",category:"Carne",stock:"hay",purchasedAt:"2026-10-03",expires:"2026-10-07",dateType:"caducidad",price:5.8},
-  {id:"i4",name:"Queso lonchas",qty:6,unit:"lonchas",location:"Nevera",category:"Lácteos",stock:"hay",purchasedAt:"2026-10-02",expires:"2026-10-12",dateType:"preferente",price:2.4},
-  {id:"i5",name:"Pasta",qty:1,unit:"kg",location:"Despensa",category:"Despensa",stock:"hay",purchasedAt:"2026-09-15",expires:"2027-05-01",dateType:"preferente",price:1.6},
-  {id:"i6",name:"Pollo",qty:600,unit:"g",location:"Congelador",category:"Carne",stock:"hay",purchasedAt:"2026-09-28",price:6.4},
-  {id:"i7",name:"Proteína whey",qty:18,unit:"servicios",location:"Suplementos",category:"Suplementos",stock:"hay",purchasedAt:"2026-09-20",expires:"2027-08-01",dateType:"preferente",price:24},
-  {id:"i8",name:"Pollo con arroz",qty:2,unit:"raciones",location:"Nevera",category:"Preparados",stock:"hay",purchasedAt:"2026-10-05",preparedAt:"2026-10-05",expires:"2026-10-08",dateType:"caducidad",servings:2,source:"sobras"}
- ],
- shopping:[
-  {id:"s1",name:"Tomates",qty:4,unit:"uds",category:"Fruta y verdura",requestedBy:"Casa",reason:"recomienda",status:"pendiente"},
-  {id:"s2",name:"Pan de hamburguesa",qty:1,unit:"pack",category:"Despensa",supermarket:"Mercadona",requestedBy:"Tú",reason:"receta",status:"pendiente"},
-  {id:"s3",name:"Leche semidesnatada",qty:2,unit:"L",category:"Lácteos",supermarket:"Lidl",requestedBy:"Papá",reason:"persona",status:"pendiente"}
- ],
+ inventory:[],
+ shopping:[],
  purchaseHistory:[],
  productPreferences:{},
- members:[{id:"m1",name:"Tú",relation:"Yo",presence:"fines_semana",appetite:"normal",dislikes:"",notes:"Entre semana casi no está en casa."},{id:"m2",name:"Mamá",relation:"Madre",presence:"fuera_dia",appetite:"normal",dislikes:"",notes:"Suele comer fuera y vuelve por la noche."},{id:"m3",name:"Papá",relation:"Padre",presence:"casa",appetite:"normal",dislikes:"",notes:"Hace parte de la compra familiar."},{id:"m4",name:"Hermano",relation:"Hijo",presence:"casa",appetite:"mucho",dislikes:"queso",notes:"Consume bastante comida preparada."}],
- events:[{id:"e1",title:"Navidad",date:"2026-12-25"}],
- budget:800,spent:486.35,waste:18.4,wasteSaved:27.6,productEngineVersion:1,
- profile:{householdSize:4,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goals:["organizar","desperdicio"],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo",kitchenTools:[]}
+ members:[{id:"m1",name:"Tú",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:""}],
+ events:[],
+ budget:0,spent:0,waste:0,wasteSaved:0,productEngineVersion:1,
+ profile:{householdSize:1,supermarkets:[],mainSupermarket:"",goals:[],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo",kitchenTools:[]}
 };
 
 function normalizeState(x:any):AppState{
@@ -462,7 +449,10 @@ export default function HomeOS(){
   if(!miss.length){setToast("Tienes todo para esta receta");return}
   const toAdd=miss.filter(m=>!state.shopping.some(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key))));
   if(!toAdd.length){setToast("Los ingredientes que faltan ya están en la compra");return}
-  setState(s=>({...s,shopping:[...s.shopping,...toAdd.map(m=>({id:crypto.randomUUID(),name:m.name,qty:1,unit:inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const}))]}));
+  setState(s=>({...s,shopping:[...s.shopping,...toAdd.map(m=>{
+   const parsed=parseQty(m.qty);
+   return {id:crypto.randomUUID(),name:m.name,qty:parsed?.amount||1,unit:parsed?.unit||inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Casa",reason:"receta" as const,status:"pendiente" as const};
+  })]}));
   setToast(`${toAdd.length} ingredientes añadidos a la compra`);
  }
 
@@ -476,7 +466,7 @@ export default function HomeOS(){
     const profile=classifyProduct(x.name,x.category);
     const pref=s.productPreferences[profile.canonical]||{};
     const category=pref.category||profile.category;
-    const reserveAllowed=x.reserve&&canStoreAt(x.name,category,"Congelador")&&!["Limpieza y hogar","Higiene y cuidado","Suplementos"].includes(category);
+    const reserveAllowed=x.reserve&&(Boolean(freezerQualityGuide(x.name,category,profile.subcategory))||category==="Carne");
     const location=(reserveAllowed?"Congelador":recommendedLocation(x.name,category,pref.location)) as Location;
     const guide=reserveAllowed?freezerQualityGuide(x.name,category,profile.subcategory):null;
     const frozenAt=reserveAllowed?today:undefined;
@@ -538,6 +528,7 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
  const [joinOpen,setJoinOpen]=useState(false);
  const [joinCode,setJoinCode]=useState("");
  const [joinError,setJoinError]=useState("");
+ const [draftDeviceMemberId,setDraftDeviceMemberId]=useState(deviceMemberId);
  async function joinExisting(){setJoinError("");const ok=await connectHome(joinCode);if(!ok)setJoinError("Código no válido o no se pudo conectar.");}
  const toggleGoal=(g:Goal)=>setState(s=>({...s,profile:{...s.profile,goals:s.profile.goals.includes(g)?s.profile.goals.filter(x=>x!==g):[...s.profile.goals,g]}}));
  const toggleMarket=(m:string)=>setState(s=>({...s,profile:{...s.profile,supermarkets:s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m],mainSupermarket:s.profile.mainSupermarket||m}}));
@@ -817,7 +808,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
    <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(state.inventory,n)?"have":hasNeed(state.inventory,n)?"some":"missing"} key={n.key}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:<Habitos state={state}/>} 
 
-  {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>n+1)}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
+  {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>Math.min(recipe.servings,n+1))}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
   {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={needAvailable(state.inventory,n)?"need-ok":hasNeed(state.inventory,n)?"need-some":"need-missing"}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"cantidad insuficiente":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>needAvailable(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
 
  </section>
@@ -996,7 +987,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
 
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Para una receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}{shoppingActive&&canStoreAt(i.name,i.category,"Congelador")&&!["Limpieza y hogar","Higiene y cuidado","Suplementos"].includes(i.category)&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.qty} {i.unit}</span><small>{i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?"Para una receta":i.requestedBy}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}{shoppingActive&&Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne"&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
 
    <aside className="purchase-tools">
     <div className="ticket-actions">
@@ -1132,6 +1123,9 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
   if(i.category==="Carne")return "Carne y pescado";
   if(i.category==="Fruta y verdura")return i.subcategory==="Fruta"?"Fruta":"Verdura";
   if(i.category==="Lácteos")return "Lácteos";
+  if(i.category==="Bebidas")return "Bebidas";
+  if(i.category==="Snacks y dulces")return "Snacks y dulces";
+  if(i.category==="Higiene y cuidado")return "Higiene y cuidado";
   if(i.category==="Limpieza y hogar")return "Limpieza y hogar";
   if(i.category==="Preparados")return "Preparados";
   if(i.category==="Suplementos")return "Suplementos";
@@ -1186,14 +1180,14 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
  const [joinCode,setJoinCode]=useState("");
  const [joinError,setJoinError]=useState("");
  const members=draft.members.slice(0,draft.profile.householdSize);
- const dirty=JSON.stringify(draft)!==JSON.stringify(state);
+ const dirty=JSON.stringify(draft)!==JSON.stringify(state)||draftDeviceMemberId!==deviceMemberId;
 
  async function joinOther(){setJoinError("");const ok=await connectHome(joinCode);if(ok)close();else setJoinError("No se ha podido conectar con ese hogar.");}
  function updateMember(id:string,patch:Partial<Member>){setDraft(s=>({...s,members:s.members.map(m=>m.id===id?{...m,...patch}:m)}))}
  function toggleTool(tool:string){setDraft(s=>({...s,profile:{...s.profile,kitchenTools:s.profile.kitchenTools.includes(tool)?s.profile.kitchenTools.filter(x=>x!==tool):[...s.profile.kitchenTools,tool]}}))}
  function save(){
-  const validDevice=draft.members.slice(0,draft.profile.householdSize).some(m=>m.id===deviceMemberId);
-  if(!validDevice)setDeviceMemberId(draft.members[0]?.id||"");
+  const validDevice=draft.members.slice(0,draft.profile.householdSize).some(m=>m.id===draftDeviceMemberId);
+  setDeviceMemberId(validDevice?draftDeviceMemberId:(draft.members[0]?.id||""));
   setState({...draft});
   setToast("Hogar guardado");
   close();
@@ -1215,7 +1209,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
     <div className="member-summary"><b>{presenceText(m.presence)}</b><span>{appetiteText(m.appetite)}</span></div>
    </article>)}</div>:<div className="settings-list improved-settings">
     <label><span>Personas del hogar</span><select value={draft.profile.householdSize} onChange={e=>setDraft(s=>{const householdSize=Number(e.target.value);return {...s,profile:{...s.profile,householdSize},members:ensureMembers(s.members,householdSize)}})}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label>
-    {members.length>1&&<label><span>Este dispositivo lo usa</span><select value={members.some(m=>m.id===deviceMemberId)?deviceMemberId:(members[0]?.id||"")} onChange={e=>setDeviceMemberId(e.target.value)}>{members.map(m=><option value={m.id} key={m.id}>{m.name}</option>)}</select><small>Las compras que añadas desde este móvil u ordenador aparecerán a nombre de esta persona.</small></label>}
+    {members.length>1&&<label><span>Este dispositivo lo usa</span><select value={members.some(m=>m.id===draftDeviceMemberId)?draftDeviceMemberId:(members[0]?.id||"")} onChange={e=>setDraftDeviceMemberId(e.target.value)}>{members.map(m=><option value={m.id} key={m.id}>{m.name}</option>)}</select><small>Las compras que añadas desde este móvil u ordenador aparecerán a nombre de esta persona.</small></label>}
     <label><span>Estilo habitual de cocina</span><select value={draft.profile.cooking} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,cooking:e.target.value as CookingStyle}}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label>
     <label><span>Información de alimentación</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Grande + compras rápidas</option><option value="diaria">Frecuente</option></select></label>
