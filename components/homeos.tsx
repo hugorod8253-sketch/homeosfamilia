@@ -9,6 +9,7 @@ import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
+import { planUnitFamily, recipeShortages, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -20,11 +21,11 @@ type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 type InventoryItem = {
   id:string; name:string; qty:number; unit:string; location:Location; category:string; subcategory?:string;
   stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
-  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string;
+  price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
 };
 type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
-  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string;
+  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string; sources?:ShoppingSource[];
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
@@ -105,11 +106,12 @@ function normalizeState(x:any):AppState{
   const estimated=estimateShelfLifeFromReference(i.name,i.purchasedAt);
   return estimated?{...i,estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:i;
  });
- const shopping=needsProductMigration?baseShopping.map(i=>{
+ const migratedShopping=needsProductMigration?baseShopping.map(i=>{
   const p=classifyProduct(i.name,i.category);
   const pref=productPreferences[p.canonical]||{};
   return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
+ const shopping=migratedShopping.map(i=>i.sources?.length?i:{...i,sources:shoppingSources(i)});
  return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done").slice(-80):[],productPreferences,productEngineVersion:1};
 }
 function loadState():AppState{
@@ -133,6 +135,25 @@ function missing(recipe:Recipe,inv:InventoryItem[]){
   if(!parsed)return !hasInv(inv,x.key);
   return !needAvailable(inv,{key:x.key,label:x.name,amount:parsed.amount,unit:parsed.unit as ReuseNeed["unit"]});
  });
+}
+function shoppingSources(i:ShoppingItem):ShoppingSource[]{
+ if(i.sources?.length)return i.sources;
+ const ids=[...(i.recipePlanIds||[]),...(i.recipePlanId?[i.recipePlanId]:[])];
+ if(ids.length)return ids.map((planId,idx)=>({id:"legacy-recipe:"+planId+":"+i.id+":"+idx,type:"recipe",label:i.requestedBy||"Receta",qty:idx===0?i.qty:0,unit:i.unit,planId,recipeId:i.recipeId})).filter(x=>x.qty>0);
+ const type=i.reason==="recomienda"||i.reason==="reposicion"?"restock":i.reason==="receta"?"recipe":"manual";
+ return [{id:"legacy:"+i.id,type,label:i.requestedBy||"Compra",qty:i.qty,unit:i.unit,recipeId:i.recipeId} as ShoppingSource];
+}
+function withShoppingSources(i:ShoppingItem,sources:ShoppingSource[]):ShoppingItem|null{
+ const positive=sources.filter(x=>x.qty>0);
+ if(!positive.length)return null;
+ const qty=sumSources(positive,i.unit);
+ if(qty<=0)return null;
+ const recipeIds=[...new Set(positive.filter(x=>x.planId).map(x=>x.planId!))];
+ return {...i,qty,sources:positive,recipePlanIds:recipeIds,recipePlanId:recipeIds[0],reason:positive.some(x=>x.type==="recipe")?"receta":positive.some(x=>x.type==="weekly")?"receta":positive.some(x=>x.type==="restock")?"recomienda":"persona"};
+}
+function cleanPlanReservations(item:InventoryItem,planId:string){
+ const planReservations=(item.planReservations||[]).filter(x=>x.planId!==planId);
+ return {...item,planReservations:planReservations.length?planReservations:undefined};
 }
 function score(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.length-missing(recipe,inv).length}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
