@@ -807,8 +807,12 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
  const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
  const preferenceMembers=state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes.trim());
- const weekDays=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
  const weeklyPlan=state.weeklyMenu;
+ const weekStart=weeklyPlan?.startDate||weeklyPlan?.createdAt||new Date().toISOString().slice(0,10);
+ const weekDates=Array.from({length:7},(_,i)=>{
+  const d=new Date(weekStart+"T12:00:00");d.setDate(d.getDate()+i);
+  return {iso:d.toISOString().slice(0,10),label:d.toLocaleDateString("es-ES",{weekday:"long"}),date:d.toLocaleDateString("es-ES",{day:"numeric",month:"short"})};
+ });
  const weeklySlots=weeklyPlan?.slots||[];
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
  const weeklyMissing=weeklyRecipes.flatMap(x=>missing(x.recipe,state.inventory).map(i=>({...i,recipeTitle:x.recipe.title})));
@@ -1002,9 +1006,10 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
     <div className="weekly-menu-actions"><button className="secondary" onClick={generateWeek}>{weeklyPlan?"Regenerar semana":"Crear mi semana"}</button>{weeklyPlan&&<button className="primary" disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyMissing.length?"Añadir faltantes a compra":"No falta nada"}</button>}</div>
    </article>
    {!weeklyPlan?<article className="weekly-menu-empty"><span>📅</span><h3>Una semana sin pensar cada día qué cocinar</h3><p>HomeOS usará el inventario conocido, evitará lo que no gusta y repartirá las recetas para no repetir siempre lo mismo.</p><button onClick={generateWeek}>Generar menú semanal</button></article>:
-   <div className="weekly-menu-grid">{weekDays.map((day,dayIndex)=>{
+   <div className="weekly-menu-grid">{weekDates.map((day,dayIndex)=>{
     const daySlots=weeklySlots.filter(s=>s.day===dayIndex);
-    return <article className="weekly-day" key={day}><div className="weekly-day-head"><span>{dayIndex+1}</span><strong>{day}</strong></div>{["Comida","Cena"].map(meal=>{
+    const dayEvents=state.events.filter(e=>e.date===day.iso);
+    return <article className="weekly-day" key={day.iso}><div className="weekly-day-head"><span>{dayIndex+1}</span><div><strong>{day.label.charAt(0).toUpperCase()+day.label.slice(1)}</strong><small>{day.date}</small></div></div>{dayEvents.length>0&&<div className="weekly-event-note">📅 {dayEvents.map(e=>e.title).join(" · ")}</div>}{["Comida","Cena"].map(meal=>{
      const slot=daySlots.find(s=>s.meal===meal);
      const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
      return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<button onClick={()=>openWeekRecipe(r)}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><b>{r.title}</b><em>{r.time} min · {missing(r,state.inventory).length?missing(r,state.inventory).length+" por completar":"encaja con Casa"}</em></div><strong>›</strong></button>:<p>Sin propuesta</p>}{slot?.why&&<i>{slot.why}</i>}</div>
