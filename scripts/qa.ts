@@ -2,7 +2,7 @@ import { classifyProduct, detectProductsInText, freezerQualityGuide } from "../l
 import { parseReceiptText } from "../lib/receipt-local";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
-import { LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
+import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
 
 function assert(condition:any,message:string){
@@ -92,6 +92,9 @@ assert((shelfLifeReferenceDays("bebida de avena barista")||0)>150,"barista oat d
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="batido proteínas"&&x.label==="02/2028"),"protein drink must preserve the observed 02/2028 label");
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="queso"&&x.exactDate==="2026-11-19"),"cheese must preserve the corrected 19/11/2026 label");
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="almendras"&&x.confidence==="media"&&!x.exactDate),"almonds 29/03 must remain incomplete instead of inventing a year");
+const oatEstimate=estimateShelfLifeFromReference("bebida de avena barista","2026-10-06");
+assert(oatEstimate?.date==="2027-05-02","estimated oat drink date should reproduce the observed reference on the observation date");
+assert(oatEstimate?.kind==="preferente","estimated oat drink must remain a best-before estimate, not an expiry guarantee");
 
 
 const menu=buildWeeklyMenu(EXTRA_RECIPES,{
