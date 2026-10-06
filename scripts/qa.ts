@@ -5,6 +5,8 @@ import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
 import { LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
+import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
+import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
 import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
@@ -129,6 +131,20 @@ assert(aiClamped[0].time===180&&aiClamped[0].servings===12,"local AI sanitizer s
 let badAiShape=false;try{sanitizeLocalAiRecipes([{title:"Vacía",ingredients:[],steps:[]}],2)}catch{badAiShape=true}
 assert(badAiShape,"local AI sanitizer should reject recipes without usable ingredients or steps");
 assert(LOCAL_AI_MOBILE_MODEL==="SmolLM2-360M-Instruct-q4f32_1-MLC","mobile local AI should use the broadly compatible q4f32 WebLLM model");
+const syncBase={shopping:[{id:"a",name:"Leche",qty:1}],profile:{cooking:"rapido"}};
+const syncLocal={shopping:[{id:"a",name:"Leche",qty:1},{id:"b",name:"Pan",qty:1}],profile:{cooking:"rapido"}};
+const syncRemote={shopping:[{id:"a",name:"Leche",qty:2}],profile:{cooking:"normal"}};
+const syncMerged=mergeThreeWay(syncBase,syncLocal,syncRemote);
+assert(syncMerged.shopping.some((x:any)=>x.id==="b")&&syncMerged.shopping.find((x:any)=>x.id==="a")?.qty===2,"three-way sync should preserve an independent local addition and remote edit");
+assert(syncMerged.profile.cooking==="normal","three-way sync should accept a remote field when local left it unchanged");
+const deleted=mergeThreeWay([{id:"a",qty:1}],[],[{id:"a",qty:1}]);
+assert(deleted.length===0,"three-way sync should preserve a deletion when the other device did not edit the item");
+const deletionConflict=mergeThreeWay([{id:"a",qty:1}],[],[{id:"a",qty:2}]);
+assert(deletionConflict[0]?.qty===2,"three-way sync should preserve changed data rather than silently losing it on delete/edit conflict");
+assert(mergeAdditiveCounter(100,120,130)===150,"additive counters should combine independent device deltas");
+const fakeCreds={householdId:"123e4567-e89b-12d3-a456-426614174000",token:"12345678901234567890123456789012"};
+assert(JSON.stringify(parseConnectionCode(connectionCode(fakeCreds)))===JSON.stringify(fakeCreds),"household connection code should round-trip");
+assert(parseConnectionCode("HOS1.bad.short")===null,"invalid household connection codes must be rejected");
 const reservedMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"]);
 assert(reservedMilk[0].qty===0.5,"general suggestions must not spend milk reserved for a recipe");
 const ownerMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"],"p1");
