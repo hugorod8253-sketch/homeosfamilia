@@ -894,7 +894,6 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const readyServings=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0);
  const reserveDue=state.inventory.filter(i=>i.storageMode==="reserva"&&i.qualityReviewAt&&daysUntil(i.qualityReviewAt)<=0);
  const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"—";
- const peopleAtHome=state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="casa").length;
  const savedRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
  const readyRecipePlans=savedRecipePlans.filter(p=>p.missing.length===0);
  const nextRecipePlan=savedRecipePlans[0];
@@ -907,36 +906,67 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   const blocked=householdDislikes.some(d=>d&&text.includes(d));
   const toolPenalty=r.tools?.length&&state.profile.kitchenTools.length&&!r.tools.some(t=>state.profile.kitchenTools.includes(t))?1:0;
   return {r,miss,urgentHits,blocked,toolPenalty};
- }).filter(x=>!x.blocked).sort((a,b)=>a.toolPenalty-b.toolPenalty||a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).slice(0,4);
- return <section className="stack">
-  <div className="dashboard-hero"><div>{logo()}<span className="eyebrow">HOY EN CASA</span><h2>{state.profile.householdSize===1?"Tu casa, sin tener que recordarlo todo":"Lo importante de casa, de un vistazo"}</h2><p>{pending?String(pending)+" productos pendientes de compra.":"La lista de compra está al día."} {recommended?String(recommended)+" son sugerencias de reposición de HomeOS.":""}</p></div><div className="inventory-trust"><span>ESTADO DEL INVENTARIO</span><strong>{known} productos con estado conocido</strong><small>{review?String(review)+" necesitan revisión":"Nada pendiente de revisar"}</small></div></div>
+ }).filter(x=>!x.blocked).sort((a,b)=>a.toolPenalty-b.toolPenalty||a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).slice(0,3);
+ const hour=new Date().getHours();
+ const greeting=hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches";
+ const allReady=homeIdeas.filter(x=>x.miss.length===0).length;
+ const householdConfigured=state.profile.householdSize>0&&state.members.length>=state.profile.householdSize;
 
-  <div className="household-context">
-   <div><small>PERFIL DEL HOGAR</small><strong>{state.profile.householdSize===1?"Perfil personal":String(peopleAtHome)+" comen habitualmente en casa"}</strong><span>{state.profile.householdSize===1?"Tus gustos y rutina ajustan las sugerencias.":state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="fuera_dia").length+" fuera durante el día · "+state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length+" con consumo alto"}</span></div>
-   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Configurar hogar</button>
-  </div>
-
-  <section className="home-today-ideas">
-   <div className="home-today-head"><div><small>IDEAS PARA HOY</small><h3>Qué puedes preparar con Casa</h3><p>Primero lo viable; después lo que necesita muy poco para completarse.</p></div><button onClick={()=>setView("comer")}>Ver más ideas →</button></div>
-   <div className="home-today-grid">{homeIdeas.map(({r,miss,urgentHits})=><button key={r.id} className="home-today-card" onClick={()=>openRecipeIdea(r.title)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.calories?("≈ "+r.calories+" kcal/ración"):"orientativo"}</span><small className={miss.length?"needs":"ready"}>{miss.length?(miss.length===1?"Falta 1 ingrediente":("Faltan "+miss.length+" ingredientes")):"✓ Puedes hacerlo"}{urgentHits?" · aprovecha "+urgentHits+" producto"+(urgentHits===1?"":"s"):""}</small></div></button>)}</div>
+ return <section className="stack home-pro">
+  <section className="home-pro-hero">
+   <div className="home-pro-copy">
+    <span className="eyebrow">HOMEOS · HOY</span>
+    <h2>{greeting}.</h2>
+    <p>Lo importante de casa, organizado para que decidas rápido qué hacer.</p>
+    <div className="home-pro-actions">
+     <button className="primary" onClick={()=>setView("comer")}>Qué comer</button>
+     <button onClick={()=>setView("comprar")}>Abrir compra</button>
+     <button onClick={()=>setView("casa")}>Ver Casa</button>
+    </div>
+   </div>
+   <div className="home-pro-metrics">
+    <button onClick={()=>setView("comprar")}><small>COMPRA</small><strong>{pending}</strong><span>{pending===1?"pendiente":"pendientes"}</span></button>
+    <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><small>USAR PRONTO</small><strong>{expiring.length}</strong><span>{expiring.length?"productos":"sin urgencias"}</span></button>
+    <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><small>PREPARADO</small><strong>{readyServings}</strong><span>{readyServings===1?"ración":"raciones"}</span></button>
+    <button onClick={openWeekly}><small>SEMANA</small><strong>{state.weeklyMenu?"✓":"7"}</strong><span>{state.weeklyMenu?"menú listo":"días"}</span></button>
+   </div>
   </section>
 
-  <div className="hero-grid home-primary-actions">
-   <button className="decision-card photo-card" onClick={()=>setView("comer")}><img src={RECIPES[0].image} alt="Idea para comer" decoding="async"/><div className="photo-overlay"><small>¿QUÉ COMEMOS HOY?</small><h2>Ideas con lo que ya tienes</h2><p>Varias opciones según tiempo, inventario y gustos.</p><span className="card-cta">Ver ideas →</span></div></button>
-   <button className="decision-card shopping-decision" onClick={()=>setView("comprar")}><span className="decision-icon">🛒</span><div><small>LISTA DE COMPRA</small><h2>{pending?String(pending)+" pendientes":"Todo al día"}</h2><p>{pending?"Entra, marca lo que coges y termina la compra.":"Añade algo cuando lo necesites."}</p><span className="card-cta">Abrir lista →</span></div></button>
-  </div>
-  {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS QUE QUERÍAS HACER</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" ya "+(readyRecipePlans.length===1?"está":"están")+" listas":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Planificada para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("No la has perdido · faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
-  <button className="home-weekly-strip" onClick={openWeekly}><span>📅</span><div><small>MENÚ SEMANAL</small><strong>{state.weeklyMenu?"Semana preparada":"Planifica 7 días sin pensar cada comida"}</strong><p>{state.weeklyMenu?"Revisa platos y añade de una vez lo que falte a Comprar.":"HomeOS usa Casa, gustos, eventos y recetas."}</p></div><b>Ver menú →</b></button>
+  <section className="home-pro-section">
+   <div className="home-pro-section-head">
+    <div><small>PARA HOY</small><h3>Ideas que encajan con Casa</h3></div>
+    <button onClick={()=>setView("comer")}>Ver todas →</button>
+   </div>
+   <div className="home-pro-ideas">
+    {homeIdeas.map(({r,miss,urgentHits})=><button key={r.id} className="home-pro-idea" onClick={()=>openRecipeIdea(r.title)}>
+     <img src={r.image} alt="" loading="lazy" decoding="async"/>
+     <div><strong>{r.title}</strong><span>{r.time} min · {r.calories?("≈ "+r.calories+" kcal"):"receta"}</span><small className={miss.length?"needs":"ready"}>{miss.length?("Faltan "+miss.length):"✓ Puedes hacerlo"}{urgentHits?" · aprovecha "+urgentHits:""}</small></div>
+     <b>›</b>
+    </button>)}
+   </div>
+   <div className="home-pro-ideas-foot">
+    <span>{allReady?allReady+" listas con lo que ya tienes":"HomeOS prioriza lo que requiere menos compra"}</span>
+    <button onClick={()=>setView("comer")}>Buscar otra receta</button>
+   </div>
+  </section>
 
-  <div className="home-status-grid">
-   <button className="status-card expiry-card" onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
-   <button className="status-card budget-card" onClick={()=>setView("finanzas")}><span>€</span><div><small>TE QUEDA ESTE MES</small><strong>{Math.max(0,available).toFixed(0)} €</strong><p>de {state.budget.toFixed(0)} € de presupuesto</p></div><b>›</b></button>
-   <button className="status-card prepared-card" onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span>🍱</span><div><small>COMIDA PREPARADA</small><strong>{readyServings}</strong><p>raciones listas</p></div><b>›</b></button>
-   <button className="status-card event-card" onClick={()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"center"})}><span>📅</span><div><small>PRÓXIMO EVENTO</small><strong>{nextDate}</strong><p>{next?.title||"Sin eventos"}</p></div><b>›</b></button>
+  <div className="home-pro-shortcuts">
+   <button onClick={()=>setView("comer")}><span>🍳</span><div><small>COMER</small><strong>Ideas y recetas</strong></div><b>›</b></button>
+   <button onClick={()=>setView("comprar")}><span>🛒</span><div><small>COMPRAR</small><strong>{pending?pending+" pendientes":"Lista al día"}</strong></div><b>›</b></button>
+   <button onClick={openWeekly}><span>📅</span><div><small>MENÚ</small><strong>{state.weeklyMenu?"Semana preparada":"Planificar semana"}</strong></div><b>›</b></button>
+   <button onClick={()=>setView("finanzas")}><span>€</span><div><small>FINANZAS</small><strong>{Math.max(0,available).toFixed(0)} € disponibles</strong></div><b>›</b></button>
   </div>
-  {reserveDue.length>0&&<button className="reserve-review-banner" onClick={()=>{setCasaFocus("reserve");setView("casa")}}><span>❄️</span><div><small>RESERVA DEL CONGELADOR</small><strong>{reserveDue.length} producto{reserveDue.length===1?"":"s"} para revisar</strong><p>No significa que esté caducado: HomeOS te recuerda revisar calidad y decidir si conviene usarlo pronto.</p></div><b>Ver reservas →</b></button>}
 
-  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={openHabits}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
+  {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS GUARDADAS</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" listas para preparar":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("Faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
+
+  <div className="home-pro-secondary">
+   <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><span>{expiring[0]?.name||"Nada urgente"}</span></button>
+   <button onClick={()=>{setCasaFocus("reserve");setView("casa")}}><small>CONGELADOR</small><strong>{reserveDue.length}</strong><span>{reserveDue.length?"por revisar":"sin revisiones"}</span></button>
+   <button onClick={()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"center"})}><small>PRÓXIMO EVENTO</small><strong>{nextDate}</strong><span>{next?.title||"Sin eventos"}</span></button>
+   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}><small>HOGAR</small><strong>{state.profile.householdSize}</strong><span>{householdConfigured?"perfil configurado":"por completar"}</span></button>
+  </div>
+
+  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits home-pro-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR</small><h3>Señales que HomeOS ya conoce</h3></div><button onClick={openHabits}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div></article>}
 
   <CalendarCard state={state} setState={setState}/>
  </section>
