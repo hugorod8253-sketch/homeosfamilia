@@ -24,6 +24,7 @@ type ShoppingItem = {
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean;
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
+type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
 type ProductPreference = {location?:Location;category?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
 type EventItem = {id:string;title:string;date:string};
@@ -39,7 +40,7 @@ type Profile = {
   notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 type AppState = {
-  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
+  inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number; productEngineVersion:number;
 };
 
@@ -64,6 +65,7 @@ const DEFAULT:AppState={
  inventory:[],
  shopping:[],
  purchaseHistory:[],
+ purchaseSessions:[],
  productPreferences:{},
  members:[{id:"m1",name:"Tú",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:""}],
  events:[],
@@ -94,7 +96,7 @@ function normalizeState(x:any):AppState{
   const pref=productPreferences[p.canonical]||{};
   return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
- return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],productPreferences,productEngineVersion:1};
+ return {...DEFAULT,...raw,profile,members,events:raw.events||DEFAULT.events,inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],productPreferences,productEngineVersion:1};
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
@@ -452,7 +454,9 @@ export default function HomeOS(){
  }
 
  const expiring=useMemo(()=>state.inventory.filter(i=>daysUntil(i.expires)<=3&&i.stock!=="falta"),[state.inventory]);
- const available=state.budget-state.spent;
+ const monthKey=new Date().toISOString().slice(0,7);
+ const monthlySpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(monthKey)).reduce((n,x)=>n+x.total,0):state.spent;
+ const available=state.budget-monthlySpent;
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
 
  function addFromRecipe(recipe:Recipe){
@@ -505,7 +509,8 @@ export default function HomeOS(){
      price:x.price
     };
    })].slice(-600);
-   return {...s,inventory,purchaseHistory,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
+   const purchaseSessions=typeof total==="number"&&total>=0?[...s.purchaseSessions,{id:crypto.randomUUID(),date:today,total,supermarket:activeStore||undefined}].slice(-240):s.purchaseSessions;
+   return {...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
   });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
@@ -526,7 +531,7 @@ export default function HomeOS(){
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
    {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setMealSeed(name);setView("comer")}}/>}
-   {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
+   {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
   <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>
@@ -1188,10 +1193,12 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,ope
  </section>
 }
 
-function Finanzas({state,setState,available}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;available:number}){
- const usedPct=Math.min(100,Math.round(state.spent/Math.max(1,state.budget)*100));
- const priced=state.inventory.filter(i=>typeof i.price==="number"&&(i.price||0)>0);
- function financeCategory(i:InventoryItem){
+function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;available:number;monthlySpent:number}){
+ const usedPct=Math.min(100,Math.round(monthlySpent/Math.max(1,state.budget)*100));
+ const monthKey=new Date().toISOString().slice(0,7);
+ const pricedHistory=state.purchaseHistory.filter(i=>i.date.startsWith(monthKey)&&typeof i.price==="number"&&(i.price||0)>0);
+ const pricedInventory=state.inventory.filter(i=>typeof i.price==="number"&&(i.price||0)>0);
+ function financeCategory(i:{category:string;subcategory?:string;location?:Location}){
   if(i.location==="Congelador"||i.category==="Congelados")return "Congelados";
   if(i.category==="Carne")return "Carne y pescado";
   if(i.category==="Fruta y verdura")return i.subcategory==="Fruta"?"Fruta":"Verdura";
@@ -1205,7 +1212,8 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
   if(i.category==="Despensa")return "Despensa";
   return "Otros";
  }
- const byCat=priced.reduce<Record<string,number>>((a,i)=>{const k=financeCategory(i);a[k]=(a[k]||0)+(i.price||0);return a},{});
+ const financeSource=pricedHistory.length?pricedHistory:pricedInventory;
+ const byCat=financeSource.reduce<Record<string,number>>((a,i)=>{const k=financeCategory(i as any);a[k]=(a[k]||0)+(i.price||0);return a},{});
  const knownSpend=Object.values(byCat).reduce((a,b)=>a+b,0);
  const categoryOrder=["Carne y pescado","Verdura","Fruta","Lácteos","Congelados","Despensa","Bebidas","Snacks y dulces","Limpieza y hogar","Higiene y cuidado","Preparados","Suplementos","Otros"];
  const icons:Record<string,string>={"Carne y pescado":"🥩","Verdura":"🥬","Fruta":"🍎","Lácteos":"🥛","Congelados":"🧊","Despensa":"🥫","Bebidas":"🥤","Snacks y dulces":"🍪","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Preparados":"🍱","Suplementos":"＋","Otros":"🛍️"};
@@ -1223,7 +1231,7 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
    <div className="budget-head"><div><small>PRESUPUESTO DEL MES</small><strong>{state.budget.toFixed(0)} €</strong></div><label><span>Cambiar</span><div><input type="number" min="0" value={state.budget} onChange={e=>setState(s=>({...s,budget:Math.max(0,Number(e.target.value)||0)}))}/><b>€</b></div></label></div>
    <div className="budget-progress"><span style={{width:String(usedPct)+"%"}}/></div>
    <div className="budget-numbers">
-    <div><small>GASTADO</small><strong>{state.spent.toFixed(2)} €</strong></div>
+    <div><small>GASTADO</small><strong>{monthlySpent.toFixed(2)} €</strong></div>
     <div className={available>=0?"remaining":"remaining over"}><small>{available>=0?"TE QUEDA":"TE HAS PASADO"}</small><strong>{available>=0?remaining.toFixed(2):over.toFixed(2)} €</strong></div>
     <div><small>PRESUPUESTO USADO</small><strong>{usedPct}%</strong></div>
    </div>
@@ -1231,7 +1239,7 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
 
   <div className="finance-secondary">
    <article className="waste-card"><span>♻️</span><div><small>DESPERDICIO REGISTRADO</small><strong>{state.waste.toFixed(2)} €</strong><p>Solo cuenta productos que realmente has marcado como tirados o caducados.</p></div></article>
-   <article className="finance-data-card"><span>🧾</span><div><small>GASTO CON CATEGORÍA CONOCIDA</small><strong>{knownSpend.toFixed(2)} €</strong><p>De {state.spent.toFixed(2)} € gastados este mes. El resto aún no tiene detalle por producto.</p></div></article>
+   <article className="finance-data-card"><span>🧾</span><div><small>GASTO CON CATEGORÍA CONOCIDA</small><strong>{knownSpend.toFixed(2)} €</strong><p>De {monthlySpent.toFixed(2)} € gastados este mes. El resto aún no tiene detalle por producto.</p></div></article>
   </div>
 
   <article className="category-spend-card">
@@ -1241,7 +1249,7 @@ function Finanzas({state,setState,available}:{state:AppState;setState:React.Disp
 
   <article className="finance-how">
    <div><small>QUÉ SIGNIFICA CADA DATO</small><h3>Un ejemplo sencillo</h3></div>
-   <div className="finance-example"><span>Presupuesto <b>800 €</b></span><span>− Gastado <b>{state.spent.toFixed(2)} €</b></span><span>= Disponible <b>{available>=0?remaining.toFixed(2)+" €":"0 €"}</b></span></div>
+   <div className="finance-example"><span>Presupuesto <b>800 €</b></span><span>− Gastado <b>{monthlySpent.toFixed(2)} €</b></span><span>= Disponible <b>{available>=0?remaining.toFixed(2)+" €":"0 €"}</b></span></div>
    <p>El desperdicio se muestra aparte y no se resta otra vez del presupuesto porque ya forma parte de las compras realizadas.</p>
   </article>
  </section>
