@@ -1208,3 +1208,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .quick-add.smart>button:last-child{grid-column:1/-1;width:100%}
 }
 
+/* Briefing cards as direct links */
+.home-brief-status button{position:relative}
+.home-brief-status button>b{margin-top:4px;font-size:6.8px;color:#4f6d58;font-weight:850}
+.home-agenda-list>button{width:100%;border:0;background:transparent;display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;border-bottom:1px solid #edf0ed;padding:0 0 6px}
+.home-agenda-list>button:last-child{border-bottom:0;padding-bottom:0}
+.home-agenda-list>button time{font-size:7px;color:#748078;text-transform:capitalize}
+.home-agenda-list>button strong{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-agenda-list>button b{font-size:12px;color:#9aa39d}
+.habit-indicator{border:1px solid #e2e7e3;text-align:left;width:100%;cursor:pointer}
+.habit-indicator i{font-size:9px;font-style:normal;color:#9ba49e;justify-self:end}
+@media(max-width:720px){
+ .home-brief-status button>b{font-size:6px}
+ .home-agenda-list>button{grid-template-columns:52px minmax(0,1fr) auto}
+}
+
