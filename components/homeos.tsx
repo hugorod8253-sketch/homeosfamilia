@@ -567,7 +567,11 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
  const [joinError,setJoinError]=useState("");
  async function joinExisting(){setJoinError("");const ok=await connectHome(joinCode);if(!ok)setJoinError("Código no válido o no se pudo conectar.");}
  const toggleGoal=(g:Goal)=>setState(s=>({...s,profile:{...s.profile,goals:s.profile.goals.includes(g)?s.profile.goals.filter(x=>x!==g):[...s.profile.goals,g]}}));
- const toggleMarket=(m:string)=>setState(s=>({...s,profile:{...s.profile,supermarkets:s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m],mainSupermarket:s.profile.mainSupermarket||m}}));
+ const toggleMarket=(m:string)=>setState(s=>{
+  const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];
+  const mainSupermarket=supermarkets.includes(s.profile.mainSupermarket)?s.profile.mainSupermarket:(supermarkets[0]||"");
+  return {...s,profile:{...s.profile,supermarkets,mainSupermarket}};
+ });
  return <div className="onboarding"><div className="onboarding-card">
   <div className="onboarding-progress"><span style={{width:`${((step+1)/6)*100}%`}}/></div>
   {step===0&&<div className="ob-panel"><span className="eyebrow">PRIMERA CONFIGURACIÓN</span><h1>¿Cuántas personas viven en casa?</h1><p>HomeOS adapta cantidades y nivel de incertidumbre al tamaño del hogar.</p><div className="number-grid">{[1,2,3,4,5,6].map(n=><button key={n} className={state.profile.householdSize===n?"choice active":"choice"} onClick={()=>setState(s=>({...s,profile:{...s.profile,householdSize:n},members:ensureMembers(s.members,n)}))}>{n}</button>)}</div></div>}
@@ -1398,7 +1402,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
     <label><span>Información de alimentación</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="off">Oculta</option><option value="basica">Básica</option><option value="detallada">Detallada</option></select></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Grande + compras rápidas</option><option value="diaria">Frecuente</option></select></label>
 
-    <div className="profile-market-section"><span>Supermercados habituales</span><div className="profile-market-grid">{SUPERMARKETS.map(m=><button type="button" key={m} className={draft.profile.supermarkets.includes(m)?"active":""} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];return {...s,profile:{...s.profile,supermarkets}}})}>{m}</button>)}</div></div>
+    <div className="profile-market-section"><span>Supermercados habituales</span><div className="profile-market-grid">{SUPERMARKETS.map(m=><button type="button" key={m} className={draft.profile.supermarkets.includes(m)?"active":""} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];const mainSupermarket=supermarkets.includes(s.profile.mainSupermarket)?s.profile.mainSupermarket:(supermarkets[0]||"");return {...s,profile:{...s.profile,supermarkets,mainSupermarket}}})}>{m}</button>)}</div></div>
 
     <div className="profile-market-section kitchen-tools-setting"><span>Qué tienes para cocinar</span><p>HomeOS muestra las formas de preparación compatibles cuando la receta las tiene disponibles.</p><div className="profile-market-grid">{KITCHEN_TOOLS.map(t=><button type="button" key={t} className={draft.profile.kitchenTools.includes(t)?"active":""} onClick={()=>toggleTool(t)}>{t}</button>)}</div></div>
    </div>}
