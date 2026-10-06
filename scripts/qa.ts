@@ -2,6 +2,8 @@ import { classifyProduct, detectProductsInText, freezerQualityGuide } from "../l
 import { parseReceiptText } from "../lib/receipt-local";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
+import { LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
+import { buildWeeklyMenu } from "../lib/weekly-menu";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
@@ -83,5 +85,21 @@ assert(receipt.items.some(x=>x.qty===2),"receipt should parse x2 quantity");
 assert(EXTRA_RECIPES.length>=30,"local recipe book should have at least 30 extra recipes");
 assert(REUSE_IDEAS.length>=8,"reuse library should have at least 8 verified ideas");
 assert(EXTRA_RECIPES.some(r=>r.ingredients.some(i=>/yogur/i.test(i.name))&&r.ingredients.some(i=>/leche/i.test(i.name))),"recipe book should cover milk + yogurt together");
+assert(LIDL_2026_SHELF_LIFE.length>=50,"real Lidl shelf-life calibration should contain at least 50 observed references");
+assert(shelfLifeBandFromReference("pan de hamburguesa")==="corta","burger buns should calibrate as short shelf life");
+assert(shelfLifeBandFromReference("macarrones")==="larga","dry pasta should calibrate as long shelf life");
+assert((shelfLifeReferenceDays("bebida de avena barista")||0)>150,"barista oat drink should use observed long shelf-life reference");
 
-console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas");
+const menu=buildWeeklyMenu(EXTRA_RECIPES,{
+ inventory:["pechuga de pollo","arroz","tomate","yogur natural","patatas","huevos","garbanzos"],
+ dislikes:["queso azul"],
+ tools:["Placa / inducción","Horno","Air fryer"],
+ people:4
+});
+assert(menu.slots.length===14,"weekly menu should create lunch and dinner for 7 days");
+assert(new Set(menu.slots.map(x=>x.day)).size===7,"weekly menu should cover all 7 days");
+assert(menu.slots.filter(x=>x.meal==="Comida").length===7,"weekly menu should include 7 lunches");
+assert(menu.slots.filter(x=>x.meal==="Cena").length===7,"weekly menu should include 7 dinners");
+
+
+console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 14/14");
