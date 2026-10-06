@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
-import { addMonthsIso, canStoreAt, classifyProduct, freezerQualityGuide, recommendedLocation, storageWarning } from "../lib/product-engine";
+import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freezerQualityGuide, recommendedLocation, storageWarning } from "../lib/product-engine";
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 
@@ -633,6 +633,7 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
  const [useMuch,setUseMuch]=useState("");
  const [craving,setCraving]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
+ const [mealListening,setMealListening]=useState(false);
  const [reuseOpen,setReuseOpen]=useState(false);
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
  const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
@@ -642,11 +643,20 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
  const miss=missing(recipe,state.inventory);
  const filtered=useMuch?RECIPES.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
  const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2);
- const cravingMatches=cravingWords.length?RECIPES.map(r=>{
+ const mentionedProducts=detectProductsInText(craving);
+ const requireAllMentioned=mentionedProducts.length>1&&/(ambos|los dos|las dos|juntos|juntas|aprovechar|usar|gastar|con .* y )/.test(norm(craving));
+ const recipeUses=(r:Recipe,p:{canonical:string})=>r.ingredients.some(i=>{
+  const ip=classifyProduct(i.name,inferCategory(i.name));
+  const a=norm(ip.canonical),b=norm(p.canonical),raw=norm(i.name+" "+i.key);
+  return a===b||a.includes(b)||b.includes(a)||raw.includes(b);
+ });
+ const cravingMatches=craving.trim()?RECIPES.map(r=>{
   const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
-  const hits=cravingWords.filter(w=>hay.includes(w)).length;
-  return {r,hits,fit:score(r,state.inventory)};
- }).filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits||b.fit-a.fit).map(x=>x.r):[];
+  const wordHits=cravingWords.filter(w=>hay.includes(w)).length;
+  const productHits=mentionedProducts.filter(p=>recipeUses(r,p)).length;
+  const allProducts=!mentionedProducts.length||productHits===mentionedProducts.length;
+  return {r,wordHits,productHits,allProducts,fit:score(r,state.inventory)};
+ }).filter(x=>requireAllMentioned?x.allProducts:(x.productHits>0||x.wordHits>0)).sort((a,b)=>Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||b.fit-a.fit).map(x=>x.r):[];
  const suggestions=(craving.trim()?cravingMatches:pool).slice(0,4);
  const availableTools=(recipe.tools||[]).filter(t=>state.profile.kitchenTools.includes(t));
  const dislikers=state.members.slice(0,state.profile.householdSize).map(member=>{
@@ -655,10 +665,12 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
   return {name:member.name,matches};
  }).filter(x=>x.matches.length);
 
- const reuseIdeas=REUSE_IDEAS.map(idea=>{
+ const reuseIdeasBase=REUSE_IDEAS.map(idea=>{
   const matched=idea.needs.filter(n=>needAvailable(state.inventory,n)).length;
-  return {...idea,matched,ready:matched===idea.needs.length};
- }).sort((a,b)=>Number(b.ready)-Number(a.ready)||b.matched-a.matched);
+  const mentionedHits=mentionedProducts.filter(p=>idea.needs.some(n=>norm(n.key).includes(norm(p.canonical))||norm(p.canonical).includes(norm(n.key))||norm(n.label).includes(norm(p.canonical)))).length;
+  return {...idea,matched,ready:matched===idea.needs.length,mentionedHits};
+ }).sort((a,b)=>Number(b.ready)-Number(a.ready)||b.mentionedHits-a.mentionedHits||b.matched-a.matched);
+ const reuseIdeas=mentionedProducts.length?reuseIdeasBase.filter(x=>requireAllMentioned?x.mentionedHits===mentionedProducts.length:x.mentionedHits>0):reuseIdeasBase;
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
  const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
 
@@ -687,6 +699,24 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
   setToast(exact?"Inventario actualizado":"Inventario actualizado · revisa una cantidad incompatible");
  }
 
+
+ function startMealVoice(){
+  const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+  if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
+  const recognition=new W();
+  recognition.lang="es-ES";recognition.interimResults=false;recognition.maxAlternatives=1;
+  setMealListening(true);
+  recognition.onresult=(e:any)=>{
+   const text=e.results?.[0]?.[0]?.transcript||"";
+   setCraving(text);
+   if(/aprovecha|aprovechar|gastar|sobra|sobran|transform/.test(norm(text)))setTab("aprovechar");
+   else setTab("ideas");
+   setToast("He usado lo que acabas de decir como contexto");
+  };
+  recognition.onerror=()=>setToast("No he podido entender la voz");
+  recognition.onend=()=>setMealListening(false);
+  recognition.start();
+ }
  function chooseRecipe(r:Recipe){
   setSelectedRecipeId(r.id);
   setMode(r.mode.includes(mode)?mode:r.mode[0]);
@@ -708,8 +738,9 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
 
   {tab==="ideas"?<>
    <article className="meal-request">
-    <div><small>¿QUÉ TE APETECE?</small><h3>Busca una idea concreta</h3><p>Prueba con “pollo con tomate”, “pasta”, “algo rápido” o un ingrediente que quieras gastar.</p></div>
-    <input value={craving} onChange={e=>setCraving(e.target.value)} placeholder="Ej. pollo con tomate, carbonara, algo con leche…"/>
+    <div><small>¿QUÉ TE APETECE?</small><h3>Dilo o escríbelo como hablarías en casa</h3><p>Ej.: “Tengo leche y yogur y quiero aprovechar ambos” o “quiero una cena rápida con pollo”.</p></div>
+    <div className="meal-query-input"><input value={craving} onChange={e=>setCraving(e.target.value)} enterKeyHint="search" placeholder="Tengo leche y yogur, quiero aprovechar ambos…"/><button className={mealListening?"meal-mic listening":"meal-mic"} onClick={startMealVoice} aria-label="Hablar">{mealListening?"…":"🎙"}</button></div>
+    {mentionedProducts.length>0&&<div className="meal-confirmed-products">{mentionedProducts.map(p=><span key={p.canonical}>✓ {p.canonical} <small>{state.inventory.some(i=>productMatchesNeed(i,p.canonical))?"en Casa":"confirmado por ti para esta consulta"}</small></span>)}</div>}
     {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" ingredientes por completar":"Puedes hacerlo con lo que tienes"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. Puedes usar “Aprovechar producto” o elegir una de las ideas de abajo.</div>}</div>}
    </article>
 
@@ -726,7 +757,7 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
 
    <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Qué quieres gastar antes?</h3><p>Escribe un producto que tengas de sobra y te mostramos recetas donde realmente se usa.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" por completar":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
   </>:tab==="aprovechar"?<>
-   <article className="reuse-hero"><div><small>APROVECHAMIENTO INTELIGENTE</small><h3>Ideas para gastar, transformar y no tirar</h3><p>HomeOS mira lo que tienes y propone usos concretos. Si conviertes unos ingredientes en otro producto, también actualiza el inventario.</p></div><span>♻️</span></article>
+   <article className="reuse-hero"><div><small>APROVECHAMIENTO INTELIGENTE</small><h3>Ideas para gastar, transformar y no tirar</h3><p>Dilo por voz si quieres: “tengo leche y yogur y quiero usar los dos”. Los ingredientes que confirmas tú mandan sobre una estimación antigua del inventario.</p><div className="reuse-query"><input value={craving} onChange={e=>setCraving(e.target.value)} placeholder="Ej. tengo tomates y queso y quiero gastar ambos"/><button className={mealListening?"meal-mic listening":"meal-mic"} onClick={startMealVoice}>{mealListening?"…":"🎙"}</button></div>{mentionedProducts.length>0&&<div className="meal-confirmed-products">{mentionedProducts.map(p=><span key={p.canonical}>✓ {p.canonical}</span>)}</div>}</div><span>♻️</span></article>
 
    {expiringForReuse.length>0&&<div className="reuse-priority"><div className="recipe-options-head"><div><small>GASTAR PRIMERO</small><h3>Productos que merecen atención</h3></div></div><div className="reuse-priority-grid">{expiringForReuse.map(i=><button key={i.id} onClick={()=>{const found=reuseIdeas.find(x=>reuseIdeaMatchesProduct(x,i.name,i.category));if(found){setSelectedReuseId(found.id);setReuseOpen(true)}}}><span>{productIcon(i.name,i.category)}</span><div><strong>{i.name}</strong><small>{i.expires&&daysUntil(i.expires)<=5?("Fecha próxima · "+Math.max(0,daysUntil(i.expires))+" días"):i.stock==="mucho"?"Hay bastante":"Conviene revisar"}</small></div><b>›</b></button>)}</div></div>}
 
