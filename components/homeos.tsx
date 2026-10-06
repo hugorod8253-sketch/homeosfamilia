@@ -672,6 +672,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
  const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
  const [open,setOpen]=useState(false);
+ const [savePreparedAfter,setSavePreparedAfter]=useState(false);
+ const [leftoverServings,setLeftoverServings]=useState(1);
  const [useMuch,setUseMuch]=useState("");
  const [craving,setCraving]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
@@ -765,15 +767,22 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
   setMode(r.mode.includes(mode)?mode:r.mode[0]);
   setIndex(0);
  }
- function completeRecipe(){
+ function completeRecipe(servingsToStore=0){
   let wasExact=true;
   setState(s=>{
    const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients);
    wasExact=consumed.exact;
-   return {...s,inventory:consumed.inventory};
+   let inventory=consumed.inventory;
+   if(servingsToStore>0){
+    const today=new Date().toISOString().slice(0,10);
+    const existing=inventory.findIndex(i=>norm(i.name)===norm(recipe.title)&&i.category==="Preparados"&&i.location==="Nevera");
+    if(existing>=0)inventory=inventory.map((i,idx)=>idx===existing?{...i,qty:i.qty+servingsToStore,servings:(i.servings||i.qty)+servingsToStore,stock:"hay",preparedAt:today,purchasedAt:today}:i);
+    else inventory=[{id:crypto.randomUUID(),name:recipe.title,qty:servingsToStore,unit:"raciones",location:"Nevera",category:"Preparados",subcategory:"Preparado",stock:"hay",purchasedAt:today,preparedAt:today,servings:servingsToStore,source:recipe.mode.includes("mealprep")?"mealprep":"receta"},...inventory];
+   }
+   return {...s,inventory};
   });
-  setOpen(false);
-  setToast(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar");
+  setOpen(false);setSavePreparedAfter(false);
+  setToast(servingsToStore>0?(wasExact?"Ingredientes descontados · preparado guardado":"Preparado guardado · revisa una cantidad"):(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar"));
  }
 
  return <section className="stack">
@@ -808,7 +817,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
    <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(state.inventory,n)?"have":hasNeed(state.inventory,n)?"some":"missing"} key={n.key}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:<Habitos state={state}/>} 
 
-  {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div><button className="primary modal-save" onClick={completeRecipe}>He terminado</button></div></div>}
+  {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>n+1)}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
   {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={needAvailable(state.inventory,n)?"need-ok":hasNeed(state.inventory,n)?"need-some":"need-missing"}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"cantidad insuficiente":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>needAvailable(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
 
  </section>
