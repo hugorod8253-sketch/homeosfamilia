@@ -7,7 +7,7 @@ import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reu
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
-import { shelfLifeBandFromReference, shelfLifeSample } from "../lib/shelf-life-calibration";
+import { shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
@@ -355,7 +355,7 @@ export default function HomeOS(){
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
- const cameraRef=useRef<HTMLInputElement>(null),galleryRef=useRef<HTMLInputElement>(null),receiptRef=useRef<HTMLInputElement>(null);
+ const receiptRef=useRef<HTMLInputElement>(null);
  const syncRevisionRef=useRef(0);
  const lastSyncedJsonRef=useRef("");
  const syncCreateRef=useRef(false);
@@ -583,7 +583,7 @@ export default function HomeOS(){
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openHabits={()=>{setComerFocus("habitos");setView("comer")}}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
-   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
+   {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
@@ -1323,7 +1323,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  </section>
 }
 
-function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,openRecipes}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared"|"reserve";clearFocus:()=>void;openRecipes:(name:string)=>void}){
+function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared"|"reserve";clearFocus:()=>void;openRecipes:(name:string)=>void}){
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const [density,setDensity]=useState<"compact"|"detail">("compact");
  const [preparedOpen,setPreparedOpen]=useState(false);
@@ -1332,7 +1332,6 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,ope
  const [voiceListening,setVoiceListening]=useState(false);
  const [preparedServings,setPreparedServings]=useState(1);
  const [preparedLocation,setPreparedLocation]=useState<"Nevera"|"Congelador">("Nevera");
- const [photoStatus,setPhotoStatus]=useState("");
  useEffect(()=>{if(focus!=="all"){setLoc(focus==="reserve"?"Congelador":"Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
  const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
