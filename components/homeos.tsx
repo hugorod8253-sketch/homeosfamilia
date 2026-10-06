@@ -481,8 +481,7 @@ export default function HomeOS(){
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
 
  function addFromRecipe(recipe:Recipe){
-  const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
- const miss=missing(recipe,state.inventory).filter(ing=>!confirmedForQuery(ing));
+  const miss=missing(recipe,state.inventory);
   if(!miss.length){setToast("Tienes todo para esta receta");return}
   const toAdd=miss.filter(m=>!state.shopping.some(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key))));
   if(!toAdd.length){setToast("Los ingredientes que faltan ya están en la compra");return}
@@ -724,7 +723,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
  const pool=options.length?options:allRecipes;
  const autoRecipe=pool[index%pool.length];
  const recipe=(selectedRecipeId?allRecipes.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
- const miss=missing(recipe,state.inventory);
+ const rawMiss=missing(recipe,state.inventory);
  const filtered=useMuch?allRecipes.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
  const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2);
  const mentionedProducts=detectProductsInText(craving);
@@ -734,6 +733,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
   const a=norm(ip.canonical),b=norm(p.canonical),raw=norm(i.name+" "+i.key);
   return a===b||a.includes(b)||b.includes(a)||raw.includes(b);
  });
+ const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
+ const miss=rawMiss.filter(ing=>!confirmedForQuery(ing));
  const cravingMatches=craving.trim()?allRecipes.map(r=>{
   const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
   const wordHits=cravingWords.filter(w=>hay.includes(w)).length;
