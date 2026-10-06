@@ -1,4 +1,5 @@
 export type SyncCredentials={householdId:string;token:string};
+export class SyncConflictError extends Error{revision:number;constructor(revision:number){super("sync_conflict");this.name="SyncConflictError";this.revision=revision}}
 
 const SYNC_STORAGE_KEY="homeos:sync:v1";
 const url=(process.env.NEXT_PUBLIC_SUPABASE_URL||"").replace(/\/$/,"");
@@ -84,12 +85,16 @@ export async function readRemoteHousehold(creds:SyncCredentials):Promise<{data:u
  return {data:result.data,revision:result.revision||1,name:result.name||"Mi hogar"};
 }
 
-export async function writeRemoteHousehold(creds:SyncCredentials,data:unknown):Promise<number>{
- const result=await rpc<{ok:boolean;revision?:number;error?:string}>("homeos_household_write",{
+export async function writeRemoteHousehold(creds:SyncCredentials,data:unknown,expectedRevision:number):Promise<number>{
+ const result=await rpc<{ok:boolean;revision?:number;error?:string}>("homeos_household_write_v2",{
   p_household_id:creds.householdId,
   p_token:creds.token,
+  p_expected_revision:expectedRevision,
   p_data:data
  });
- if(!result.ok) throw new Error(result.error||"sync_write_failed");
- return result.revision||1;
+ if(!result.ok){
+  if(result.error==="conflict")throw new SyncConflictError(result.revision||expectedRevision);
+  throw new Error(result.error||"sync_write_failed");
+ }
+ return result.revision||expectedRevision+1;
 }
