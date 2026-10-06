@@ -834,6 +834,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
  const [catalogOpen,setCatalogOpen]=useState(false);
  const [catalogQuery,setCatalogQuery]=useState("");
+ const [recipeScope,setRecipeScope]=useState<"casa"|"planear">("casa");
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
  const allRecipes=[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i);
@@ -875,10 +876,12 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
   const productHits=mentionedProducts.filter(p=>recipeUses(r,p)).length;
   const allProducts=!mentionedProducts.length||productHits===mentionedProducts.length;
   const intent=recipeIntentScore(r,craving);
-  return {r,wordHits,productHits,allProducts,intent,fit:score(r,state.inventory)};
- }).filter(x=>requireAllMentioned?x.allProducts:(x.productHits>0||x.wordHits>0||x.intent>0)).sort((a,b)=>b.intent-a.intent||Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||b.fit-a.fit).map(x=>x.r):[];
- const suggestions=(craving.trim()?cravingMatches:pool).slice(0,4);
- const catalogBase=(craving.trim()?cravingMatches:pool);
+  const missCount=missingForQuery(r).length;
+  return {r,wordHits,productHits,allProducts,intent,fit:score(r,state.inventory),missCount};
+ }).filter(x=>requireAllMentioned?x.allProducts:(x.productHits>0||x.wordHits>0||x.intent>0)).sort((a,b)=>recipeScope==="casa"?(a.missCount-b.missCount||b.intent-a.intent||Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||b.fit-a.fit):(b.intent-a.intent||Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||a.missCount-b.missCount||b.fit-a.fit)).map(x=>x.r):[];
+ const baseSuggestions=craving.trim()?cravingMatches:(recipeScope==="casa"?pool:allRecipes);
+ const suggestions=baseSuggestions.slice(0,4);
+ const catalogBase=baseSuggestions;
  const catalogRecipes=catalogQuery.trim()?catalogBase.filter(r=>{
   const q=norm(catalogQuery);
   return norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" ")).includes(q);
@@ -899,7 +902,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
  const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
  const preferenceMembers=state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes.trim());
- const savedPlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missingForQuery(p.recipe)})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
+ const savedPlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,state.inventory)})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
  const weeklyPlan=state.weeklyMenu;
  const weekStart=weeklyPlan?.startDate||weeklyPlan?.createdAt||new Date().toISOString().slice(0,10);
  const weekDates=Array.from({length:7},(_,i)=>{
@@ -1087,7 +1090,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
  }
 
  return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button><button className={tab==="aprovechar"?"active":""} onClick={()=>setTab("aprovechar")}>Aprovechar</button><button className={tab==="menu"?"active":""} onClick={()=>setTab("menu")}>Menú semanal</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
+  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer</h2><p>Decide si quieres cocinar con Casa ahora o planear algo para lo que puedes comprar ingredientes.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button><button className={tab==="aprovechar"?"active":""} onClick={()=>setTab("aprovechar")}>Aprovechar</button><button className={tab==="menu"?"active":""} onClick={()=>setTab("menu")}>Menú semanal</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
   {preferenceMembers.length>0&&<div className="meal-household-strip"><span>✓</span><p><b>Preferencias activas:</b> HomeOS tiene en cuenta lo que no gusta a {preferenceMembers.map(m=>m.name).join(", ")} al ordenar y avisar sobre recetas.</p></div>}
   {tab==="ideas"&&savedPlans.length>0&&<section className="saved-recipe-plans"><div className="saved-recipe-head"><div><small>PARA OTRO MOMENTO</small><h3>Recetas que no quieres perder</h3></div><span>{savedPlans.length}</span></div><div className="saved-recipe-grid">{savedPlans.slice(0,6).map(p=><article className={p.missing.length?"saved-recipe-card":"saved-recipe-card ready"} key={p.id}><button className="saved-recipe-main" onClick={()=>{chooseRecipe(p.recipe);setCraving("")}}><img src={p.recipe.image} alt="" loading="lazy"/><div><strong>{p.recipe.title}</strong><small>{p.plannedFor?new Date(p.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}):"Sin fecha"} · {p.missing.length?p.missing.length+" por comprar":"✓ lista para cocinar"}</small></div></button><div className="saved-recipe-actions">{p.missing.length>0?<button onClick={()=>addFromRecipe(p.recipe,p.plannedFor)}>Añadir faltantes</button>:<button onClick={()=>{chooseRecipe(p.recipe);setOpen(true)}}>Preparar</button>}<button className="remove-plan" onClick={()=>setState(s=>({...s,recipePlans:s.recipePlans.filter(x=>x.id!==p.id)}))} aria-label="Quitar receta guardada">×</button></div></article>)}</div></section>}
 
@@ -1105,6 +1108,8 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
     </div>
    </article>
 
+   <div className="recipe-scope-switch"><button className={recipeScope==="casa"?"active":""} onClick={()=>setRecipeScope("casa")}><span>🏠</span><div><strong>Con lo que tengo</strong><small>Prioriza recetas que puedes hacer ya o casi.</small></div></button><button className={recipeScope==="planear"?"active":""} onClick={()=>setRecipeScope("planear")}><span>🛒</span><div><strong>Planear · puedo comprar</strong><small>Busca por apetencia aunque falten ingredientes.</small></div></button></div>
+
    <div className="mode-row meal-modes">{[["rapido","⚡ Rápido"],["normal","🍽 Normal"],["cocinar","👨‍🍳 Cocinar"],["mealprep","🍱 Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
 
    <div className="recipe-options-head"><div><small>CON LO QUE TIENES</small><h3>{mode==="mealprep"?"Opciones para preparar varias raciones":"Varias opciones, no solo una"}</h3></div><button className="recipe-catalog-toggle" onClick={()=>setCatalogOpen(v=>!v)}>{catalogOpen?"Cerrar catálogo":"Ver todas"} · {catalogBase.length} recetas</button></div>
@@ -1112,7 +1117,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
 
    <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?String(miss.length)+" INGREDIENTES POR COMPLETAR":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div>{availableTools.length>0&&<div className="recipe-tools"><small>PUEDES HACERLA CON</small>{availableTools.map(t=><span key={t}>{t}</span>)}</div>}{recipe.source==="local-ai"?<div className="ai-recipe-note"><b>✦ IA local</b><span>Receta generada en tu dispositivo · revisa cantidades y cocción antes de preparar.</span></div>:<div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>}
     {dislikers.length>0&&<div className="family-warning">{dislikers.map((d,i)=><span key={d.name}>⚠ {d.name==="Tú"?"Has marcado que no te gusta":("A "+d.name+" no le gusta")} {d.matches.join(", ")}{i<dislikers.length-1?".":""}</span>)}</div>}
-    <div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar esta receta</button><button className="secondary" onClick={()=>saveRecipePlan(recipe)}>Guardar para luego</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Siguiente idea</button></div><div className="recipe-plan-when"><span>Si no es para ahora:</span><button onClick={()=>saveRecipePlan(recipe,isoAfterDays(1))}>Mañana</button><button onClick={()=>saveRecipePlan(recipe,weekendPlanIso())}>Este finde</button>{miss.length>0&&<button className="buy-missing-plan" onClick={()=>addFromRecipe(recipe)}>Guardar + añadir faltantes</button>}</div></div></article>
+    <div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar esta receta</button><button className="secondary" onClick={()=>saveRecipePlan(recipe)}>Guardar para luego</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Siguiente idea</button></div><div className="recipe-plan-when"><span>Si no es para ahora:</span><button onClick={()=>miss.length?addFromRecipe(recipe,isoAfterDays(1)):saveRecipePlan(recipe,isoAfterDays(1))}>Mañana{miss.length?" + compra":""}</button><button onClick={()=>miss.length?addFromRecipe(recipe,weekendPlanIso()):saveRecipePlan(recipe,weekendPlanIso())}>Este finde{miss.length?" + compra":""}</button>{miss.length>0&&<button className="buy-missing-plan" onClick={()=>addFromRecipe(recipe)}>Sin fecha + añadir faltantes</button>}</div></div></article>
 
    <div className="ingredient-summary clearer"><article><small>YA TIENES EN CASA</small><strong>{recipe.ingredients.length-miss.length} de {recipe.ingredients.length}</strong>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>NECESITAS PARA COMPLETARLA</small><strong>{miss.length?String(miss.length)+" ingredientes":"Nada"}</strong>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>✓ Está todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>{miss.length?"Guardar receta + añadir faltantes":"Ya tienes todo"}</button></article></div>
 
