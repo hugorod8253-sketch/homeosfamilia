@@ -946,6 +946,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  const [storeFilter,setStoreFilter]=useState("Todos");
  const [purchaseTotal,setPurchaseTotal]=useState("");
  const [receiptName,setReceiptName]=useState("");
+ const [shoppingListening,setShoppingListening]=useState(false);
  const [ocrStatus,setOcrStatus]=useState<"idle"|"reading"|"ready"|"error">("idle");
  const [ocrProgress,setOcrProgress]=useState(0);
  const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
@@ -965,8 +966,8 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  }).slice(0,8);
 
 
- function add(){
-  let value=quick.trim();if(!value)return;
+ function add(input=quick){
+  let value=input.trim();if(!value)return;
   let supermarket:string|undefined;
   const lower=norm(value);
   for(const s of state.profile.supermarkets){
@@ -992,6 +993,20 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
    return {...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category,subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente"}]};
   });
   setQuick("");
+ }
+ function startShoppingVoice(){
+  const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+  if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
+  const recognition=new W();
+  recognition.lang="es-ES";recognition.interimResults=false;recognition.maxAlternatives=1;
+  setShoppingListening(true);
+  recognition.onresult=(e:any)=>{
+   const text=e.results?.[0]?.[0]?.transcript||"";
+   if(text){add(text);setToast("Añadido por voz");}
+  };
+  recognition.onerror=()=>setToast("No he podido entender la voz");
+  recognition.onend=()=>setShoppingListening(false);
+  recognition.start();
  }
  async function ticketSelected(file?:File){
   if(!file)return;
@@ -1057,7 +1072,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  return <section className="stack">
   <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Añade productos y HomeOS los organiza por tienda y categoría.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente"}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary" onClick={()=>setShoppingActive(true)}>Empezar compra</button>}</div>
 
-  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Ej. 2 L de leche Lidl, tomates, 1 kg pollo…"/>{members.length>1?<label className="device-member-select"><span>Añade como</span><select value={currentMember?.id||""} onChange={e=>setDeviceMemberId(e.target.value)}>{members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>:<span className="device-member-pill">👤 {requestedBy}</span>}<button onClick={add}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}</div>}
+  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. 2 L de leche Lidl, tomates, 1 kg pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":"🎙"}</button>{members.length>1?<label className="device-member-select"><span>Añade como</span><select value={currentMember?.id||""} onChange={e=>setDeviceMemberId(e.target.value)}>{members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>:<span className="device-member-pill">👤 {requestedBy}</span>}<button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}</div>}
 
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
