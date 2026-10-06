@@ -108,6 +108,11 @@ assert(menu.slots.length===14,"weekly menu should create lunch and dinner for 7 
 assert(new Set(menu.slots.map(x=>x.day)).size===7,"weekly menu should cover all 7 days");
 assert(menu.slots.filter(x=>x.meal==="Comida").length===7,"weekly menu should include 7 lunches");
 assert(menu.slots.filter(x=>x.meal==="Cena").length===7,"weekly menu should include 7 dinners");
+const savingMenu=buildWeeklyMenu([
+ {id:"cheap",title:"Plato sencillo",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]},
+ {id:"expensive",title:"Plato premium",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]}
+],{inventory:[],dislikes:[],tools:[],people:2,budgetPressure:true,costByRecipe:{cheap:2,expensive:18}});
+assert(savingMenu.slots[0]?.recipeId==="cheap","save-priority menu should prefer lower known missing cost when recipes otherwise fit equally");
 
 const shortages=recipeShortages([{name:"Leche",qty:"500 ml",key:"leche"},{name:"Huevos",qty:"4 uds",key:"huevo"}],[{name:"Leche",qty:0.2,unit:"L",category:"Lácteos",stock:"hay"},{name:"Huevos",qty:2,unit:"ud",category:"Lácteos",stock:"hay"}]);
 assert(shortages.some(x=>x.key==="leche"&&x.missing===300),"recipe shortage should subtract 200 ml already at home");
