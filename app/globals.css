@@ -1360,3 +1360,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .home-final-action-grid::-webkit-scrollbar{display:none}
 }
 
+/* Approved Home mobile ordering */
+@media(max-width:720px){
+ .home-final{display:grid}
+ .home-final-mid,.home-final-bottom{display:contents}
+ .home-final-head{order:1}
+ .home-final-top{order:2}
+ .home-final-summary{order:3}
+ .home-final-actions{order:4}
+ .home-final-habits{order:5}
+ .home-final-recommend{order:6}
+ .apple-calendar{order:7}
+}
+
