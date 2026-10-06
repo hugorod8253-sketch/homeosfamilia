@@ -160,6 +160,57 @@ function planningInventory(state:AppState,exceptPlanId?:string){
  const active=[...state.recipePlans.filter(p=>p.status==="saved").map(p=>p.id),...(state.weeklyMenu?[state.weeklyMenu.id]:[])];
  return freeInventoryAfterReservations(state.inventory.filter(usableInventoryItem),active,exceptPlanId) as InventoryItem[];
 }
+function weeklyMissingItems(state:AppState,plan=state.weeklyMenu){
+ if(!plan)return [] as {name:string;key:string;qty:number;unit:string;category:string;canonical:string}[];
+ const needMap=new Map<string,{name:string;key:string;amountBase:number;unit:string;family:string;category:string;canonical:string}>();
+ for(const slot of plan.slots){
+  const recipe=RECIPES.find(r=>r.id===slot.recipeId);
+  if(!recipe)continue;
+  for(const ing of recipe.ingredients){
+   const parsed=parseQty(ing.qty); if(!parsed)continue;
+   const family=unitFamily(parsed.unit);
+   const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
+   const key=canonical+"|"+family+"|"+(family==="count"?normalizedUnit(parsed.unit):"");
+   const prev=needMap.get(key);
+   if(prev)prev.amountBase+=toBase(parsed.amount,parsed.unit);
+   else needMap.set(key,{name:ing.name,key:ing.key,amountBase:toBase(parsed.amount,parsed.unit),unit:parsed.unit,family,category:inferCategory(ing.name),canonical});
+  }
+ }
+ const free=planningInventory(state,plan.id);
+ return [...needMap.values()].flatMap(need=>{
+  let availableBase=0;
+  for(const item of free.filter(i=>productMatchesNeed(i,need.key)&&usableInventoryItem(i))){
+   if(unitFamily(item.unit)!==need.family)continue;
+   if(need.family==="count"&&normalizedUnit(need.unit)!=="ud"&&normalizedUnit(item.unit)!==normalizedUnit(need.unit))continue;
+   availableBase+=toBase(Math.max(0,item.qty),item.unit);
+  }
+  const shortBase=Math.max(0,need.amountBase-availableBase);
+  if(shortBase<=0)return [];
+  return [{name:need.name,key:need.key,qty:Math.round(fromBase(shortBase,need.unit)*100)/100,unit:need.unit,category:need.category,canonical:need.canonical}];
+ });
+}
+function reconcileWeeklyShopping(base:AppState){
+ const plan=base.weeklyMenu;
+ if(!plan?.shoppingLinked)return base;
+ let shopping=base.shopping.flatMap(item=>{
+  const next=shoppingSources(item).filter(src=>!(src.type==="weekly"&&src.planId===plan.id));
+  const updated=withShoppingSources(item,next);
+  return updated?[updated]:[];
+ });
+ for(const item of weeklyMissingItems({...base,shopping},plan)){
+  const source:ShoppingSource={id:"weekly:"+plan.id+":"+item.canonical,type:"weekly",label:"Menú semanal",qty:item.qty,unit:item.unit,planId:plan.id};
+  const existing=shopping.findIndex(x=>x.status==="pendiente"&&planUnitFamily(x.unit)===planUnitFamily(item.unit)&&norm(classifyProduct(x.name,x.category).canonical)===item.canonical);
+  if(existing>=0){
+   const q=shopping[existing];
+   const updated=withShoppingSources(q,[...shoppingSources(q),source]);
+   if(updated)shopping[existing]={...updated,requestedBy:"Menú semanal"};
+  }else{
+   const p=classifyProduct(item.name,item.category);
+   shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty,unit:item.unit,category:p.category,subcategory:p.subcategory,requestedBy:"Menú semanal",reason:"receta",status:"pendiente",sources:[source]});
+  }
+ }
+ return {...base,shopping};
+}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
 function inferCategory(name:string){return classifyProduct(name).category}
 function inferUnit(name:string){
@@ -676,7 +727,7 @@ export default function HomeOS(){
    })].slice(-600);
    const purchaseSessions=typeof total==="number"&&total>=0?[...s.purchaseSessions,{id:crypto.randomUUID(),date:today,total,supermarket:activeStore||undefined}].slice(-240):s.purchaseSessions;
    const purchasedState={...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
-   return reconcileRecipeShopping(purchasedState);
+   return reconcileWeeklyShopping(reconcileRecipeShopping(purchasedState));
   });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
@@ -961,34 +1012,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  });
  const weeklySlots=weeklyPlan?.slots||[];
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
- const weeklyNeedMap=new Map<string,{name:string;key:string;amountBase:number;unit:string;family:string}>();
- for(const {recipe:r} of weeklyRecipes){
-  for(const ing of r.ingredients){
-   const parsed=parseQty(ing.qty);
-   if(!parsed)continue;
-   const family=unitFamily(parsed.unit);
-   const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
-   const key=canonical+"|"+family+"|"+(family==="count"?normalizedUnit(parsed.unit):"");
-   const base=toBase(parsed.amount,parsed.unit);
-   const prev=weeklyNeedMap.get(key);
-   if(prev)prev.amountBase+=base;
-   else weeklyNeedMap.set(key,{name:ing.name,key:ing.key,amountBase:base,unit:parsed.unit,family});
-  }
- }
- const weeklyMissing=[...weeklyNeedMap.values()].map(need=>{
-  const candidates=planningInventory(state,weeklyPlan?.id).filter(i=>productMatchesNeed(i,need.key)&&usableInventoryItem(i));
-  let availableBase=0;
-  for(const i of candidates){
-   const itemFamily=unitFamily(i.unit);
-   if(itemFamily!==need.family)continue;
-   if(need.family==="count"&&normalizedUnit(need.unit)!=="ud"&&normalizedUnit(i.unit)!==normalizedUnit(need.unit))continue;
-   availableBase+=toBase(Math.max(0,i.qty),i.unit);
-  }
-  const shortBase=Math.max(0,need.amountBase-availableBase);
-  if(shortBase<=0)return null;
-  const amount=Math.round(fromBase(shortBase,need.unit)*100)/100;
-  return {name:need.name,key:need.key,qty:String(amount)+" "+need.unit};
- }).filter(Boolean) as RecipeIngredient[];
+ const weeklyMissingDetailed=weeklyMissingItems(state,weeklyPlan);\n const weeklyMissing=weeklyMissingDetailed.map(x=>({name:x.name,key:x.key,qty:String(x.qty)+" "+x.unit} as RecipeIngredient));
 
  function generateWeek(){
   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
@@ -1015,38 +1039,8 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  }
  function addWeekMissing(){
   if(!weeklyPlan){setToast("Primero crea el menú semanal");return}
-  const grouped=new Map<string,{name:string;qty:number;unit:string;category:string;canonical:string}>();
-  for(const ing of weeklyMissing){
-   const parsed=parseQty(ing.qty);
-   const unit=parsed?.unit||inferUnit(ing.name);
-   const qty=parsed?.amount||1;
-   const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
-   const key=canonical+"|"+planUnitFamily(unit);
-   const prev=grouped.get(key);
-   if(prev)prev.qty=Math.round((prev.qty+qty)*100)/100;
-   else grouped.set(key,{name:ing.name,qty,unit,category:inferCategory(ing.name),canonical});
-  }
-  setState(s=>{
-   let shopping=s.shopping.flatMap(item=>{
-    const nextSources=shoppingSources(item).filter(src=>!(src.type==="weekly"&&src.planId===weeklyPlan.id));
-    const updated=withShoppingSources(item,nextSources);
-    return updated?[updated]:[];
-   });
-   for(const item of grouped.values()){
-    const p=classifyProduct(item.name,item.category);
-    const source:ShoppingSource={id:"weekly:"+weeklyPlan.id+":"+item.canonical,type:"weekly",label:"Menú semanal",qty:item.qty,unit:item.unit,planId:weeklyPlan.id};
-    const existing=shopping.findIndex(x=>x.status==="pendiente"&&planUnitFamily(x.unit)===planUnitFamily(item.unit)&&norm(classifyProduct(x.name,x.category).canonical)===item.canonical);
-    if(existing>=0){
-     const q=shopping[existing];
-     const updated=withShoppingSources(q,[...shoppingSources(q),source]);
-     if(updated)shopping[existing]={...updated,requestedBy:"Menú semanal"};
-    }else{
-     shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty,unit:item.unit,category:p.category,subcategory:p.subcategory,requestedBy:"Menú semanal",reason:"receta",status:"pendiente",sources:[source]});
-    }
-   }
-   return {...s,shopping};
-  });
-  setToast(grouped.size?grouped.size+" productos del menú sincronizados con Comprar":"El menú ya encaja con Casa");
+  setState(s=>reconcileWeeklyShopping({...s,weeklyMenu:s.weeklyMenu?{...s.weeklyMenu,shoppingLinked:true}:s.weeklyMenu}));
+  setToast(weeklyMissingDetailed.length?weeklyMissingDetailed.length+" productos del menú sincronizados con Comprar":"El menú ya encaja con Casa");
  }
 
  function completeReuse(){
