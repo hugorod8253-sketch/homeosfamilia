@@ -89,6 +89,10 @@ assert(LIDL_2026_SHELF_LIFE.length>=50,"real Lidl shelf-life calibration should 
 assert(shelfLifeBandFromReference("pan de hamburguesa")==="corta","burger buns should calibrate as short shelf life");
 assert(shelfLifeBandFromReference("macarrones")==="larga","dry pasta should calibrate as long shelf life");
 assert((shelfLifeReferenceDays("bebida de avena barista")||0)>150,"barista oat drink should use observed long shelf-life reference");
+assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="batido proteínas"&&x.label==="02/2028"),"protein drink must preserve the observed 02/2028 label");
+assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="queso"&&x.exactDate==="2026-11-19"),"cheese must preserve the corrected 19/11/2026 label");
+assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="almendras"&&x.confidence==="media"&&!x.exactDate),"almonds 29/03 must remain incomplete instead of inventing a year");
+
 
 const menu=buildWeeklyMenu(EXTRA_RECIPES,{
  inventory:["pechuga de pollo","arroz","tomate","yogur natural","patatas","huevos","garbanzos"],
