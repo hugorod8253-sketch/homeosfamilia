@@ -446,3 +446,20 @@ export function addMonthsIso(dateIso:string,months:number){
  d.setMonth(d.getMonth()+months);
  return d.toISOString().slice(0,10);
 }
+
+
+export function detectProductsInText(text:string){
+ const n=normalizeProductText(text);
+ const all=[...EXTRA_RULES,...RULES];
+ const seen=new Set<string>();
+ const out:ProductProfile[]=[];
+ for(const rule of all){
+  if(rule.match.test(n)&&!seen.has(rule.canonical)){
+   seen.add(rule.canonical);
+   const {match,...profile}=rule;
+   out.push(profile);
+  }
+ }
+ // Prefer the most specific variants when a broad family also matched.
+ return out.filter((p,idx,arr)=>!arr.some((q,j)=>j!==idx&&q.canonical!==p.canonical&&q.canonical.includes(p.canonical)&&q.canonical.length>p.canonical.length));
+}
