@@ -305,7 +305,8 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
- const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared">("all");
+ const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
+ const [mealSeed,setMealSeed]=useState("");
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
@@ -520,9 +521,9 @@ export default function HomeOS(){
   <main className="main">
    <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus}/>}
-   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast}/>}
+   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
-   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")}/>}
+   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
   </main>
 
@@ -553,7 +554,7 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
  </div></div>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared")=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void}){
  const todayIso=new Date().toISOString().slice(0,10);
  const next=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
  const recommended=state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length;
@@ -561,6 +562,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const known=state.inventory.filter(i=>i.stock!=="incierto").length;
  const review=state.inventory.length-known;
  const readyServings=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0);
+ const reserveDue=state.inventory.filter(i=>i.storageMode==="reserva"&&i.qualityReviewAt&&daysUntil(i.qualityReviewAt)<=0);
  const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"—";
  const peopleAtHome=state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="casa").length;
  return <section className="stack">
@@ -582,8 +584,9 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    <button className="status-card prepared-card" onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span>🍱</span><div><small>COMIDA PREPARADA</small><strong>{readyServings}</strong><p>raciones listas</p></div><b>›</b></button>
    <button className="status-card event-card" onClick={()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"center"})}><span>📅</span><div><small>PRÓXIMO EVENTO</small><strong>{nextDate}</strong><p>{next?.title||"Sin eventos"}</p></div><b>›</b></button>
   </div>
+  {reserveDue.length>0&&<button className="reserve-review-banner" onClick={()=>{setCasaFocus("reserve");setView("casa")}}><span>❄️</span><div><small>RESERVA DEL CONGELADOR</small><strong>${reserveDue.length} producto${reserveDue.length===1?"":"s"} para revisar</strong><p>No significa que esté caducado: HomeOS te recuerda revisar calidad y decidir si conviene usarlo pronto.</p></div><b>Ver reservas →</b></button>}
 
-  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
+  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"<div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
 
   <CalendarCard state={state} setState={setState}/>
  </section>
@@ -664,7 +667,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
   </article>
 }
 
-function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void}){
+function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
  const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
@@ -675,6 +678,7 @@ function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:
  const [mealListening,setMealListening]=useState(false);
  const [reuseOpen,setReuseOpen]=useState(false);
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
+ useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:RECIPES;
  const autoRecipe=pool[index%pool.length];
@@ -1001,7 +1005,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  </section>
 }
 
-function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared";clearFocus:()=>void}){
+function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,openRecipes}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;cameraRef:React.RefObject<HTMLInputElement|null>;galleryRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared"|"reserve";clearFocus:()=>void;openRecipes:(name:string)=>void}){
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const [density,setDensity]=useState<"compact"|"detail">("compact");
  const [preparedOpen,setPreparedOpen]=useState(false);
@@ -1011,9 +1015,9 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
  const [preparedServings,setPreparedServings]=useState(1);
  const [preparedLocation,setPreparedLocation]=useState<"Nevera"|"Congelador">("Nevera");
  const [photoStatus,setPhotoStatus]=useState("");
- useEffect(()=>{if(focus!=="all"){setLoc("Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
+ useEffect(()=>{if(focus!=="all"){setLoc(focus==="reserve"?"Congelador":"Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
- const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":true));
+ const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function freeze(id:string){
@@ -1087,7 +1091,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
  return <section className="stack">
   <div className="page-intro"><div><span className="eyebrow">CASA</span><h2>Encuentra rápido lo que tienes</h2><p>Primero eliges dónde está; después, si quieres, filtras por tipo de producto.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>🍱 Añadir preparado</button><button className="secondary" onClick={()=>cameraRef.current?.click()}>📷 Revisar con foto</button><button className="secondary" onClick={()=>galleryRef.current?.click()}>🖼 Fototeca</button><input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files?.[0];if(f){setPhotoStatus(f.name||"Foto de cámara");setToast("Foto seleccionada")}}}/><input ref={galleryRef} hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f){setPhotoStatus(f.name);setToast("Imagen seleccionada")}}}/>{photoStatus&&<span className="photo-status">Imagen lista: {photoStatus} · análisis automático pendiente</span>}</div></div>
 
-  {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que caducan pronto":"Comida preparada"}</strong><p>{focus==="expiring"?"Solo mostramos productos con fecha próxima para que puedas decidir qué gastar primero.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
+  {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":focus==="reserve"?"❄️":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que caducan pronto":focus==="reserve"?"Reservas del congelador":"Comida preparada"}</strong><p>{focus==="expiring"?"Solo mostramos productos con fecha próxima para que puedas decidir qué gastar primero.":focus==="reserve"?"Productos guardados a largo plazo. Los avisos son de revisión y calidad, no borrados automáticos.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
   <div className="inventory-toolbar">
    <div className="inventory-filter-block"><small>DÓNDE ESTÁ</small><div className="visual-filter-row">{LOCATIONS.map(x=><button key={x} className={loc===x?"active":""} onClick={()=>setLoc(x)}><span>{LOCATION_ICONS[x]}</span><b>{x}</b></button>)}</div></div>
    <div className="inventory-filter-block"><small>QUÉ ES</small><div className="visual-filter-row categories">{CATEGORIES.map(x=><button key={x} className={cat===x?"active":""} onClick={()=>setCat(x)}><span>{CATEGORY_ICONS[x]||"🛍️"}</span><b>{CATEGORY_LABELS[x]||x}</b></button>)}</div></div>
@@ -1103,7 +1107,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
     <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}{density==="detail"&&<small className="estimate-basis">{estimate.basis}</small>}</p>
     <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}
-    <div className="inventory-actions">{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"falta")}>Se acabó</button>}{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
+    <div className="inventory-actions">{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"falta")}>Se acabó</button>}{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}{density==="detail"&&i.stock!=="falta"&&<button className="recipe-from-product" onClick={()=>openRecipes(i.name)}>Ideas para comer</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
    </article>
   })}</div>
 
