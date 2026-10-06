@@ -228,6 +228,15 @@ const RULES:Rule[]=[
 /* Specific supermarket references checked before the broad family rules.
    Brand/flavour variants collapse into these household-level product types. */
 const EXTRA_RULES:Rule[]=[
+ // High-priority compound names that must beat broad family matches
+ P("pan de hamburguesa",/pan.*hamburguesa|burger\s+bun|brioche.*hamburguesa/,"Despensa","Panadería","Despensa","alta","burger-bun","shelf"),
+ P("chocolate con almendras",/chocolate.*almendra/,"Snacks y dulces","Chocolate","Despensa","baja","chocolate-almond","shelf"),
+ P("chocolate con leche",/chocolate.*leche/,"Snacks y dulces","Chocolate","Despensa","baja","milk-chocolate","shelf"),
+ P("pasta de dientes",/pasta.*diente|dentifrico/,"Higiene y cuidado","Dental","Despensa","baja","toothpaste","household"),
+ P("tortilla preparada",/tortilla.*(patata|preparad)/,"Preparados","Tortilla","Nevera","alta","tortilla","cold-required"),
+ P("pescado congelado",/(merluza|bacalao|salmon|pescado|gamba|langostino).*congelad|congelad.*(merluza|bacalao|salmon|pescado|gamba|langostino)/,"Congelados","Pescado congelado","Congelador","baja","frozen-fish","frozen"),
+ P("calamares rebozados",/calamar.*rebozad/,"Congelados","Marisco rebozado","Congelador","baja","breaded-squid","frozen"),
+
  // Quesos y lácteos
  P("queso manchego",/queso.*manchego|manchego.*queso/,"Lácteos","Queso curado","Nevera","baja","cheese","flex"),
  P("queso cheddar",/cheddar/,"Lácteos","Queso","Nevera","media","cheddar","cold-required"),
