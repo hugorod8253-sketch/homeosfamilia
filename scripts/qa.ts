@@ -4,7 +4,7 @@ import { parseReceiptText } from "../lib/receipt-local";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
-import { buildWeeklyMenu } from "../lib/weekly-menu";
+import { buildWeeklyMenu, resolveCalorieReference } from "../lib/weekly-menu";
 import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
@@ -127,6 +127,14 @@ const defaultCaloriePlan=buildWeeklyMenu([
  {id:"dinner-ref",title:"Pescado con verduras",time:20,servings:2,calories:700,protein:35,ingredients:[{name:"Pescado",qty:"300 g",key:"pescado"},{name:"Verduras",qty:"250 g",key:"verdura"}],mode:["normal"]}
 ],{inventory:[],dislikes:[],tools:[],people:1,balancedGoal:true});
 assert(defaultCaloriePlan.slots.length===21,"weekly menu should still use a calorie reference when the user does not know their target");
+const generalRef=resolveCalorieReference([0],true);
+assert(generalRef.source==="general"&&generalRef.dailyCalories===2000,"unknown calorie needs should use the 2000 kcal general reference");
+const mixedRef=resolveCalorieReference([2400,0],true);
+assert(mixedRef.source==="mixed"&&mixedRef.dailyCalories===2200,"mixed households should average configured values with the general reference for unknown members");
+const invalidRef=resolveCalorieReference([800,9999],true);
+assert(invalidRef.source==="general"&&invalidRef.dailyCalories===2000,"invalid calorie values should fall back safely instead of distorting the menu");
+const offRef=resolveCalorieReference([2400,0],false);
+assert(offRef.enabled===false&&offRef.dailyCalories===undefined&&offRef.source==="off","turning nutrition guidance off must disable calorie guidance completely");
 const savingMenu=buildWeeklyMenu([
  {id:"cheap",title:"Plato sencillo",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]},
  {id:"expensive",title:"Plato premium",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]}
