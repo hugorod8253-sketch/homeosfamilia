@@ -280,7 +280,6 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  const intervals:number[]=[];
  for(let i=1;i<purchases.length;i++)intervals.push((purchases[i]-purchases[i-1])/86400000);
  const learned=intervals.length>=2?median(intervals):0;
- const rotation=classifyProduct(item.name,item.category).rotation;
  const cycleDays={diaria:3,semanal:7,quincenal:14,mensual:30,mixta:10}[state.profile.shoppingCycle]||7;
  const activeMembers=state.members.slice(0,state.profile.householdSize);
  const presenceWeight:Record<Member["presence"],number>={casa:1,fuera_dia:.65,fines_semana:.38,variable:.65};
@@ -288,11 +287,20 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  const demand=Math.max(.55,activeMembers.reduce((sum,m)=>sum+presenceWeight[m.presence]*appetiteWeight[m.appetite],0));
  const baseline=Math.max(1.2,state.profile.householdSize*.68);
  const demandFactor=Math.max(.7,Math.min(1.45,demand/baseline));
- let expected=learned||(rotation==="alta"?cycleDays:rotation==="media"?cycleDays*2.4:cycleDays*7);
- if(!learned)expected/=demandFactor;
- if(item.location==="Congelador")expected=learned?Math.max(learned,30):Math.max(90,cycleDays*10);
- else if(item.location==="Despensa")expected*=1.35;
- if(["Suplementos","Limpieza y hogar","Higiene y cuidado"].includes(item.category))expected*=1.6;
+ const canonicalName=norm(classifyProduct(item.name,item.category).canonical);
+ const stapleFast=/leche|yogur|huevo|pan|pollo|pavo|hamburgues|lechuga|tomate|platano|manzana/.test(canonicalName);
+ const householdSlow=["Suplementos","Limpieza y hogar","Higiene y cuidado"].includes(item.category);
+ let genericExpected=cycleDays*(stapleFast?1:item.location==="Despensa"?3.2:householdSlow?5:1.7);
+ const purchaseQtys=state.purchaseHistory.filter(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical).map(p=>Math.max(.01,p.qty));
+ const typicalQty=purchaseQtys.length?median(purchaseQtys):Math.max(.01,item.qty);
+ const qtyFactor=Math.max(.55,Math.min(2.4,item.qty/Math.max(.01,typicalQty)));
+ let expected=learned?learned*qtyFactor:genericExpected*qtyFactor/demandFactor;
+ if(item.location==="Congelador")expected=learned?Math.max(learned*qtyFactor,30):Math.max(90,cycleDays*10);
+ else if(householdSlow)expected*=1.6;
+ const eatenSinceStart=state.mealHistory.filter(m=>new Date(m.date+"T12:00:00").getTime()>=new Date((item.lastConfirmedAt||item.purchasedAt)+"T12:00:00").getTime()).reduce((sum,m)=>{
+  return sum+(m.ingredients.some(ing=>norm(classifyProduct(ing.name,ing.category).canonical)===canonical)?m.servings:0);
+ },0);
+ if(eatenSinceStart>0&&!learned)expected=Math.max(2,expected/(1+Math.min(2,eatenSinceStart/Math.max(1,state.profile.householdSize))*.35));
  const start=item.lastConfirmedAt||item.frozenAt||item.purchasedAt;
  const age=Math.max(0,Math.floor((Date.now()-new Date(start+"T12:00:00").getTime())/86400000));
  const ratio=age/Math.max(1,expected);
@@ -301,7 +309,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.stock==="mucho")prob=Math.max(prob,.9);
  const label=prob>=.78?(age<=2?"Hay":"Probablemente hay"):prob>=.42?"Revisar":"Probablemente falta";
  const tone=prob>=.78?"hay":prob>=.42?"incierto":"falta";
- const basis=learned?"Aprende de una reposición típica de ~"+Math.max(1,Math.round(expected))+" días":"Estimación inicial según hogar y ritmo de compra · mejorará con tus tickets";
+ const basis=learned?"Aprende de vuestra reposición real (~"+Math.max(1,Math.round(expected))+" días ajustados a cantidad)":"Estimación inicial según hogar, cantidad y ritmo de compra · mejorará con tickets y comidas";
  return {prob,label,tone,basis};
 }
 
