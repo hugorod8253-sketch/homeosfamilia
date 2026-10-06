@@ -8,7 +8,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
-import { buildWeeklyMenu, type WeeklyMeal, type WeeklyMenuPlan } from "../lib/weekly-menu";
+import { buildWeeklyMenu, resolveCalorieReference, type WeeklyMeal, type WeeklyMenuPlan } from "../lib/weekly-menu";
 import { freeInventoryAfterReservations, planFromBase, planToBase, planUnitFamily, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 
@@ -1111,9 +1111,9 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   return {iso:d.toISOString().slice(0,10),label:d.toLocaleDateString("es-ES",{weekday:"long"}),date:d.toLocaleDateString("es-ES",{day:"numeric",month:"short"})};
  });
  const weeklySlots=weeklyPlan?.slots||[];
- const configuredCalorieTargets=state.members.slice(0,state.profile.householdSize).map(m=>m.dailyCalories||0).filter(n=>n>=1200&&n<=5000);
- const weeklyDailyTarget=configuredCalorieTargets.length?Math.round(configuredCalorieTargets.reduce((a,b)=>a+b,0)/configuredCalorieTargets.length):2000;
- const weeklyCalorieSource=configuredCalorieTargets.length?"Objetivo medio configurado":"Referencia general de adulto";
+ const calorieReference=resolveCalorieReference(state.members.slice(0,state.profile.householdSize).map(m=>m.dailyCalories),state.profile.nutrition!=="off");
+ const weeklyDailyTarget=calorieReference.dailyCalories||0;
+ const weeklyCalorieSource=calorieReference.source==="general"?"Referencia general":calorieReference.source==="mixed"?"Referencia mixta · datos propios + general":calorieReference.source==="custom"?"Referencia configurada":"Sin guía calórica";
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
  const weeklyMissingDetailed=weeklyMissingItems(state,weeklyPlan);
  const weeklyMissing=weeklyMissingDetailed.map(x=>({name:x.name,key:x.key,qty:String(x.qty)+" "+x.unit} as RecipeIngredient));
@@ -1147,14 +1147,14 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  }
  function createWeek(preferSaving=false){
   const activeMembers=state.members.slice(0,state.profile.householdSize);
-  const calorieTargets=activeMembers.map(m=>m.dailyCalories||0).filter(n=>n>=1200&&n<=5000);
-  const dailyCalories=calorieTargets.length?Math.round(calorieTargets.reduce((a,b)=>a+b,0)/calorieTargets.length):2000;
+  const calorieReference=resolveCalorieReference(activeMembers.map(m=>m.dailyCalories),state.profile.nutrition!=="off");
+  const dailyCalories=calorieReference.dailyCalories;
   const dislikes=activeMembers.flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
   const inventory=planningInventory(state,state.weeklyMenu?.id).map(i=>i.name);
   const priority=planningInventory(state,state.weeklyMenu?.id).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
   const costByRecipe=preferSaving?Object.fromEntries(RECIPES.flatMap(r=>{const cost=recipeKnownMissingCost(r);return typeof cost==="number"?[[r.id,cost]]:[]})):{};
   const keepShoppingLinked=Boolean(state.weeklyMenu?.shoppingLinked);
-  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority,costByRecipe,budgetPressure:preferSaving,dailyCalories,balancedGoal:state.profile.nutrition!=="off"||state.profile.goals.includes("equilibrio")}),shoppingLinked:keepShoppingLinked};
+  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority,costByRecipe,budgetPressure:preferSaving,dailyCalories,balancedGoal:state.profile.nutrition!=="off"||state.profile.goals.includes("equilibrio"),useCalorieGuidance:calorieReference.enabled}),shoppingLinked:keepShoppingLinked};
   setState(s=>{
    const oldId=s.weeklyMenu?.id;
    const shopping=oldId?s.shopping.flatMap(item=>{
@@ -1197,7 +1197,10 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    const ap=meal==="Desayuno"?(breakfast(a)?-6:5):(breakfast(a)?3:0);
    const bp=meal==="Desayuno"?(breakfast(b)?-6:5):(breakfast(b)?3:0);
    const at=meal==="Cena"&&a.time<=25?-1:0,bt=meal==="Cena"&&b.time<=25?-1:0;
-   return am-bm||ap-bp||ar-br||at-bt||a.time-b.time;
+   const ref=resolveCalorieReference(state.members.slice(0,state.profile.householdSize).map(m=>m.dailyCalories),state.profile.nutrition!=="off");
+   const share=meal==="Desayuno"?.25:meal==="Comida"?.40:.35;
+   const caloriePenalty=(r:Recipe)=>ref.enabled&&ref.dailyCalories&&r.calories?Math.abs(r.calories-ref.dailyCalories*share)/120:0;
+   return am-bm||ap-bp||caloriePenalty(a)-caloriePenalty(b)||ar-br||at-bt||a.time-b.time;
   });
   const nextRecipe=candidates[0];
   if(!nextRecipe){setToast("No encuentro una alternativa mejor con estas preferencias");return}
@@ -1376,7 +1379,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(reuseInventory,n)?"have":hasNeed(reuseInventory,n)?"some":"missing"} key={n.key}>{needAvailable(reuseInventory,n)?"✓":hasNeed(reuseInventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:tab==="menu"?<>
    <article className="weekly-menu-hero">
-    <div><small>MENÚ SEMANAL</small><h3>21 momentos · desayuno, comida y cena</h3><p>Combina Casa, gustos, tiempo, equipamiento y equilibrio general. Si nadie conoce sus calorías, HomeOS usa una referencia general para no obligarte a calcular nada.</p><span className="weekly-calorie-target">{weeklyCalorieSource} · ≈ {weeklyDailyTarget} kcal/persona/día</span></div>
+    <div><small>MENÚ SEMANAL</small><h3>21 momentos · desayuno, comida y cena</h3><p>Combina Casa, gustos, tiempo, equipamiento y equilibrio general. Si nadie conoce sus calorías, HomeOS puede usar una referencia general sin tratarla como objetivo médico.</p>{calorieReference.enabled&&<span className="weekly-calorie-target">{weeklyCalorieSource} · ≈ {weeklyDailyTarget} kcal/persona/día</span>}</div>
     <div className="weekly-menu-actions"><button className="secondary" onClick={generateWeek}>{weeklyPlan?"Regenerar semana":"Crear mi semana"}</button>{weeklyPlan&&<button className="primary" disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyMissing.length?"Añadir faltantes a compra":"No falta nada"}</button>}</div>
    </article>
    {!weeklyPlan?<article className="weekly-menu-empty"><span>📅</span><h3>Una semana sin pensar cada día qué cocinar</h3><p>HomeOS usará Casa, evitará lo que no gusta y propondrá desayuno, comida y cena sin repetir siempre lo mismo. Si hay calorías objetivo, las usará solo como orientación.</p><button onClick={generateWeek}>Generar menú semanal</button></article>:
