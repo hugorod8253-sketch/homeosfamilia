@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   applicationName: "HomeOS",
   manifest: "/manifest.webmanifest",
   appleWebApp:{capable:true,statusBarStyle:"default",title:"HomeOS"},
-  icons:{icon:"/icon.svg",apple:"/apple-icon"},
+  icons:{icon:"/icon.svg?v=2",apple:"/apple-icon"},
 };
 
 export const viewport: Viewport = {
