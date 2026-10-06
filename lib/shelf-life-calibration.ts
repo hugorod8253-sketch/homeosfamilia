@@ -28,14 +28,16 @@ export const LIDL_2026_SHELF_LIFE:ShelfLifeSample[]=[
  {name:"piña en lata",observedAt:"2026-10-06",label:"28/10/2027",kind:"preferente",confidence:"alta",exactDate:"2027-10-28"},
  {name:"champiñones en lata",observedAt:"2026-10-06",label:"31/12/2029",kind:"preferente",confidence:"alta",exactDate:"2029-12-31"},
  {name:"maíz conserva",observedAt:"2026-10-06",label:"07/2029",kind:"preferente",confidence:"alta",monthYear:"2029-07"},
+ {name:"tinto para cocinar",observedAt:"2026-10-06",label:"1/6",kind:"desconocido",confidence:"dudosa",note:"Dato incompleto/dudoso; no usar para cálculo."},
+ {name:"Vinoucosus",observedAt:"2026-10-06",label:"sin fecha visible",kind:"desconocido",confidence:"dudosa"},
  {name:"atún conserva",observedAt:"2026-10-06",label:"31/09/2029",kind:"preferente",confidence:"dudosa",note:"Fecha transcrita imposible; no usar para cálculo."},
- {name:"almendras",observedAt:"2026-10-06",label:"29/03/2027",kind:"preferente",confidence:"alta",exactDate:"2027-03-29"},
+ {name:"almendras",observedAt:"2026-10-06",label:"29/03",kind:"preferente",confidence:"media",note:"Año no indicado en la recogida; no usar para cálculo."},
  {name:"mix frutos secos natural",observedAt:"2026-10-06",label:"18/01/2027",kind:"preferente",confidence:"alta",exactDate:"2027-01-18"},
  {name:"chocolate negro",observedAt:"2026-10-06",label:"13/07/2028",kind:"preferente",confidence:"alta",exactDate:"2028-07-13"},
  {name:"kit kat",observedAt:"2026-10-06",label:"04/2027",kind:"preferente",confidence:"alta",monthYear:"2027-04"},
  {name:"bombones",observedAt:"2026-10-06",label:"04/2027",kind:"preferente",confidence:"alta",monthYear:"2027-04"},
  {name:"chuches",observedAt:"2026-10-06",label:"07/05/2028",kind:"preferente",confidence:"alta",exactDate:"2028-05-07"},
- {name:"bizcocho de coco",observedAt:"2026-10-06",label:"03/11",kind:"preferente",confidence:"media",note:"Año no indicado en la recogida."},
+ {name:"bizcocho de coco",observedAt:"2026-10-06",label:"03/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-03",note:"Año corregido en la recogida 2016→2026."},
  {name:"magdalenas",observedAt:"2026-10-06",label:"16/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-16"},
  {name:"sobaos",observedAt:"2026-10-06",label:"24/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-24"},
  {name:"magdalenas azúcar",observedAt:"2026-10-06",label:"07/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-07"},
@@ -53,7 +55,7 @@ export const LIDL_2026_SHELF_LIFE:ShelfLifeSample[]=[
  {name:"levadura",observedAt:"2026-10-06",label:"11/2028",kind:"preferente",confidence:"alta",monthYear:"2028-11"},
  {name:"producto infantil",observedAt:"2026-10-06",label:"07/2027",kind:"preferente",confidence:"media",monthYear:"2027-07"},
  {name:"café molido",observedAt:"2026-10-06",label:"23/12/2027",kind:"preferente",confidence:"alta",exactDate:"2027-12-23"},
- {name:"batido proteínas",observedAt:"2026-10-06",label:"06/08/2029",kind:"preferente",confidence:"alta",exactDate:"2029-08-06"},
+ {name:"batido proteínas",observedAt:"2026-10-06",label:"02/2028",kind:"preferente",confidence:"alta",monthYear:"2028-02"},
  {name:"barritas energéticas",observedAt:"2026-10-06",label:"07/2027",kind:"preferente",confidence:"alta",monthYear:"2027-07"},
  {name:"cola cao",observedAt:"2026-10-06",label:"15/06/2029",kind:"preferente",confidence:"alta",exactDate:"2029-06-15"},
  {name:"té frutos rojos",observedAt:"2026-10-06",label:"08/2028",kind:"preferente",confidence:"alta",monthYear:"2028-08"},
@@ -71,7 +73,10 @@ export const LIDL_2026_SHELF_LIFE:ShelfLifeSample[]=[
  {name:"butifarra",observedAt:"2026-10-06",label:"17/10/2026",kind:"caducidad",confidence:"alta",exactDate:"2026-10-17"},
  {name:"ganchitos / cheetos",observedAt:"2026-10-06",label:"23/12",kind:"preferente",confidence:"media",note:"Año no indicado."},
  {name:"zumo",observedAt:"2026-10-06",label:"28/07/2027",kind:"preferente",confidence:"alta",exactDate:"2027-07-28"},
- {name:"cerveza",observedAt:"2026-10-06",label:"06/2027",kind:"preferente",confidence:"alta",monthYear:"2027-06"}
+ {name:"cerveza",observedAt:"2026-10-06",label:"06/2027",kind:"preferente",confidence:"alta",monthYear:"2027-06"},
+ {name:"queso",observedAt:"2026-10-06",label:"19/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-19"},
+ {name:"ice tea limón",observedAt:"2026-10-06",label:"28/08/2027",kind:"preferente",confidence:"alta",exactDate:"2027-08-28"},
+ {name:"patatas chips",observedAt:"2026-10-06",label:"18/11/2026",kind:"preferente",confidence:"alta",exactDate:"2026-11-18"}
 ];
 
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9ñ\s]/g," ").replace(/\s+/g," ").trim()}
