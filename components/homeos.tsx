@@ -1335,6 +1335,7 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus,ope
 }
 
 function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;available:number;monthlySpent:number}){
+ const [selectedCategory,setSelectedCategory]=useState<string|null>(null);
  const usedPct=Math.min(100,Math.round(monthlySpent/Math.max(1,state.budget)*100));
  const monthKey=new Date().toISOString().slice(0,7);
  const pricedHistory=state.purchaseHistory.filter(i=>i.date.startsWith(monthKey)&&typeof i.price==="number"&&(i.price||0)>0);
@@ -1358,7 +1359,8 @@ function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setSta
  const knownSpend=Object.values(byCat).reduce((a,b)=>a+b,0);
  const categoryOrder=["Carne y pescado","Verdura","Fruta","Lácteos","Congelados","Despensa","Bebidas","Snacks y dulces","Limpieza y hogar","Higiene y cuidado","Preparados","Suplementos","Otros"];
  const icons:Record<string,string>={"Carne y pescado":"🥩","Verdura":"🥬","Fruta":"🍎","Lácteos":"🥛","Congelados":"🧊","Despensa":"🥫","Bebidas":"🥤","Snacks y dulces":"🍪","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Preparados":"🍱","Suplementos":"＋","Otros":"🛍️"};
- const rows=categoryOrder.filter(k=>(byCat[k]||0)>0).map(k=>({name:k,value:byCat[k]||0,icon:icons[k]}));
+ const rows=categoryOrder.map(k=>({name:k,value:byCat[k]||0,icon:icons[k]}));
+ const selectedItems=selectedCategory?pricedHistory.filter(i=>financeCategory(i as any)===selectedCategory).slice().reverse().slice(0,12):[];
  const remaining=Math.max(0,available);
  const over=Math.max(0,-available);
  const modeText=state.profile.financeMode==="preciso"
@@ -1384,8 +1386,9 @@ function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setSta
   </div>
 
   <article className="category-spend-card">
-   <div className="category-spend-head"><div><small>EN QUÉ SE VA EL DINERO</small><h3>Gasto por categoría</h3><p>Cuando tengamos tickets detallados, aquí aparecerá el reparto exacto de cada compra.</p></div><strong>{knownSpend.toFixed(2)} € clasificados</strong></div>
-   {rows.length?<div className="category-money-list">{rows.map((r,i)=>{const pct=knownSpend?Math.round(r.value/knownSpend*100):0;return <div className="money-row" key={r.name}><span className="money-icon">{r.icon}</span><div><div className="money-row-top"><b>{r.name}</b><strong>{r.value.toFixed(2)} €</strong></div><div className="money-bar"><span className={"bar-"+((i%6)+1)} style={{width:String(pct)+"%"}}/></div><small>{pct}% de lo clasificado</small></div></div>})}</div>:<div className="finance-empty"><span>🧾</span><strong>Todavía no hay productos con precio</strong><p>Cuando cierres compras con importes o se lean tickets, aparecerá el desglose.</p></div>}
+   <div className="category-spend-head"><div><small>EN QUÉ SE VA EL DINERO</small><h3>Gasto por categoría</h3><p>Mostramos todas las categorías. Toca una con gasto para ver qué productos la forman.</p></div><strong>{knownSpend.toFixed(2)} € clasificados</strong></div>
+   <div className="category-money-list">{rows.map((r,i)=>{const pct=knownSpend?Math.round(r.value/knownSpend*100):0;return <button className={"money-row "+(r.value?"has-data":"zero")+" "+(selectedCategory===r.name?"selected":"")} key={r.name} onClick={()=>r.value&&setSelectedCategory(selectedCategory===r.name?null:r.name)} disabled={!r.value}><span className="money-icon">{r.icon}</span><div><div className="money-row-top"><b>{r.name}</b><strong>{r.value.toFixed(2)} €</strong></div><div className="money-bar"><span className={"bar-"+((i%6)+1)} style={{width:String(pct)+"%"}}/></div><small>{r.value?pct+"% de lo clasificado":"Sin gasto registrado este mes"}</small></div></button>})}</div>
+   {selectedCategory&&<div className="finance-category-detail"><div><small>DETALLE · {selectedCategory.toUpperCase()}</small><button onClick={()=>setSelectedCategory(null)}>Cerrar</button></div>{selectedItems.length?<div>{selectedItems.map(i=><span key={i.id}><b>{i.name}</b><em>{typeof i.price==="number"?i.price.toFixed(2)+" €":"—"}</em><small>{new Date(i.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}{i.supermarket?" · "+i.supermarket:""}</small></span>)}</div>:<p>Hay gasto clasificado, pero todavía no tenemos líneas de ticket suficientes para enseñar el detalle de productos.</p>}</div>}
   </article>
 
   <article className="finance-how">
