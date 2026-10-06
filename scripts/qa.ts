@@ -4,6 +4,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
+import { LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
@@ -121,6 +122,13 @@ const sourceTotal=sumSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:
 assert(sourceTotal===1.5,"shopping sources should merge compatible recipe and manual quantities");
 const remainingSources=removePlanFromSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"p1");
 assert(remainingSources.length===1&&remainingSources[0].type==="manual","cancelling a recipe must preserve manual shopping demand");
+const aiParsed=parseLocalAiResponse('prefix [{"title":"Tortilla rápida","description":"Simple","time":12,"servings":2,"ingredients":[{"name":"Huevos","qty":"4 uds","key":"huevo"}],"steps":["Batir","Cuajar"],"tools":["Sartén"]}] suffix',2);
+assert(aiParsed.length===1&&aiParsed[0].title==="Tortilla rápida","local AI parser should recover a valid JSON array from model text");
+const aiClamped=sanitizeLocalAiRecipes([{title:"X",time:999,servings:99,ingredients:[{name:"Leche",qty:"1 L",key:"leche"}],steps:["Mezclar"]}],4);
+assert(aiClamped[0].time===180&&aiClamped[0].servings===12,"local AI sanitizer should clamp unreasonable time and serving values");
+let badAiShape=false;try{sanitizeLocalAiRecipes([{title:"Vacía",ingredients:[],steps:[]}],2)}catch{badAiShape=true}
+assert(badAiShape,"local AI sanitizer should reject recipes without usable ingredients or steps");
+assert(LOCAL_AI_MOBILE_MODEL==="SmolLM2-360M-Instruct-q4f32_1-MLC","mobile local AI should use the broadly compatible q4f32 WebLLM model");
 const reservedMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"]);
 assert(reservedMilk[0].qty===0.5,"general suggestions must not spend milk reserved for a recipe");
 const ownerMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"],"p1");
