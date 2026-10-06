@@ -109,3 +109,21 @@ export function freeInventoryAfterReservations<T extends PlanInventoryItem & {pl
   return {...item,qty};
  });
 }
+
+
+export function remainingSourcesAfterPurchase(sources:ShoppingSource[],purchasedQty:number,purchasedUnit:string){
+ let remainingBase=planToBase(Math.max(0,purchasedQty),purchasedUnit);
+ const priority=(x:ShoppingSource)=>x.type==="recipe"?0:x.type==="weekly"?1:x.type==="manual"?2:3;
+ const ordered=sources.map((source,index)=>({source,index})).sort((a,b)=>priority(a.source)-priority(b.source)||(a.source.plannedFor||"9999").localeCompare(b.source.plannedFor||"9999"));
+ const next=[...sources];
+ for(const {source,index} of ordered){
+  if(remainingBase<=0)break;
+  if(planUnitFamily(source.unit)!==planUnitFamily(purchasedUnit))continue;
+  const sourceBase=planToBase(Math.max(0,source.qty),source.unit);
+  const fulfilled=Math.min(sourceBase,remainingBase);
+  const left=Math.max(0,sourceBase-fulfilled);
+  next[index]={...source,qty:Math.round(planFromBase(left,source.unit)*100)/100};
+  remainingBase-=fulfilled;
+ }
+ return next.filter(x=>x.qty>0);
+}
