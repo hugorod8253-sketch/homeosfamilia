@@ -5,6 +5,7 @@ import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freeze
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
+import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
@@ -32,7 +33,7 @@ type RecipeIngredient = {name:string;qty:string;key:string};
 type Recipe = {
   id:string; title:string; image:string; time:number; difficulty:"Fácil"|"Media";
   mode:CookingStyle[]; servings:number; calories:number; protein:number; carbs:number; fat:number;
-  ingredients:RecipeIngredient[]; steps:string[]; description:string; tools?:string[];
+  ingredients:RecipeIngredient[]; steps:string[]; description:string; tools?:string[]; source?:"local-ai";
 };
 type Profile = {
   householdSize:number; supermarkets:string[]; mainSupermarket:string; goals:Goal[];
@@ -684,16 +685,22 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
  const [useMuch,setUseMuch]=useState("");
  const [craving,setCraving]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
+ const [aiRecipes,setAiRecipes]=useState<Recipe[]>([]);
+ const [aiLoading,setAiLoading]=useState(false);
+ const [aiProgress,setAiProgress]=useState(0);
+ const [aiProgressText,setAiProgressText]=useState("");
+ const [aiError,setAiError]=useState("");
  const [mealListening,setMealListening]=useState(false);
  const [reuseOpen,setReuseOpen]=useState(false);
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
- const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
- const pool=options.length?options:RECIPES;
+ const allRecipes=[...RECIPES,...aiRecipes];
+ const options=allRecipes.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
+ const pool=options.length?options:allRecipes;
  const autoRecipe=pool[index%pool.length];
- const recipe=(selectedRecipeId?RECIPES.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
+ const recipe=(selectedRecipeId?allRecipes.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
  const miss=missing(recipe,state.inventory);
- const filtered=useMuch?RECIPES.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
+ const filtered=useMuch?allRecipes.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
  const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2);
  const mentionedProducts=detectProductsInText(craving);
  const requireAllMentioned=mentionedProducts.length>1&&/(ambos|los dos|las dos|juntos|juntas|aprovechar|usar|gastar|con .* y )/.test(norm(craving));
@@ -702,7 +709,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
   const a=norm(ip.canonical),b=norm(p.canonical),raw=norm(i.name+" "+i.key);
   return a===b||a.includes(b)||b.includes(a)||raw.includes(b);
  });
- const cravingMatches=craving.trim()?RECIPES.map(r=>{
+ const cravingMatches=craving.trim()?allRecipes.map(r=>{
   const hay=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
   const wordHits=cravingWords.filter(w=>hay.includes(w)).length;
   const productHits=mentionedProducts.filter(p=>recipeUses(r,p)).length;
@@ -769,6 +776,46 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
   recognition.onend=()=>setMealListening(false);
   recognition.start();
  }
+
+ async function runLocalAI(){
+  setAiError("");
+  if(!localAiSupported()){setAiError("Este navegador no ofrece WebGPU. HomeOS seguirá usando el libro local de recetas sin coste.");return}
+  setAiLoading(true);setAiProgress(0);setAiProgressText("Preparando IA local");
+  try{
+   const inventory=state.inventory.filter(i=>i.stock!=="falta").slice(0,60).map(i=>i.name+" · "+i.qty+" "+i.unit+" · "+i.location);
+   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
+   const generated=await generateLocalRecipes({
+    request:craving.trim()||"Dame tres ideas útiles usando lo que tengo en casa",
+    inventory,
+    people:state.profile.householdSize,
+    dislikes,
+    tools:state.profile.kitchenTools,
+    mode
+   },p=>{setAiProgress(p.progress);setAiProgressText(p.text)});
+   const mapped:Recipe[]=generated.map((r,idx)=>({
+    id:"local-ai-"+Date.now()+"-"+idx,
+    title:r.title,
+    image:RECIPES[0]?.image||"/icon.svg",
+    time:r.time,
+    difficulty:r.time<=30?"Fácil":"Media",
+    mode:[mode],
+    servings:r.servings,
+    calories:0,protein:0,carbs:0,fat:0,
+    ingredients:r.ingredients,
+    steps:r.steps,
+    description:r.description,
+    tools:r.tools,
+    source:"local-ai"
+   }));
+   setAiRecipes(mapped);
+   if(mapped[0])setSelectedRecipeId(mapped[0].id);
+   setToast("3 ideas creadas con IA local");
+  }catch(err:any){
+   setAiError(err?.message==="webgpu_unavailable"?"Este navegador no soporta la IA local.":"No he podido generar ideas ahora. El libro local sigue disponible.");
+  }finally{
+   setAiLoading(false);
+  }
+ }
  function chooseRecipe(r:Recipe){
   setSelectedRecipeId(r.id);
   setMode(r.mode.includes(mode)?mode:r.mode[0]);
@@ -800,7 +847,13 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
     <div><small>¿QUÉ TE APETECE?</small><h3>Dilo o escríbelo como hablarías en casa</h3><p>Ej.: “Tengo leche y yogur y quiero aprovechar ambos” o “quiero una cena rápida con pollo”.</p></div>
     <div className="meal-query-input"><input value={craving} onChange={e=>setCraving(e.target.value)} enterKeyHint="search" placeholder="Tengo leche y yogur, quiero aprovechar ambos…"/><button className={mealListening?"meal-mic listening":"meal-mic"} onClick={startMealVoice} aria-label="Hablar">{mealListening?"…":"🎙"}</button></div>
     {mentionedProducts.length>0&&<div className="meal-confirmed-products">{mentionedProducts.map(p=><span key={p.canonical}>✓ {p.canonical} <small>{state.inventory.some(i=>productMatchesNeed(i,p.canonical))?"en Casa":"confirmado por ti para esta consulta"}</small></span>)}</div>}
-    {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" ingredientes por completar":"Puedes hacerlo con lo que tienes"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. Puedes usar “Aprovechar producto” o elegir una de las ideas de abajo.</div>}</div>}
+    {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" ingredientes por completar":"Puedes hacerlo con lo que tienes"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. La IA local puede crear opciones nuevas sin enviar tus datos a una API de pago.</div>}</div>}
+    <div className="local-ai-meals">
+     <div><small>IA LOCAL · SIN COSTE POR USO</small><strong>Crea recetas nuevas en tu propio dispositivo</strong><p>La primera vez descarga el modelo. Después queda en caché del navegador. No necesita clave de API ni saldo.</p></div>
+     <button className="local-ai-run" disabled={aiLoading} onClick={runLocalAI}>{aiLoading?"Preparando "+aiProgress+"%":"✦ Generar con IA local"}</button>
+     {aiLoading&&<div className="local-ai-progress"><span style={{width:aiProgress+"%"}}/><small>{aiProgressText}</small></div>}
+     {aiError&&<p className="local-ai-error">{aiError}</p>}
+    </div>
    </article>
 
    <div className="mode-row meal-modes">{[["rapido","⚡ Rápido"],["normal","🍽 Normal"],["cocinar","👨‍🍳 Cocinar"],["mealprep","🍱 Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
@@ -808,7 +861,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
    <div className="recipe-options-head"><div><small>CON LO QUE TIENES</small><h3>{mode==="mealprep"?"Opciones para preparar varias raciones":"Varias opciones, no solo una"}</h3></div><span>{pool.length} ideas disponibles</span></div>
    <div className="recipe-option-grid">{suggestions.map(r=>{const rm=missing(r,state.inventory);return <button className={recipe.id===r.id?"recipe-option selected":"recipe-option"} key={r.id} onClick={()=>chooseRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.servings} raciones</span><small className={rm.length?"needs":"ready"}>{rm.length?String(rm.length)+" por completar":"✓ Puedes hacerlo"}</small></div></button>})}</div>
 
-   <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?String(miss.length)+" INGREDIENTES POR COMPLETAR":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div>{availableTools.length>0&&<div className="recipe-tools"><small>PUEDES HACERLA CON</small>{availableTools.map(t=><span key={t}>{t}</span>)}</div>}<div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>
+   <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?String(miss.length)+" INGREDIENTES POR COMPLETAR":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div>{availableTools.length>0&&<div className="recipe-tools"><small>PUEDES HACERLA CON</small>{availableTools.map(t=><span key={t}>{t}</span>)}</div>}{recipe.source==="local-ai"?<div className="ai-recipe-note"><b>✦ IA local</b><span>Receta generada en tu dispositivo · revisa cantidades y cocción antes de preparar.</span></div>:<div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>}
     {dislikers.length>0&&<div className="family-warning">{dislikers.map((d,i)=><span key={d.name}>⚠ {d.name==="Tú"?"Has marcado que no te gusta":("A "+d.name+" no le gusta")} {d.matches.join(", ")}{i<dislikers.length-1?".":""}</span>)}</div>}
     <div className="meal-actions"><button className="primary" onClick={()=>setOpen(true)}>Preparar esta receta</button><button className="secondary" onClick={()=>{setSelectedRecipeId(null);setIndex(i=>i+1)}}>Siguiente idea</button></div></div></article>
 
