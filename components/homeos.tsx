@@ -113,7 +113,7 @@ function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function usableInventoryItem(i:InventoryItem){
- if(!usableInventoryItem(i))return false;
+ if(i.stock==="falta"||i.qty<=0)return false;
  if(i.location!=="Congelador"&&i.dateType==="caducidad"&&i.expires&&daysUntil(i.expires)<0)return false;
  return true;
 }
