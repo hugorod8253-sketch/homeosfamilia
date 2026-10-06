@@ -167,13 +167,24 @@ function planningInventory(state:AppState,exceptPlanId?:string){
  const active=[...state.recipePlans.filter(p=>p.status==="saved").map(p=>p.id),...(state.weeklyMenu?[state.weeklyMenu.id]:[])];
  return freeInventoryAfterReservations(state.inventory.filter(usableInventoryItem),active,exceptPlanId) as InventoryItem[];
 }
+function weeklyMealPeople(state:AppState,startDate:string,day:number,meal:WeeklyMeal){
+ const date=new Date(startDate+"T12:00:00");date.setDate(date.getDate()+day);
+ const weekend=date.getDay()===0||date.getDay()===6;
+ return state.members.slice(0,state.profile.householdSize).reduce((count,m)=>{
+  if(m.presence==="fines_semana")return count+(weekend?1:0);
+  if(m.presence==="fuera_dia")return count+((meal==="Comida"&&!weekend)?0:1);
+  return count+1;
+ },0);
+}
 function weeklyMissingItems(state:AppState,plan=state.weeklyMenu){
  if(!plan)return [] as {name:string;key:string;qty:number;unit:string;category:string;canonical:string}[];
  const needMap=new Map<string,{name:string;key:string;amountBase:number;unit:string;family:string;category:string;canonical:string}>();
  for(const slot of plan.slots){
   const recipe=RECIPES.find(r=>r.id===slot.recipeId);
   if(!recipe)continue;
-  const servingFactor=Math.max(1,state.profile.householdSize/Math.max(1,recipe.servings));
+  const people=weeklyMealPeople(state,plan.startDate||plan.createdAt,slot.day,slot.meal);
+  if(people<=0)continue;
+  const servingFactor=Math.max(1,people/Math.max(1,recipe.servings));
   for(const ing of recipe.ingredients){
    const parsed=parseQty(ing.qty); if(!parsed)continue;
    const family=unitFamily(parsed.unit);
@@ -482,7 +493,7 @@ export default function HomeOS(){
    const before=JSON.stringify(s.shopping),after=JSON.stringify(next.shopping);
    return before===after?s:next;
   });
- },[hydrated,state.inventory]);
+ },[hydrated,state.inventory,state.profile.householdSize,state.members]);
  useEffect(()=>{
   if(!hydrated)return;
   const readyNow=new Set(state.recipePlans.filter(p=>p.status==="saved"&&missing(p.recipe,planningInventory(state,p.id)).length===0).map(p=>p.id));
@@ -1386,10 +1397,11 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    <div className="weekly-menu-grid">{weekDates.map((day,dayIndex)=>{
     const daySlots=weeklySlots.filter(s=>s.day===dayIndex);
     const dayEvents=state.events.filter(e=>e.date===day.iso);
-    const dayCalories=daySlots.reduce((sum,slot)=>sum+(RECIPES.find(r=>r.id===slot.recipeId)?.calories||0),0);return <article className="weekly-day" key={day.iso}><div className="weekly-day-head"><span>{dayIndex+1}</span><div><strong>{day.label.charAt(0).toUpperCase()+day.label.slice(1)}</strong><small>{day.date}{dayCalories?" · ≈ "+dayCalories+" kcal/persona":""}</small></div></div>{dayEvents.length>0&&<div className="weekly-event-note">📅 {dayEvents.map(e=>e.title).join(" · ")}</div>}{(["Desayuno","Comida","Cena"] as WeeklyMeal[]).map(meal=>{
+    const dayCalories=daySlots.reduce((sum,slot)=>sum+(RECIPES.find(r=>r.id===slot.recipeId)?.calories||0),0);return <article className="weekly-day" key={day.iso}><div className="weekly-day-head"><span>{dayIndex+1}</span><div><strong>{day.label.charAt(0).toUpperCase()+day.label.slice(1)}</strong><small>{day.date}{calorieReference.enabled&&dayCalories?" · ≈ "+dayCalories+" kcal/persona":""}</small></div></div>{dayEvents.length>0&&<div className="weekly-event-note">📅 {dayEvents.map(e=>e.title).join(" · ")}</div>}{(["Desayuno","Comida","Cena"] as WeeklyMeal[]).map(meal=>{
      const slot=daySlots.find(s=>s.meal===meal);
      const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
-     return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<><button className="weekly-slot-main" onClick={()=>openWeekRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><b>{r.title}</b><em>{r.time} min · ≈ {r.calories} kcal/ración</em><span className={missing(r,planningInventory(state,weeklyPlan?.id)).length?"weekly-fit needs":"weekly-fit ready"}>{missing(r,planningInventory(state,weeklyPlan?.id)).length?missing(r,planningInventory(state,weeklyPlan?.id)).length+" por completar":"✓ encaja con Casa"}</span></div><strong>›</strong></button><div className="weekly-slot-actions"><button onClick={()=>changeWeekSlot(dayIndex,meal)}>Cambiar</button><button className="remove" onClick={()=>removeWeekSlot(dayIndex,meal)}>Quitar</button></div></>:<div className="weekly-slot-empty"><p>Sin propuesta</p><button onClick={()=>changeWeekSlot(dayIndex,meal)}>Añadir plato</button></div>}{slot?.why&&<i>{slot.why}</i>}</div>
+     const expectedPeople=weeklyPlan?weeklyMealPeople(state,weeklyPlan.startDate||weeklyPlan.createdAt,dayIndex,meal):state.profile.householdSize;
+     return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<><button className="weekly-slot-main" onClick={()=>openWeekRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><b>{r.title}</b><em>{r.time} min{calorieReference.enabled?" · ≈ "+r.calories+" kcal/ración":""}</em><span className={expectedPeople===0?"weekly-fit away":missing(r,planningInventory(state,weeklyPlan?.id)).length?"weekly-fit needs":"weekly-fit ready"}>{expectedPeople===0?"Fuera de casa · no añade compra":missing(r,planningInventory(state,weeklyPlan?.id)).length?missing(r,planningInventory(state,weeklyPlan?.id)).length+" por completar":"✓ encaja con Casa"}</span></div><strong>›</strong></button><div className="weekly-slot-actions"><button onClick={()=>changeWeekSlot(dayIndex,meal)}>Cambiar</button><button className="remove" onClick={()=>removeWeekSlot(dayIndex,meal)}>Quitar</button></div></>:<div className="weekly-slot-empty"><p>Sin propuesta</p><button onClick={()=>changeWeekSlot(dayIndex,meal)}>Añadir plato</button></div>}{slot?.why&&<i>{slot.why}</i>}</div>
     })}</article>
    })}</div>}
    {weeklyPlan&&<><article className="weekly-menu-summary"><div><small>COMPRA DE LA SEMANA</small><h3>{weeklyMissing.length?weeklyMissing.length+" ingredientes por completar":"Tienes lo necesario"}</h3><p>HomeOS calcula los faltantes contra Casa. Si cambias un plato, Comprar se recalcula sin tocar tu compra habitual.</p></div><button disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyPlan.shoppingLinked?"✓ Sincronizado con Comprar":"🛒 Pasar faltantes a Comprar"}</button></article>{state.budget>0&&<article className={weeklyBudgetRisk?"weekly-budget-assist warning":"weekly-budget-assist"}><div><small>PRESUPUESTO · ORIENTATIVO</small><strong>{weeklyPriceCoverage>=.6?"≈ "+weeklyKnownCost.toFixed(2)+" € de compra del menú":"Aún faltan precios para estimarlo bien"}</strong><p>{weeklyPriceCoverage>=.6?(weeklyBudgetRisk?"Supera el saldo mensual restante de "+budgetRemaining.toFixed(2)+" €. Puedes regenerar priorizando ingredientes ya disponibles y menor coste conocido.":"Saldo mensual restante: "+budgetRemaining.toFixed(2)+" € · estimación basada en precios anteriores."):"HomeOS conoce precio de "+Math.round(weeklyPriceCoverage*100)+"% de los faltantes. No tomará decisiones de presupuesto con datos débiles."}</p></div>{weeklyPriceCoverage>=.6&&<button onClick={generateWeekSaving}>Priorizar ahorro</button>}</article>}</>}
