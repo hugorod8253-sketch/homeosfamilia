@@ -5,6 +5,7 @@ import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freeze
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
+import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -19,10 +20,10 @@ type InventoryItem = {
   price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string;
 };
 type ShoppingItem = {
-  id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string;
+  id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean;
 };
-type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string};
+type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type ProductPreference = {location?:Location;category?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
 type EventItem = {id:string;title:string;date:string};
