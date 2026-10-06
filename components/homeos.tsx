@@ -1620,7 +1620,14 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const filteredList=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
  const planLine=(i:ShoppingItem)=>shoppingSources(i).some(src=>src.type==="recipe"||src.type==="weekly");
  const intentBase=(shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList);
- const mainItems=intentBase.filter(i=>shoppingIntentFilter==="todos"||(shoppingIntentFilter==="planes"?planLine(i):!planLine(i))).slice().sort((a,b)=>Number(planLine(b))-Number(planLine(a))||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
+ const todayShopping=new Date().toISOString().slice(0,10);
+ const shoppingRank=(i:ShoppingItem)=>{
+  if(!planLine(i))return 1;
+  if(shoppingSources(i).some(src=>src.type==="weekly"))return 0;
+  const due=shoppingRecipeDue(i);
+  return due<="9998-12-31"&&due>todayShopping?2:0;
+ };
+ const mainItems=intentBase.filter(i=>shoppingIntentFilter==="todos"||(shoppingIntentFilter==="planes"?planLine(i):!planLine(i))).slice().sort((a,b)=>shoppingRank(a)-shoppingRank(b)||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
  const hasPlanLines=state.shopping.some(planLine);
  const grouped=mainItems.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
  const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
