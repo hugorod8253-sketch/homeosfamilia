@@ -46,11 +46,9 @@ function breakfastLike(r:WeeklyMenuRecipe){
  return /desayuno|avena|yogur|batido|tortita|pancake|sandwich|sandwich|bizcocho|fruta|platano|huevo/.test(recipeText(r));
 }
 function calorieTargetFor(meal:WeeklyMeal,dailyCalories?:number){
- if(dailyCalories&&dailyCalories>=1200){
-  const share=meal==="Desayuno"?.25:meal==="Comida"?.40:.35;
-  return dailyCalories*share;
- }
- return meal==="Desayuno"?400:meal==="Comida"?650:500;
+ const reference=dailyCalories&&dailyCalories>=1200?dailyCalories:2000;
+ const share=meal==="Desayuno"?.25:meal==="Comida"?.40:.35;
+ return reference*share;
 }
 function calorieFitScore(r:WeeklyMenuRecipe,meal:WeeklyMeal,dailyCalories?:number){
  if(!r.calories||!Number.isFinite(r.calories))return 0;
