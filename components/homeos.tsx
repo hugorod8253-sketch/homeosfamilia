@@ -954,10 +954,12 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   const blocked=householdDislikes.some(d=>d&&text.includes(d));
   const urgentHits=expiring.filter(item=>r.ingredients.some(ing=>norm(ing.key).includes(norm(item.name))||norm(item.name).includes(norm(ing.key))||norm(ing.name).includes(norm(item.name)))).length;
   return {r,miss,blocked,urgentHits};
- }).filter(x=>!x.blocked).sort((a,b)=>a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).slice(0,4);
+ }).filter(x=>!x.blocked).sort((a,b)=>a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).filter((x,i,a)=>a.findIndex(y=>y.r.image===x.r.image)===i).slice(0,4);
 
  const hour=now.getHours();
- const greeting=hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches";
+ const primaryName=(state.members[0]?.name||"").trim();
+ const showName=primaryName&&!["tu","tú","yo","miembro 1"].includes(norm(primaryName));
+ const greeting=(hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches")+(showName?", "+primaryName:"");
  const currentMeal:WeeklyMeal=hour<12?"Desayuno":hour<18?"Comida":"Cena";
  const mealOrder:WeeklyMeal[]=["Desayuno","Comida","Cena"];
  let todayMenuSlots:WeeklyMenuPlan["slots"]=[];
