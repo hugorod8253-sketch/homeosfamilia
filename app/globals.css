@@ -819,3 +819,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .quick-guide-bottom{align-items:stretch;flex-direction:column}
  .quick-guide-bottom button{width:100%}
 }
+
+.meal-household-strip{display:flex;align-items:center;gap:8px;border:1px solid #dbe7de;background:#f4f9f5;border-radius:12px;padding:9px 11px}
+.meal-household-strip>span{width:25px;height:25px;border-radius:8px;background:#deece2;color:#3f6b4e;display:grid;place-items:center;font-size:9px;font-weight:900;flex:none}
+.meal-household-strip p{margin:0;font-size:9px;line-height:1.4;color:#68756d}.meal-household-strip b{color:#405148}
