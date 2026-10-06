@@ -1,6 +1,6 @@
-export type ProductLocation="Nevera"|"Congelador"|"Despensa"|"Suplementos";
+export type ProductLocation="Nevera"|"Congelador"|"Despensa"|"Suplementos"|"Sin ubicar";
 export type ProductRotation="alta"|"media"|"baja";
-export type ProductSafety="cold-required"|"frozen"|"shelf"|"household"|"supplement"|"flex";
+export type ProductSafety="cold-required"|"frozen"|"shelf"|"household"|"supplement"|"flex"|"unknown";
 export type ProductProfile={
  canonical:string;
  category:string;
@@ -378,6 +378,7 @@ const EXTRA_RULES:Rule[]=[
 ];
 
 const CATEGORY_FALLBACKS:Record<string,ProductProfile>={
+ "Por clasificar":{canonical:"producto por clasificar",category:"Por clasificar",subcategory:"Sin clasificar",location:"Sin ubicar",rotation:"media",icon:"unknown",safety:"unknown"},
  "Fruta y verdura":{canonical:"fruta o verdura",category:"Fruta y verdura",subcategory:"Fresco",location:"Nevera",rotation:"alta",icon:"leafy",safety:"flex"},
  "Lácteos":{canonical:"lácteo",category:"Lácteos",subcategory:"Lácteo",location:"Nevera",rotation:"media",icon:"dairy",safety:"cold-required"},
  "Carne":{canonical:"carne o pescado",category:"Carne",subcategory:"Fresco",location:"Nevera",rotation:"alta",icon:"meat","safety":"cold-required"},
@@ -398,7 +399,7 @@ export function classifyProduct(name:string,currentCategory?:string):ProductProf
   const {match,...profile}=found;
   return profile;
  }
- return CATEGORY_FALLBACKS[currentCategory||"Despensa"]||CATEGORY_FALLBACKS["Despensa"];
+ return currentCategory&&CATEGORY_FALLBACKS[currentCategory]?CATEGORY_FALLBACKS[currentCategory]:CATEGORY_FALLBACKS["Por clasificar"];
 }
 
 export function recommendedLocation(name:string,currentCategory?:string,preferred?:string){
@@ -412,6 +413,8 @@ export function recommendedLocation(name:string,currentCategory?:string,preferre
 
 export function canStoreAt(name:string,category:string,location:string){
  const p=classifyProduct(name,category);
+ if(location==="Sin ubicar") return true;
+ if(p.safety==="unknown") return true;
  if(location==="Congelador") return p.safety!=="household"&&p.safety!=="supplement";
  if(location==="Nevera") return p.safety!=="household";
  if(location==="Suplementos") return p.safety==="supplement";
@@ -424,6 +427,7 @@ export function storageWarning(name:string,category:string,location:string){
  if(canStoreAt(name,category,location)) return "";
  if(p.safety==="cold-required"&&location==="Despensa") return "Este producto necesita frío. HomeOS no recomienda guardarlo en despensa.";
  if(p.safety==="frozen"&&location!=="Congelador") return "Este producto se clasifica como congelado y debe mantenerse en congelador según su envase.";
+ if(p.safety==="unknown") return "";
  return "La ubicación elegida no encaja con la conservación habitual de este producto.";
 }
 
