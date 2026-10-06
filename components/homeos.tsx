@@ -1020,7 +1020,8 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  });
  const weeklySlots=weeklyPlan?.slots||[];
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
- const weeklyMissingDetailed=weeklyMissingItems(state,weeklyPlan);\n const weeklyMissing=weeklyMissingDetailed.map(x=>({name:x.name,key:x.key,qty:String(x.qty)+" "+x.unit} as RecipeIngredient));
+ const weeklyMissingDetailed=weeklyMissingItems(state,weeklyPlan);
+ const weeklyMissing=weeklyMissingDetailed.map(x=>({name:x.name,key:x.key,qty:String(x.qty)+" "+x.unit} as RecipeIngredient));
  const weeklyCostRows=weeklyMissingDetailed.map(item=>{
   const last=[...state.purchaseHistory].reverse().find(p=>typeof p.price==="number"&&p.qty>0&&unitFamily(p.unit)===unitFamily(item.unit)&&norm(classifyProduct(p.name,p.category).canonical)===item.canonical);
   if(!last||typeof last.price!=="number")return {...item,cost:null as number|null};
