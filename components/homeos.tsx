@@ -8,7 +8,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
 import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
-import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
+import { buildWeeklyMenu, type WeeklyMeal, type WeeklyMenuPlan } from "../lib/weekly-menu";
 import { freeInventoryAfterReservations, planFromBase, planToBase, planUnitFamily, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 
@@ -173,14 +173,16 @@ function weeklyMissingItems(state:AppState,plan=state.weeklyMenu){
  for(const slot of plan.slots){
   const recipe=RECIPES.find(r=>r.id===slot.recipeId);
   if(!recipe)continue;
+  const servingFactor=Math.max(1,state.profile.householdSize/Math.max(1,recipe.servings));
   for(const ing of recipe.ingredients){
    const parsed=parseQty(ing.qty); if(!parsed)continue;
    const family=unitFamily(parsed.unit);
    const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
    const key=canonical+"|"+family+"|"+(family==="count"?normalizedUnit(parsed.unit):"");
    const prev=needMap.get(key);
-   if(prev)prev.amountBase+=toBase(parsed.amount,parsed.unit);
-   else needMap.set(key,{name:ing.name,key:ing.key,amountBase:toBase(parsed.amount,parsed.unit),unit:parsed.unit,family,category:inferCategory(ing.name),canonical});
+   const scaledBase=toBase(parsed.amount*servingFactor,parsed.unit);
+   if(prev)prev.amountBase+=scaledBase;
+   else needMap.set(key,{name:ing.name,key:ing.key,amountBase:scaledBase,unit:parsed.unit,family,category:inferCategory(ing.name),canonical});
   }
  }
  const free=planningInventory(state,plan.id);
@@ -1012,6 +1014,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  const [recipeScope,setRecipeScope]=useState<"casa"|"planear">("casa");
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
+ useEffect(()=>{if(tab==="menu"&&state.weeklyMenu&&state.weeklyMenu.slots.length&&!state.weeklyMenu.slots.some(s=>s.meal==="Desayuno"))createWeek(false)},[tab]);
  const allRecipes=[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i);
  const imageUsage=allRecipes.reduce((m,r)=>{m.set(r.image,(m.get(r.image)||0)+1);return m},new Map<string,number>());
  const recipeVisual=(r:Recipe,kind:"thumb"|"hero"="thumb")=>{
@@ -1125,12 +1128,15 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   return shortages.length&&known/shortages.length>=.5?Math.round(cost*100)/100:undefined;
  }
  function createWeek(preferSaving=false){
-  const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
+  const activeMembers=state.members.slice(0,state.profile.householdSize);
+  const calorieTargets=activeMembers.map(m=>m.dailyCalories||0).filter(n=>n>=1200&&n<=5000);
+  const dailyCalories=calorieTargets.length?Math.round(calorieTargets.reduce((a,b)=>a+b,0)/calorieTargets.length):undefined;
+  const dislikes=activeMembers.flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
   const inventory=planningInventory(state,state.weeklyMenu?.id).map(i=>i.name);
   const priority=planningInventory(state,state.weeklyMenu?.id).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
   const costByRecipe=preferSaving?Object.fromEntries(RECIPES.flatMap(r=>{const cost=recipeKnownMissingCost(r);return typeof cost==="number"?[[r.id,cost]]:[]})):{};
   const keepShoppingLinked=Boolean(state.weeklyMenu?.shoppingLinked);
-  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority,costByRecipe,budgetPressure:preferSaving}),shoppingLinked:keepShoppingLinked};
+  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority,costByRecipe,budgetPressure:preferSaving,dailyCalories,balancedGoal:state.profile.nutrition!=="off"||state.profile.goals.includes("equilibrio")}),shoppingLinked:keepShoppingLinked};
   setState(s=>{
    const oldId=s.weeklyMenu?.id;
    const shopping=oldId?s.shopping.flatMap(item=>{
@@ -1153,7 +1159,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  function openWeekRecipe(r:Recipe){
   chooseRecipe(r);setOpen(true);
  }
- function changeWeekSlot(day:number,meal:"Comida"|"Cena"){
+ function changeWeekSlot(day:number,meal:WeeklyMeal){
   if(!weeklyPlan)return;
   const current=weeklyPlan.slots.find(x=>x.day===day&&x.meal===meal);
   const free=planningInventory(state,weeklyPlan.id);
@@ -1169,8 +1175,11 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   }).sort((a,b)=>{
    const am=missing(a,free).length,bm=missing(b,free).length;
    const ar=used.get(a.id)||0,br=used.get(b.id)||0;
+   const breakfast=(r:Recipe)=>/avena|yogur|batido|tortita|pancake|desayuno|bizcocho|fruta|platano|sandwich|huevo/.test(norm([r.title,...r.ingredients.map(i=>i.name)].join(" ")));
+   const ap=meal==="Desayuno"?(breakfast(a)?-6:5):(breakfast(a)?3:0);
+   const bp=meal==="Desayuno"?(breakfast(b)?-6:5):(breakfast(b)?3:0);
    const at=meal==="Cena"&&a.time<=25?-1:0,bt=meal==="Cena"&&b.time<=25?-1:0;
-   return am-bm||ar-br||at-bt||a.time-b.time;
+   return am-bm||ap-bp||ar-br||at-bt||a.time-b.time;
   });
   const nextRecipe=candidates[0];
   if(!nextRecipe){setToast("No encuentro una alternativa mejor con estas preferencias");return}
@@ -1179,7 +1188,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   setState(s=>reconcileWeeklyShopping({...s,weeklyMenu:nextPlan}));
   setToast(meal+" cambiada · Comprar se ha recalculado");
  }
- function removeWeekSlot(day:number,meal:"Comida"|"Cena"){
+ function removeWeekSlot(day:number,meal:WeeklyMeal){
   if(!weeklyPlan)return;
   const nextPlan={...weeklyPlan,slots:weeklyPlan.slots.filter(x=>!(x.day===day&&x.meal===meal))};
   setState(s=>reconcileWeeklyShopping({...s,weeklyMenu:nextPlan}));
