@@ -5,7 +5,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
-import { LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
+import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
 import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
@@ -132,6 +132,14 @@ assert(aiClamped[0].time===180&&aiClamped[0].servings===12,"local AI sanitizer s
 let badAiShape=false;try{sanitizeLocalAiRecipes([{title:"Vacía",ingredients:[],steps:[]}],2)}catch{badAiShape=true}
 assert(badAiShape,"local AI sanitizer should reject recipes without usable ingredients or steps");
 assert(LOCAL_AI_MOBILE_MODEL==="SmolLM2-360M-Instruct-q4f32_1-MLC","mobile local AI should use the broadly compatible q4f32 WebLLM model");
+const aiCasaPrompt=buildLocalAiPrompt({request:"Quiero cenar",inventory:["Huevos"],people:2,dislikes:[],tools:["Sartén"],mode:"normal",scope:"casa"});
+const aiPlanPrompt=buildLocalAiPrompt({request:"Quiero una lasaña",inventory:["Huevos"],people:2,dislikes:[],tools:["Horno"],mode:"normal",scope:"planear"});
+assert(aiCasaPrompt.system.includes("CON LO QUE HAY")&&aiCasaPrompt.system.includes("minimiza ingredientes faltantes"),"Casa AI mode must strongly prefer current inventory");
+assert(aiPlanPrompt.system.includes("PLANIFICANDO")&&aiPlanPrompt.system.includes("puedes incluir ingredientes faltantes"),"planning AI mode must allow sensible missing ingredients");
+const webllm=await import("@mlc-ai/web-llm");
+const webllmModels=new Set((webllm.prebuiltAppConfig?.model_list||[]).map((m:any)=>m.model_id));
+assert(webllmModels.has(LOCAL_AI_MODEL),"desktop local AI model must exist in installed WebLLM catalog");
+assert(webllmModels.has(LOCAL_AI_MOBILE_MODEL),"mobile local AI model must exist in installed WebLLM catalog");
 const syncBase={shopping:[{id:"a",name:"Leche",qty:1}],profile:{cooking:"rapido"}};
 const syncLocal={shopping:[{id:"a",name:"Leche",qty:1},{id:"b",name:"Pan",qty:1}],profile:{cooking:"rapido"}};
 const syncRemote={shopping:[{id:"a",name:"Leche",qty:2}],profile:{cooking:"normal"}};
