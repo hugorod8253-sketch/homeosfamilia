@@ -379,8 +379,16 @@ export default function HomeOS(){
  useEffect(()=>{
   let alive=true;
   (async()=>{
-   const local=loadState();
-   const creds=getStoredSync();
+   const fresh=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("fresh")==="1";
+   if(fresh){
+    localStorage.removeItem("homeos:v5");
+    localStorage.removeItem("homeos:device-member");
+    localStorage.removeItem("homeos:quick-guide-seen");
+    clearSync();
+    window.history.replaceState({},document.title,window.location.pathname);
+   }
+   const local=fresh?DEFAULT:loadState();
+   const creds=fresh?null:getStoredSync();
    if(creds&&syncConfigured()){
     setSyncStatus("connecting");
     try{
