@@ -1065,12 +1065,26 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  const weeklyBudgetRisk=state.budget>0&&weeklyPriceCoverage>=.6&&weeklyKnownCost>budgetRemaining;
 
 
- function generateWeek(){
+ function recipeKnownMissingCost(r:Recipe){
+  const shortages=recipeShortages(r.ingredients,planningInventory(state,state.weeklyMenu?.id));
+  let cost=0,known=0;
+  for(const item of shortages){
+   const canonical=norm(classifyProduct(item.name,inferCategory(item.name)).canonical);
+   const last=[...state.purchaseHistory].reverse().find(p=>typeof p.price==="number"&&p.qty>0&&unitFamily(p.unit)===unitFamily(item.unit)&&norm(classifyProduct(p.name,p.category).canonical)===canonical);
+   if(!last||typeof last.price!=="number")continue;
+   const lastBase=toBase(last.qty,last.unit),needBase=toBase(item.missing,item.unit);
+   if(lastBase<=0)continue;
+   cost+=(last.price/lastBase)*needBase;known++;
+  }
+  return shortages.length&&known/shortages.length>=.5?Math.round(cost*100)/100:undefined;
+ }
+ function createWeek(preferSaving=false){
   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
   const inventory=planningInventory(state,state.weeklyMenu?.id).map(i=>i.name);
   const priority=planningInventory(state,state.weeklyMenu?.id).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
+  const costByRecipe=preferSaving?Object.fromEntries(RECIPES.flatMap(r=>{const cost=recipeKnownMissingCost(r);return typeof cost==="number"?[[r.id,cost]]:[]})):{};
   const keepShoppingLinked=Boolean(state.weeklyMenu?.shoppingLinked);
-  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority}),shoppingLinked:keepShoppingLinked};
+  const plan={...buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority,costByRecipe,budgetPressure:preferSaving}),shoppingLinked:keepShoppingLinked};
   setState(s=>{
    const oldId=s.weeklyMenu?.id;
    const shopping=oldId?s.shopping.flatMap(item=>{
@@ -1085,8 +1099,11 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    const next={...s,weeklyMenu:plan,shopping,inventory};
    return keepShoppingLinked?reconcileWeeklyShopping(next):next;
   });
-  setToast(state.weeklyMenu?"Menú regenerado · Comprar se ha recalculado":"Menú semanal preparado con lo que hay en casa");
+  setToast(preferSaving?"Menú regenerado priorizando Casa y menor coste conocido":state.weeklyMenu?"Menú regenerado · Comprar se ha recalculado":"Menú semanal preparado con lo que hay en casa");
  }
+ function generateWeek(){createWeek(false)}
+ function generateWeekSaving(){createWeek(true)}
+
  function openWeekRecipe(r:Recipe){
   chooseRecipe(r);setOpen(true);
  }
@@ -1298,7 +1315,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
      return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<><button className="weekly-slot-main" onClick={()=>openWeekRecipe(r)}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><b>{r.title}</b><em>{r.time} min · {missing(r,planningInventory(state,weeklyPlan?.id)).length?missing(r,planningInventory(state,weeklyPlan?.id)).length+" por completar":"encaja con Casa"}</em></div><strong>›</strong></button><div className="weekly-slot-actions"><button onClick={()=>changeWeekSlot(dayIndex,meal as "Comida"|"Cena")}>Cambiar</button><button className="remove" onClick={()=>removeWeekSlot(dayIndex,meal as "Comida"|"Cena")}>Quitar</button></div></>:<div className="weekly-slot-empty"><p>Sin propuesta</p><button onClick={()=>changeWeekSlot(dayIndex,meal as "Comida"|"Cena")}>Añadir plato</button></div>}{slot?.why&&<i>{slot.why}</i>}</div>
     })}</article>
    })}</div>}
-   {weeklyPlan&&<><article className="weekly-menu-summary"><div><small>COMPRA DE LA SEMANA</small><h3>{weeklyMissing.length?weeklyMissing.length+" ingredientes por completar":"Tienes lo necesario"}</h3><p>HomeOS calcula los faltantes contra Casa. Si cambias un plato, Comprar se recalcula sin tocar tu compra habitual.</p></div><button disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyPlan.shoppingLinked?"✓ Sincronizado con Comprar":"🛒 Pasar faltantes a Comprar"}</button></article>{state.budget>0&&<article className={weeklyBudgetRisk?"weekly-budget-assist warning":"weekly-budget-assist"}><div><small>PRESUPUESTO · ORIENTATIVO</small><strong>{weeklyPriceCoverage>=.6?"≈ "+weeklyKnownCost.toFixed(2)+" € de compra del menú":"Aún faltan precios para estimarlo bien"}</strong><p>{weeklyPriceCoverage>=.6?(weeklyBudgetRisk?"Supera el saldo mensual restante de "+budgetRemaining.toFixed(2)+" €. Conviene cambiar algunos platos.":"Saldo mensual restante: "+budgetRemaining.toFixed(2)+" € · estimación basada en precios anteriores."):"HomeOS conoce precio de "+Math.round(weeklyPriceCoverage*100)+"% de los faltantes. No tomará decisiones de presupuesto con datos débiles."}</p></div></article>}</>}
+   {weeklyPlan&&<><article className="weekly-menu-summary"><div><small>COMPRA DE LA SEMANA</small><h3>{weeklyMissing.length?weeklyMissing.length+" ingredientes por completar":"Tienes lo necesario"}</h3><p>HomeOS calcula los faltantes contra Casa. Si cambias un plato, Comprar se recalcula sin tocar tu compra habitual.</p></div><button disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyPlan.shoppingLinked?"✓ Sincronizado con Comprar":"🛒 Pasar faltantes a Comprar"}</button></article>{state.budget>0&&<article className={weeklyBudgetRisk?"weekly-budget-assist warning":"weekly-budget-assist"}><div><small>PRESUPUESTO · ORIENTATIVO</small><strong>{weeklyPriceCoverage>=.6?"≈ "+weeklyKnownCost.toFixed(2)+" € de compra del menú":"Aún faltan precios para estimarlo bien"}</strong><p>{weeklyPriceCoverage>=.6?(weeklyBudgetRisk?"Supera el saldo mensual restante de "+budgetRemaining.toFixed(2)+" €. Puedes regenerar priorizando ingredientes ya disponibles y menor coste conocido.":"Saldo mensual restante: "+budgetRemaining.toFixed(2)+" € · estimación basada en precios anteriores."):"HomeOS conoce precio de "+Math.round(weeklyPriceCoverage*100)+"% de los faltantes. No tomará decisiones de presupuesto con datos débiles."}</p></div>{weeklyPriceCoverage>=.6&&<button onClick={generateWeekSaving}>Priorizar ahorro</button>}</article>}</>}
   </>:<Habitos state={state}/>} 
 
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{recipe.source==="local-ai"?<div className="recipe-total"><span>Receta generada localmente</span><b>Sin cálculo nutricional automático</b></div>:<div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>}{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>Math.min(recipe.servings,n+1))}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
