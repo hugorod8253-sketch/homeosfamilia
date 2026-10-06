@@ -642,3 +642,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .shop-inline-controls b{min-width:18px;text-align:center;font-size:8px;color:#657168}
 .shop-inline-controls .remove{background:#f7eeee;color:#925f59}
 .shop-visual-card:has(.reserve-buy) .shop-inline-controls{right:8px}
+
+/* Smart restock and unknown-product review */
+.smart-restock{align-items:flex-start}
+.smart-restock>div{display:grid;gap:5px}
+.smart-restock button{justify-self:start;border:1px solid #d9e5dc;background:#eef6f0;color:#3f6550;border-radius:9px;padding:7px 9px;font-size:8px;font-weight:850}
+.glyph-por-clasificar{color:#7a817d}
+.inventory-card:has(.location-mini):has(.stock-badge){min-width:0}
