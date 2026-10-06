@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
+import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, SyncConflictError, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
 import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freezerQualityGuide, recommendedLocation, storageWarning } from "../lib/product-engine";
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
@@ -10,6 +10,7 @@ import { readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, type WeeklyMenuPlan } from "../lib/weekly-menu";
 import { freeInventoryAfterReservations, planUnitFamily, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
+import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -559,11 +560,15 @@ export default function HomeOS(){
   syncTimerRef.current=setTimeout(async()=>{
    setSyncStatus("connecting");
    try{
-    const revision=await writeRemoteHousehold(syncCreds,stateRef.current);
+    const revision=await writeRemoteHousehold(syncCreds,stateRef.current,syncRevisionRef.current);
     syncRevisionRef.current=revision;
     lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
     setSyncStatus("synced");
-   }catch{setSyncStatus("error")}
+   }catch(err){
+    if(err instanceof SyncConflictError){
+     try{await resolveSyncConflict(syncCreds)}catch{setSyncStatus("error")}
+    }else setSyncStatus("error");
+   }
   },700);
   return()=>{if(syncTimerRef.current)clearTimeout(syncTimerRef.current)};
  },[state,hydrated,syncCreds]);
@@ -628,16 +633,43 @@ export default function HomeOS(){
   }catch{setToast("No se pudo copiar el código")}
  }
 
+ async function resolveSyncConflict(creds:SyncCredentials){
+  const remote=await readRemoteHousehold(creds);
+  if(!remote)throw new Error("sync_remote_missing");
+  let base=DEFAULT;
+  try{base=normalizeState(JSON.parse(lastSyncedJsonRef.current||"{}"))}catch{}
+  const local=stateRef.current;
+  const remoteState=normalizeState(remote.data);
+  let merged=normalizeState(mergeThreeWay(base,local,remoteState));
+  merged={...merged,
+   spent:mergeAdditiveCounter(base.spent,local.spent,remoteState.spent),
+   waste:mergeAdditiveCounter(base.waste,local.waste,remoteState.waste),
+   wasteSaved:mergeAdditiveCounter(base.wasteSaved,local.wasteSaved,remoteState.wasteSaved)
+  };
+  const revision=await writeRemoteHousehold(creds,merged,remote.revision);
+  syncRevisionRef.current=revision;
+  lastSyncedJsonRef.current=JSON.stringify(merged);
+  stateRef.current=merged;
+  setState(merged);
+  setSyncStatus("synced");
+  return revision;
+ }
+
  async function syncNow(){
   if(!syncCreds)return;
   setSyncStatus("connecting");
   try{
-   const revision=await writeRemoteHousehold(syncCreds,stateRef.current);
+   const revision=await writeRemoteHousehold(syncCreds,stateRef.current,syncRevisionRef.current);
    syncRevisionRef.current=revision;
    lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
    setSyncStatus("synced");
    setToast("Hogar sincronizado");
-  }catch{setSyncStatus("error");setToast("No se pudo sincronizar")}
+  }catch(err){
+   if(err instanceof SyncConflictError){
+    try{await resolveSyncConflict(syncCreds);setToast("Cambios de varios dispositivos combinados")}
+    catch{setSyncStatus("error");setToast("No se pudo resolver la sincronización")}
+   }else{setSyncStatus("error");setToast("No se pudo sincronizar")}
+  }
  }
 
  const expiring=useMemo(()=>state.inventory.filter(i=>daysUntil(i.expires)<=3&&i.stock!=="falta"),[state.inventory]);
