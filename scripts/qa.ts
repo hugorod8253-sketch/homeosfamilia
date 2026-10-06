@@ -4,7 +4,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
-import { freeInventoryAfterReservations, recipeShortages, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
+import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
@@ -122,6 +122,10 @@ const ownerMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",cat
 assert(ownerMilk[0].qty===1,"the owning recipe must see its own reserved ingredient");
 const mixedReservations=freeInventoryAfterReservations([{name:"Huevos",qty:6,unit:"ud",category:"Lácteos",stock:"hay",planReservations:[{id:"a",type:"recipe",label:"A",qty:2,unit:"ud",planId:"p1"},{id:"b",type:"recipe",label:"B",qty:3,unit:"ud",planId:"p2"}]}],["p1","p2"],"p1");
 assert(mixedReservations[0].qty===3,"a recipe may use its own reservation but must respect another recipe reservation");
+const partial=remainingSourcesAfterPurchase([{id:"recipe",type:"recipe",label:"Tortilla",qty:6,unit:"ud",planId:"p1"},{id:"manual",type:"manual",label:"Habitual",qty:4,unit:"ud"}],4,"ud");
+assert(partial.find(x=>x.id==="recipe")?.qty===2&&partial.find(x=>x.id==="manual")?.qty===4,"partial purchase should fulfil planned recipe demand first and preserve the rest");
+const mostlyBought=remainingSourcesAfterPurchase([{id:"recipe",type:"recipe",label:"Tortilla",qty:6,unit:"ud",planId:"p1"},{id:"manual",type:"manual",label:"Habitual",qty:4,unit:"ud"}],8,"ud");
+assert(!mostlyBought.some(x=>x.id==="recipe")&&mostlyBought.find(x=>x.id==="manual")?.qty===2,"buying most of a mixed line should leave only the unmet habitual quantity");
 
 
 console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 14/14");
