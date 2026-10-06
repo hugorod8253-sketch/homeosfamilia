@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { classifyProduct, detectProductsInText, freezerQualityGuide } from "../lib/product-engine";
-import { parseReceiptText } from "../lib/receipt-local";
+import { mergeReceiptCandidates, parseReceiptText } from "../lib/receipt-local";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
@@ -87,6 +87,12 @@ assert(receipt.total===6,"receipt total should parse");
 assert(receipt.items.length===3,"receipt should parse 3 product lines");
 assert(receipt.items.some(x=>x.name.toLowerCase().includes("leche")),"receipt should include milk");
 assert(receipt.items.some(x=>x.qty===2),"receipt should parse x2 quantity");
+const mergedReceipt=mergeReceiptCandidates(
+ [{name:"Leche",qty:1,price:1.25,raw:"LECHE 1,25"}],
+ [{name:"Leche",qty:1,price:1.25,raw:"LECHE 1,25"},{name:"Pan",qty:1,price:1.1,raw:"PAN 1,10"}]
+);
+assert(mergedReceipt.length===2,"overlapping ticket photos should not duplicate the exact same detected line");
+assert(mergedReceipt.some(x=>x.name==="Pan"),"multi-photo ticket merge should keep new lines from later photos");
 
 assert(EXTRA_RECIPES.length>=30,"local recipe book should have at least 30 extra recipes");
 assert(REUSE_IDEAS.length>=8,"reuse library should have at least 8 verified ideas");
