@@ -894,13 +894,18 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
    const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients);
    wasExact=consumed.exact;
    let inventory=consumed.inventory;
+   const today=new Date().toISOString().slice(0,10);
    if(servingsToStore>0){
-    const today=new Date().toISOString().slice(0,10);
     const existing=inventory.findIndex(i=>norm(i.name)===norm(recipe.title)&&i.category==="Preparados"&&i.location==="Nevera");
     if(existing>=0)inventory=inventory.map((i,idx)=>idx===existing?{...i,qty:i.qty+servingsToStore,servings:(i.servings||i.qty)+servingsToStore,stock:"hay",preparedAt:today,purchasedAt:today}:i);
     else inventory=[{id:crypto.randomUUID(),name:recipe.title,qty:servingsToStore,unit:"raciones",location:"Nevera",category:"Preparados",subcategory:"Preparado",stock:"hay",purchasedAt:today,preparedAt:today,servings:servingsToStore,source:recipe.mode.includes("mealprep")?"mealprep":"receta"},...inventory];
    }
-   return {...s,inventory};
+   const eatenServings=Math.max(0,recipe.servings-servingsToStore);
+   const mealHistory=eatenServings>0?[...s.mealHistory,{
+    id:crypto.randomUUID(),date:today,recipeId:recipe.id,title:recipe.title,servings:eatenServings,
+    ingredients:recipe.ingredients.map(i=>({name:i.name,key:i.key,category:inferCategory(i.name)}))
+   }].slice(-400):s.mealHistory;
+   return {...s,inventory,mealHistory};
   });
   setOpen(false);setSavePreparedAfter(false);
   setToast(servingsToStore>0?(wasExact?"Ingredientes descontados · preparado guardado":"Preparado guardado · revisa una cantidad"):(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar"));
