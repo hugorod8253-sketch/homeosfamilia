@@ -663,3 +663,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .local-ocr-card>p{font-size:8px;line-height:1.4;color:#7d8781;margin:0}
 
 .discard-product{background:#fbf3f1!important;color:#8f5d56!important;border-color:#eddcd8!important}
+
+.quick-add.smart .meal-mic{flex:0 0 44px;padding:0}
+@media(max-width:720px){
+ .quick-add.smart{grid-template-columns:minmax(0,1fr) 44px auto}
+ .quick-add.smart input{grid-column:1/-1}
+ .quick-add.smart .device-member-select,.quick-add.smart .device-member-pill{min-width:0}
+ .quick-add.smart>button:last-child{padding-inline:12px}
+}
