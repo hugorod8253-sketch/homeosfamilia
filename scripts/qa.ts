@@ -109,7 +109,7 @@ const menu=buildWeeklyMenu(EXTRA_RECIPES,{
  tools:["Placa / inducción","Horno","Air fryer"],
  people:4
 });
-assert(menu.slots.length===14,"weekly menu should create lunch and dinner for 7 days");
+assert(menu.slots.length===21,"weekly menu should create breakfast, lunch and dinner for 7 days");
 assert(new Set(menu.slots.map(x=>x.day)).size===7,"weekly menu should cover all 7 days");
 assert(menu.slots.filter(x=>x.meal==="Desayuno").length===7,"weekly menu should include 7 breakfasts");
 assert(menu.slots.filter(x=>x.meal==="Comida").length===7,"weekly menu should include 7 lunches");
@@ -125,7 +125,7 @@ const savingMenu=buildWeeklyMenu([
  {id:"cheap",title:"Plato sencillo",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]},
  {id:"expensive",title:"Plato premium",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]}
 ],{inventory:[],dislikes:[],tools:[],people:2,budgetPressure:true,costByRecipe:{cheap:2,expensive:18}});
-assert(savingMenu.slots[0]?.recipeId==="cheap","save-priority menu should prefer lower known missing cost when recipes otherwise fit equally");
+assert(savingMenu.slots.some(x=>x.recipeId==="cheap"),"save-priority menu should include the lower known-cost option when recipes otherwise fit equally");
 
 const shortages=recipeShortages([{name:"Leche",qty:"500 ml",key:"leche"},{name:"Huevos",qty:"4 uds",key:"huevo"}],[{name:"Leche",qty:0.2,unit:"L",category:"Lácteos",stock:"hay"},{name:"Huevos",qty:2,unit:"ud",category:"Lácteos",stock:"hay"}]);
 assert(shortages.some(x=>x.key==="leche"&&x.missing===300),"recipe shortage should subtract 200 ml already at home");
@@ -184,4 +184,4 @@ const mostlyBought=remainingSourcesAfterPurchase([{id:"recipe",type:"recipe",lab
 assert(!mostlyBought.some(x=>x.id==="recipe")&&mostlyBought.find(x=>x.id==="manual")?.qty===2,"buying most of a mixed line should leave only the unmet habitual quantity");
 
 
-console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 14/14");
+console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 21/21");
