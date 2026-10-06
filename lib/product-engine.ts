@@ -421,3 +421,28 @@ export function storageWarning(name:string,category:string,location:string){
 export function catalogStats(){
  const all=[...EXTRA_RULES,...RULES]; return {rules:all.length,categories:new Set(all.map(r=>r.category)).size,subcategories:new Set(all.map(r=>r.subcategory)).size};
 }
+
+
+export function freezerQualityGuide(name:string,category?:string,subcategory?:string){
+ const n=normalizeProductText(name+" "+(subcategory||""));
+ // Quality guidance for food continuously frozen around -18 °C.
+ if(/bacon|salchicha|frankfurt|longaniza|butifarra|hot dog/.test(n)) return {minMonths:1,maxMonths:2,label:"1–2 meses"};
+ if(/hamburguesa|carne picada|picada/.test(n)) return {minMonths:3,maxMonths:4,label:"3–4 meses"};
+ if(/entrecot|solomillo|filete|chuleta|chuleton|roast|asado crudo|lomo|costilla|secreto|presa|pluma|cordero/.test(n)) return {minMonths:4,maxMonths:12,label:"4–12 meses"};
+ if(/pollo entero|pavo entero/.test(n)) return {minMonths:12,maxMonths:12,label:"12 meses"};
+ if(/pollo|pavo|pechuga|muslo|contramuslo|alita/.test(n)) return {minMonths:9,maxMonths:9,label:"9 meses"};
+ if(/salmon|atun|caballa|sardina|pescado azul/.test(n)) return {minMonths:2,maxMonths:3,label:"2–3 meses"};
+ if(/merluza|bacalao|lenguado|rape|dorada|lubina|pescado blanco/.test(n)) return {minMonths:4,maxMonths:8,label:"4–8 meses"};
+ if(/gamba|langostino|camaron|calamar|sepia/.test(n)) return {minMonths:6,maxMonths:18,label:"6–18 meses"};
+ if(/pizza/.test(n)) return {minMonths:1,maxMonths:2,label:"1–2 meses"};
+ if(/nugget|pollo rebozado|empanad/.test(n)) return {minMonths:1,maxMonths:3,label:"1–3 meses"};
+ if(/sopa|guiso|estofado|crema de verduras/.test(n)) return {minMonths:2,maxMonths:3,label:"2–3 meses"};
+ if(category==="Preparados") return {minMonths:2,maxMonths:6,label:"2–6 meses"};
+ return null;
+}
+
+export function addMonthsIso(dateIso:string,months:number){
+ const d=new Date(dateIso+"T12:00:00");
+ d.setMonth(d.getMonth()+months);
+ return d.toISOString().slice(0,10);
+}
