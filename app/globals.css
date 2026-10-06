@@ -1026,7 +1026,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .weekly-slot-main>strong{padding-right:7px}
 .weekly-slot-main em{display:block}
 .weekly-fit{font-size:6.5px!important;font-style:normal!important;font-weight:800}
-.weekly-fit.ready{color:#4c7858}.weekly-fit.needs{color:#9a6a3d}
+.weekly-fit.ready{color:#4c7858}.weekly-fit.needs{color:#9a6a3d}.weekly-fit.away{color:#75827a}
 .weekly-day{align-content:start}
 @media(max-width:1100px){.home-today-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){
