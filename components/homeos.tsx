@@ -131,6 +131,19 @@ function inferUnit(name:string){
  if(/rollo/.test(n)) return "rollos";
  return "ud";
 }
+function normalizeSpokenShoppingText(value:string){
+ const words:Record<string,string>={un:"1",una:"1",uno:"1",dos:"2",tres:"3",cuatro:"4",cinco:"5",seis:"6",siete:"7",ocho:"8",nueve:"9",diez:"10",once:"11",doce:"12"};
+ let out=value;
+ for(const [w,n] of Object.entries(words))out=out.replace(new RegExp("\\b"+w+"\\b","gi"),n);
+ out=out.replace(/\bmedio\s+(kilo|kg|litro|l)\b/gi,(_,u)=>"0,5 "+u).replace(/\bmedia\s+(docena)\b/gi,"6 uds");
+ return out;
+}
+function splitShoppingEntries(value:string){
+ const cleaned=value.replace(/\s+/g," ").trim();
+ if(!cleaned)return [];
+ return cleaned.split(/\s*(?:,|;|\n|\s+y\s+)\s*/i).map(x=>x.trim()).filter(Boolean).slice(0,12);
+}
+
 function normalizedUnit(unit:string){
  const u=norm(unit).replace(/\./g,"").trim();
  if(["l","litro","litros"].includes(u))return "L";
