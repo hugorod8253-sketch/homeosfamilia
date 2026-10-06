@@ -11,6 +11,23 @@ export type WeeklyMeal="Desayuno"|"Comida"|"Cena";
 export type WeeklyMenuSlot={day:number;meal:WeeklyMeal;recipeId:string;why:string};
 export type WeeklyMenuPlan={id:string;createdAt:string;startDate:string;slots:WeeklyMenuSlot[];shoppingLinked?:boolean};
 
+export type CalorieReferenceSource="off"|"general"|"custom"|"mixed";
+export type CalorieReference={enabled:boolean;dailyCalories?:number;source:CalorieReferenceSource;configuredCount:number;people:number};
+
+export function resolveCalorieReference(targets:(number|undefined)[],enabled=true):CalorieReference{
+ const people=Math.max(1,targets.length||1);
+ if(!enabled)return {enabled:false,source:"off",configuredCount:0,people};
+ const normalized=(targets.length?targets:[0]).map(x=>{
+  const n=Number(x)||0;
+  return n>=1200&&n<=5000?Math.round(n):0;
+ });
+ const configuredCount=normalized.filter(Boolean).length;
+ const values=normalized.map(n=>n||2000);
+ const dailyCalories=Math.round(values.reduce((a,b)=>a+b,0)/values.length);
+ const source=configuredCount===0?"general":configuredCount===normalized.length?"custom":"mixed";
+ return {enabled:true,dailyCalories,source,configuredCount,people:normalized.length};
+}
+
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9ñ\s]/g," ").replace(/\s+/g," ").trim()}
 function recipeText(r:WeeklyMenuRecipe){return norm([r.title,...r.ingredients.map(i=>i.name)].join(" "))}
 function group(r:WeeklyMenuRecipe){
@@ -57,7 +74,7 @@ function calorieFitScore(r:WeeklyMenuRecipe,meal:WeeklyMeal,dailyCalories?:numbe
  return Math.max(-5,5-diff/90);
 }
 
-export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;priority?:string[];seed?:number;costByRecipe?:Record<string,number>;budgetPressure?:boolean;dailyCalories?:number;balancedGoal?:boolean}):WeeklyMenuPlan{
+export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;priority?:string[];seed?:number;costByRecipe?:Record<string,number>;budgetPressure?:boolean;dailyCalories?:number;balancedGoal?:boolean;useCalorieGuidance?:boolean}):WeeklyMenuPlan{
  const candidates=recipes.filter(r=>toolOk(r,opts.tools)&&dislikeHits(r,opts.dislikes)===0);
  const pool=candidates.length>=8?candidates:recipes.filter(r=>dislikeHits(r,opts.dislikes)===0);
  const used=new Map<string,number>();
@@ -93,7 +110,7 @@ export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:strin
      if(hasVeg(r)&&meal!=="Desayuno")score+=2;
      if((r.protein||0)>=20)score+=1.5;
     }
-    score+=calorieFitScore(r,meal,opts.dailyCalories);
+    if(opts.useCalorieGuidance)score+=calorieFitScore(r,meal,opts.dailyCalories);
     if(opts.budgetPressure){const cost=opts.costByRecipe?.[r.id];if(typeof cost==="number"&&Number.isFinite(cost))score-=Math.min(12,cost*.7)}
     if(score>bestScore){bestScore=score;best=r}
    }
