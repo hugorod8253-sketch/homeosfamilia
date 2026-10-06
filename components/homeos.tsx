@@ -786,6 +786,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  const [mealListening,setMealListening]=useState(false);
  const [reuseOpen,setReuseOpen]=useState(false);
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
+ const [catalogOpen,setCatalogOpen]=useState(false);
+ const [catalogQuery,setCatalogQuery]=useState("");
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
  const allRecipes=[...RECIPES,...aiRecipes];
@@ -794,7 +796,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  const autoRecipe=pool[index%pool.length];
  const recipe=(selectedRecipeId?allRecipes.find(r=>r.id===selectedRecipeId):undefined)||autoRecipe;
  const filtered=useMuch?allRecipes.filter(r=>r.ingredients.some(i=>norm(i.name).includes(norm(useMuch))||norm(i.key).includes(norm(useMuch)))||norm(r.title).includes(norm(useMuch))):[];
- const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2);
+ const searchStopWords=new Set(["tengo","quiero","puedo","hacer","para","como","algo","alguna","algun","alguno","alguna","esto","esta","este","que","con","una","uno","unos","unas","del","las","los","por","favor"]);
+ const cravingWords=norm(craving).split(/\s+/).filter(w=>w.length>2&&!searchStopWords.has(w));
  const mentionedProducts=detectProductsInText(craving);
  const requireAllMentioned=mentionedProducts.length>1&&/(ambos|los dos|las dos|juntos|juntas|aprovechar|usar|gastar|con .* y )/.test(norm(craving));
  const recipeUses=(r:Recipe,p:{canonical:string})=>r.ingredients.some(i=>{
@@ -802,6 +805,21 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
   const a=norm(ip.canonical),b=norm(p.canonical),raw=norm(i.name+" "+i.key);
   return a===b||a.includes(b)||b.includes(a)||raw.includes(b);
  });
+ const recipeIntentScore=(r:Recipe,q:string)=>{
+  const query=norm(q);
+  const text=norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" "));
+  let points=0;
+  const intents=[
+   {q:/postre|dulce|merienda|chocolate/,r:/postre|dulce|chocolate|brownie|bizcocho|tortita|mug cake|yogur|avena|platano/},
+   {q:/desayuno/,r:/desayuno|avena|yogur|tortita|batido|sandwich|huevo/},
+   {q:/cena/,r:/cena|ensalada|merluza|revuelto|wrap|sopa|crema|tortilla|sandwich/},
+   {q:/rapido|rapida|poco tiempo|10 min|15 min/,r:/rapido|rápido|batido|yogur|sandwich|revuelto|ensalada|mug cake/},
+   {q:/proteina|proteico|proteica/,r:/pollo|pavo|huevo|atun|salmon|merluza|yogur|proteina/},
+   {q:/vegetal|vegano|vegetariano/,r:/tofu|garbanzo|lenteja|verdura|hummus|ensalada|calabaza/}
+  ];
+  for(const intent of intents)if(intent.q.test(query)&&intent.r.test(text))points+=8;
+  return points;
+ };
  const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
  const missingForQuery=(r:Recipe)=>missing(r,state.inventory).filter(ing=>!confirmedForQuery(ing));
  const miss=missingForQuery(recipe);
@@ -810,9 +828,15 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
   const wordHits=cravingWords.filter(w=>hay.includes(w)).length;
   const productHits=mentionedProducts.filter(p=>recipeUses(r,p)).length;
   const allProducts=!mentionedProducts.length||productHits===mentionedProducts.length;
-  return {r,wordHits,productHits,allProducts,fit:score(r,state.inventory)};
- }).filter(x=>requireAllMentioned?x.allProducts:(x.productHits>0||x.wordHits>0)).sort((a,b)=>Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||b.fit-a.fit).map(x=>x.r):[];
+  const intent=recipeIntentScore(r,craving);
+  return {r,wordHits,productHits,allProducts,intent,fit:score(r,state.inventory)};
+ }).filter(x=>requireAllMentioned?x.allProducts:(x.productHits>0||x.wordHits>0||x.intent>0)).sort((a,b)=>b.intent-a.intent||Number(b.allProducts)-Number(a.allProducts)||b.productHits-a.productHits||b.wordHits-a.wordHits||b.fit-a.fit).map(x=>x.r):[];
  const suggestions=(craving.trim()?cravingMatches:pool).slice(0,4);
+ const catalogBase=(craving.trim()?cravingMatches:pool);
+ const catalogRecipes=catalogQuery.trim()?catalogBase.filter(r=>{
+  const q=norm(catalogQuery);
+  return norm([r.title,r.description,...r.ingredients.map(i=>i.name)].join(" ")).includes(q);
+ }):catalogBase;
  const availableTools=(recipe.tools||[]).filter(t=>state.profile.kitchenTools.includes(t));
  const dislikers=state.members.slice(0,state.profile.householdSize).map(member=>{
   const dislikes=member.dislikes.split(/[,;\n]/).map(x=>norm(x.trim())).filter(Boolean);
@@ -1035,8 +1059,8 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
 
    <div className="mode-row meal-modes">{[["rapido","⚡ Rápido"],["normal","🍽 Normal"],["cocinar","👨‍🍳 Cocinar"],["mealprep","🍱 Meal prep"]].map(([id,label])=><button key={id} className={mode===id?"active":""} onClick={()=>{setMode(id as CookingStyle);setIndex(0);setSelectedRecipeId(null)}}>{label}</button>)}</div>
 
-   <div className="recipe-options-head"><div><small>CON LO QUE TIENES</small><h3>{mode==="mealprep"?"Opciones para preparar varias raciones":"Varias opciones, no solo una"}</h3></div><span>{pool.length} ideas disponibles</span></div>
-   <div className="recipe-option-grid">{suggestions.map(r=>{const rm=missingForQuery(r);return <button className={recipe.id===r.id?"recipe-option selected":"recipe-option"} key={r.id} onClick={()=>chooseRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.servings} raciones</span><small className={rm.length?"needs":"ready"}>{rm.length?String(rm.length)+" por completar":"✓ Puedes hacerlo"}</small></div></button>})}</div>
+   <div className="recipe-options-head"><div><small>CON LO QUE TIENES</small><h3>{mode==="mealprep"?"Opciones para preparar varias raciones":"Varias opciones, no solo una"}</h3></div><button className="recipe-catalog-toggle" onClick={()=>setCatalogOpen(v=>!v)}>{catalogOpen?"Cerrar catálogo":"Ver todas"} · {catalogBase.length} recetas</button></div>
+   <div className="recipe-option-grid">{suggestions.map(r=>{const rm=missingForQuery(r);return <button className={recipe.id===r.id?"recipe-option selected":"recipe-option"} key={r.id} onClick={()=>chooseRecipe(r)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.servings} raciones</span><small className={rm.length?"needs":"ready"}>{rm.length?String(rm.length)+" por completar":"✓ Puedes hacerlo"}</small></div></button>})}</div>{catalogOpen&&<section className="recipe-catalog"><div className="recipe-catalog-head"><div><small>CATÁLOGO DE RECETAS</small><strong>{catalogRecipes.length} opciones</strong></div><input value={catalogQuery} onChange={e=>setCatalogQuery(e.target.value)} placeholder="Buscar dentro del catálogo…"/></div><div className="recipe-catalog-grid">{catalogRecipes.map(r=>{const rm=missingForQuery(r);return <button key={r.id} className={recipe.id===r.id?"catalog-recipe selected":"catalog-recipe"} onClick={()=>{chooseRecipe(r);setCatalogOpen(false);window.scrollTo({top:document.querySelector(".featured-meal")?.getBoundingClientRect().top?window.scrollY+(document.querySelector(".featured-meal") as HTMLElement).getBoundingClientRect().top-90:window.scrollY,behavior:"smooth"})}}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.servings} raciones</span><small>{rm.length?String(rm.length)+" ingredientes por completar":"✓ Puedes hacerla"}</small></div></button>})}</div></section>}
 
    <article className="featured-meal"><img src={recipe.image} alt={recipe.title} loading="lazy" decoding="async"/><div className="featured-copy"><span className="eyebrow">{miss.length?String(miss.length)+" INGREDIENTES POR COMPLETAR":"PUEDES HACERLO YA"}</span><h3>{recipe.title}</h3><p>{recipe.description}</p><div className="chips"><span>{recipe.time} min</span><span>{recipe.difficulty}</span><span>{recipe.servings} raciones</span></div>{availableTools.length>0&&<div className="recipe-tools"><small>PUEDES HACERLA CON</small>{availableTools.map(t=><span key={t}>{t}</span>)}</div>}{recipe.source==="local-ai"?<div className="ai-recipe-note"><b>✦ IA local</b><span>Receta generada en tu dispositivo · revisa cantidades y cocción antes de preparar.</span></div>:<div className="macro-row"><b>{recipe.calories} kcal</b><span>{recipe.protein}g proteína</span><span>{recipe.carbs}g carbos</span><span>{recipe.fat}g grasas</span><small>por ración · estimación</small></div>}
     {dislikers.length>0&&<div className="family-warning">{dislikers.map((d,i)=><span key={d.name}>⚠ {d.name==="Tú"?"Has marcado que no te gusta":("A "+d.name+" no le gusta")} {d.matches.join(", ")}{i<dislikers.length-1?".":""}</span>)}</div>}
