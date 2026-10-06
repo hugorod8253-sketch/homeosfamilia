@@ -5,7 +5,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu } from "../lib/weekly-menu";
-import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
+import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
@@ -140,6 +140,7 @@ assert(aiPlanPrompt.system.includes("PLANIFICANDO")&&aiPlanPrompt.system.include
 const webllmModels=new Set((prebuiltAppConfig?.model_list||[]).map((m:any)=>m.model_id));
 assert(webllmModels.has(LOCAL_AI_MODEL),"desktop local AI model must exist in installed WebLLM catalog");
 assert(webllmModels.has(LOCAL_AI_MOBILE_MODEL),"mobile local AI model must exist in installed WebLLM catalog");
+assert(webllmModels.has(LOCAL_AI_MOBILE_FALLBACK_MODEL),"mobile fallback local AI model must exist in installed WebLLM catalog");
 const syncBase={shopping:[{id:"a",name:"Leche",qty:1}],profile:{cooking:"rapido"}};
 const syncLocal={shopping:[{id:"a",name:"Leche",qty:1},{id:"b",name:"Pan",qty:1}],profile:{cooking:"rapido"}};
 const syncRemote={shopping:[{id:"a",name:"Leche",qty:2}],profile:{cooking:"normal"}};
