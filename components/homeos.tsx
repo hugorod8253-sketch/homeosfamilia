@@ -464,7 +464,7 @@ function habitBalanceSignals(state:AppState){
   {key:"sweets",label:"Dulces",icon:"D",re:/chocolate|galleta|chuche|gominola|snack|bolleria|refresco|helado/}
  ] as const;
  if(meals.length<4)return patterns.map(p=>({...p,tone:"learning" as HabitBalanceTone,status:"Aprendiendo",ratio:0}));
- const mealHas=(m:MealHistoryItem,re:RegExp)=>m.ingredients.some(i=>re.test(norm(i.name)));
+ const mealHas=(m:MealRecord,re:RegExp)=>m.ingredients.some(i=>re.test(norm(i.name)));
  return patterns.map(p=>{
   const ratio=meals.filter(m=>mealHas(m,p.re)).length/Math.max(1,meals.length);
   let tone:HabitBalanceTone="good",status="Bien";
