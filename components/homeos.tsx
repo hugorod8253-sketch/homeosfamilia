@@ -1112,7 +1112,8 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  });
  const weeklySlots=weeklyPlan?.slots||[];
  const configuredCalorieTargets=state.members.slice(0,state.profile.householdSize).map(m=>m.dailyCalories||0).filter(n=>n>=1200&&n<=5000);
- const weeklyDailyTarget=configuredCalorieTargets.length?Math.round(configuredCalorieTargets.reduce((a,b)=>a+b,0)/configuredCalorieTargets.length):0;
+ const weeklyDailyTarget=configuredCalorieTargets.length?Math.round(configuredCalorieTargets.reduce((a,b)=>a+b,0)/configuredCalorieTargets.length):2000;
+ const weeklyCalorieSource=configuredCalorieTargets.length?"Objetivo medio configurado":"Referencia general de adulto";
  const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
  const weeklyMissingDetailed=weeklyMissingItems(state,weeklyPlan);
  const weeklyMissing=weeklyMissingDetailed.map(x=>({name:x.name,key:x.key,qty:String(x.qty)+" "+x.unit} as RecipeIngredient));
@@ -1147,7 +1148,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
  function createWeek(preferSaving=false){
   const activeMembers=state.members.slice(0,state.profile.householdSize);
   const calorieTargets=activeMembers.map(m=>m.dailyCalories||0).filter(n=>n>=1200&&n<=5000);
-  const dailyCalories=calorieTargets.length?Math.round(calorieTargets.reduce((a,b)=>a+b,0)/calorieTargets.length):undefined;
+  const dailyCalories=calorieTargets.length?Math.round(calorieTargets.reduce((a,b)=>a+b,0)/calorieTargets.length):2000;
   const dislikes=activeMembers.flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
   const inventory=planningInventory(state,state.weeklyMenu?.id).map(i=>i.name);
   const priority=planningInventory(state,state.weeklyMenu?.id).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
@@ -1375,7 +1376,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
    <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(reuseInventory,n)?"have":hasNeed(reuseInventory,n)?"some":"missing"} key={n.key}>{needAvailable(reuseInventory,n)?"✓":hasNeed(reuseInventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:tab==="menu"?<>
    <article className="weekly-menu-hero">
-    <div><small>MENÚ SEMANAL</small><h3>21 momentos · desayuno, comida y cena</h3><p>Combina Casa, gustos, tiempo, equipamiento y equilibrio general. Las calorías son orientativas y solo influyen si alguien configura un objetivo.</p>{weeklyDailyTarget>0&&<span className="weekly-calorie-target">Objetivo medio configurado · ≈ {weeklyDailyTarget} kcal/persona/día</span>}</div>
+    <div><small>MENÚ SEMANAL</small><h3>21 momentos · desayuno, comida y cena</h3><p>Combina Casa, gustos, tiempo, equipamiento y equilibrio general. Si nadie conoce sus calorías, HomeOS usa una referencia general para no obligarte a calcular nada.</p><span className="weekly-calorie-target">{weeklyCalorieSource} · ≈ {weeklyDailyTarget} kcal/persona/día</span></div>
     <div className="weekly-menu-actions"><button className="secondary" onClick={generateWeek}>{weeklyPlan?"Regenerar semana":"Crear mi semana"}</button>{weeklyPlan&&<button className="primary" disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyMissing.length?"Añadir faltantes a compra":"No falta nada"}</button>}</div>
    </article>
    {!weeklyPlan?<article className="weekly-menu-empty"><span>📅</span><h3>Una semana sin pensar cada día qué cocinar</h3><p>HomeOS usará Casa, evitará lo que no gusta y propondrá desayuno, comida y cena sin repetir siempre lo mismo. Si hay calorías objetivo, las usará solo como orientación.</p><button onClick={generateWeek}>Generar menú semanal</button></article>:
@@ -1993,7 +1994,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
   {tab==="miembros"?<div className="member-profile-grid">{members.map((m,i)=><article className="member-profile-card" key={m.id}>
     <div className="member-title"><span>{m.name.slice(0,1).toUpperCase()||"?"}</span><div><input value={m.name} onChange={e=>updateMember(m.id,{name:e.target.value})}/><small>{m.relation||"Miembro "+(i+1)}</small></div></div>
     <label><span>Rutina</span><select value={m.presence} onChange={e=>updateMember(m.id,{presence:e.target.value as Member["presence"]})}><option value="casa">Suele comer en casa</option><option value="fuera_dia">Fuera durante el día</option><option value="fines_semana">Sobre todo fines de semana</option><option value="variable">Rutina variable</option></select></label>
-    <label><span>Consumo habitual</span><select value={m.appetite} onChange={e=>updateMember(m.id,{appetite:e.target.value as Member["appetite"]})}><option value="poco">Come poco</option><option value="normal">Normal</option><option value="mucho">Come bastante</option></select></label><label className="text-field"><span>Calorías/día orientativas</span><input type="number" min="1200" max="5000" step="50" value={m.dailyCalories||""} onChange={e=>{const v=Number(e.target.value)||0;updateMember(m.id,{dailyCalories:v?Math.max(1200,Math.min(5000,Math.round(v))):0})}} placeholder="Opcional · ej. 2200"/><small>Solo ayuda a repartir desayuno, comida y cena. No es una prescripción médica.</small></label>
+    <label><span>Consumo habitual</span><select value={m.appetite} onChange={e=>updateMember(m.id,{appetite:e.target.value as Member["appetite"]})}><option value="poco">Come poco</option><option value="normal">Normal</option><option value="mucho">Come bastante</option></select></label><label className="text-field"><span>Calorías/día orientativas</span><input type="number" min="1200" max="5000" step="50" value={m.dailyCalories||""} onChange={e=>{const v=Number(e.target.value)||0;updateMember(m.id,{dailyCalories:v?Math.max(1200,Math.min(5000,Math.round(v))):0})}} placeholder="Opcional · ej. 2200"/><small>Si no sabes este dato, déjalo vacío: HomeOS usará ≈ 2.000 kcal como referencia general, no como objetivo médico.</small></label>
     <label className="text-field"><span>No le gusta / evita</span><input value={m.dislikes} onChange={e=>updateMember(m.id,{dislikes:e.target.value})} placeholder="Ej. queso, frankfurt, hamburguesa…"/><small>Se usa para avisar y priorizar recetas que encajen mejor con esta persona.</small></label>
     <label className="text-field"><span>Nota útil</span><textarea value={m.notes} onChange={e=>updateMember(m.id,{notes:e.target.value})} placeholder="Ej. come fuera entre semana, suele llevar tupper…"/></label>
     <div className="member-summary"><b>{presenceText(m.presence)}</b><span>{appetiteText(m.appetite)}</span></div>
