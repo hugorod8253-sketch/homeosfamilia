@@ -941,6 +941,10 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  const [storeFilter,setStoreFilter]=useState("Todos");
  const [purchaseTotal,setPurchaseTotal]=useState("");
  const [receiptName,setReceiptName]=useState("");
+ const [ocrStatus,setOcrStatus]=useState<"idle"|"reading"|"ready"|"error">("idle");
+ const [ocrProgress,setOcrProgress]=useState(0);
+ const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
+ const [ocrTotal,setOcrTotal]=useState<number|undefined>(undefined);
  const receiptCameraRef=useRef<HTMLInputElement>(null);
  const members=state.members.slice(0,state.profile.householdSize);
  const currentMember=members.find(m=>m.id===deviceMemberId)||members[0];
@@ -984,10 +988,43 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   });
   setQuick("");
  }
- function ticketSelected(file?:File){
+ async function ticketSelected(file?:File){
   if(!file)return;
   setReceiptName(file.name||"Foto del ticket");
-  setToast("Ticket seleccionado");
+  setOcrItems([]);setOcrTotal(undefined);setOcrProgress(0);
+  if(!file.type.startsWith("image/")){
+   setOcrStatus("idle");
+   setToast("PDF seleccionado · el OCR local funciona con fotos; introduce el total manualmente");
+   return;
+  }
+  setOcrStatus("reading");
+  setToast("Leyendo el ticket en este dispositivo…");
+  try{
+   const parsed=await readReceiptImage(file,setOcrProgress);
+   setOcrItems(parsed.items);setOcrTotal(parsed.total);setOcrStatus("ready");
+   if(typeof parsed.total==="number")setPurchaseTotal(parsed.total.toFixed(2).replace(".",","));
+   setToast(parsed.items.length?parsed.items.length+" líneas detectadas en el ticket":"Ticket leído · revisa el total");
+  }catch{
+   setOcrStatus("error");
+   setToast("No he podido leer bien este ticket · puedes continuar manualmente");
+  }
+ }
+ function applyOcrItems(){
+  if(!ocrItems.length){setToast("No hay productos detectados para añadir");return}
+  setState(s=>{
+   let shopping=[...s.shopping];
+   for(const item of ocrItems){
+    const p=classifyProduct(item.name);
+    const existing=shopping.findIndex(x=>norm(classifyProduct(x.name,x.category).canonical)===norm(p.canonical)&&p.category!=="Por clasificar");
+    if(existing>=0){
+     shopping[existing]={...shopping[existing],qty:Math.max(shopping[existing].qty,item.qty),price:item.price??shopping[existing].price,status:shoppingActive?"carrito":shopping[existing].status,supermarket:activeStore||shopping[existing].supermarket};
+    }else{
+     shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty||1,unit:inferUnit(item.name),category:p.category,subcategory:p.subcategory,supermarket:activeStore||undefined,requestedBy:"Ticket",reason:"persona",status:shoppingActive?"carrito":"pendiente",price:item.price});
+    }
+   }
+   return {...s,shopping};
+  });
+  setToast(ocrItems.length+" productos añadidos desde el ticket");
  }
  function moveHere(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,supermarket:activeStore,status:"pendiente"}:i)}))}
  function cart(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,status:i.status==="carrito"?"pendiente":"carrito"}:i)}))}
@@ -1027,6 +1064,9 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
      <button className="tool-action ticket-camera" onClick={()=>receiptCameraRef.current?.click()}><span>📷</span><div><strong>Hacer foto del ticket</strong><p>Abre la cámara directamente.</p></div></button>
      <button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Elegir ticket</strong><p>{receiptName?"Seleccionado: "+receiptName:"Foto o PDF desde el dispositivo."}</p></div></button>
     </div>
+    {ocrStatus==="reading"&&<div className="local-ocr-card"><div className="local-ocr-head"><span>⌁</span><div><strong>Leyendo ticket en el móvil</strong><small>Procesamiento local · sin API de pago</small></div><b>{ocrProgress}%</b></div><div className="local-ocr-progress"><span style={{width:ocrProgress+"%"}}/></div></div>}
+    {ocrStatus==="ready"&&<div className="local-ocr-card ready"><div className="local-ocr-head"><span>✓</span><div><strong>{ocrItems.length} productos detectados</strong><small>{typeof ocrTotal==="number"?"Total detectado: "+ocrTotal.toFixed(2)+" €":"Revisa el total antes de terminar"}</small></div></div>{ocrItems.length>0&&<div className="ocr-preview">{ocrItems.slice(0,6).map((x,idx)=><span key={idx}>{x.name}{typeof x.price==="number"?" · "+x.price.toFixed(2)+" €":""}</span>)}{ocrItems.length>6&&<small>+{ocrItems.length-6} más</small>}</div>}<button onClick={applyOcrItems} disabled={!ocrItems.length}>Usar productos detectados</button><p>La foto se procesa en tu dispositivo. HomeOS no la envía a una IA de pago.</p></div>}
+    {ocrStatus==="error"&&<div className="local-ocr-card error"><strong>No se pudo leer con suficiente claridad</strong><p>Haz otra foto más recta y con buena luz, o continúa con la lista y el total manual.</p></div>}
     <input ref={receiptCameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>ticketSelected(e.target.files?.[0])}/>
     <input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>ticketSelected(e.target.files?.[0])}/>
     {shoppingActive&&<label className="purchase-total"><span>Total de la compra <small>{state.profile.financeMode==="preciso"?"obligatorio en modo preciso":"opcional"}</small></span><div><input inputMode="decimal" value={purchaseTotal} onChange={e=>setPurchaseTotal(e.target.value)} placeholder={estimatedTotal>0?"≈ "+estimatedTotal.toFixed(2):"0,00"}/><b>€</b></div>{state.profile.financeMode==="orientativo"&&estimatedTotal>0&&<small>Si lo dejas vacío, HomeOS usará ≈ {estimatedTotal.toFixed(2)} € con los precios que ya conoce.</small>}</label>}
