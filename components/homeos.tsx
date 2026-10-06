@@ -482,11 +482,11 @@ function suspiciousRepeatedText(value:string){
 }
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
 function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.25" y="2.75" width="7.5" height="12.5" rx="3.75" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M5.75 11.75v.5a6.25 6.25 0 0 0 12.5 0v-.5M12 18.5v2.75M8.75 21.25h6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-function navIcon(id:View,icon:string){return id==="inicio"?<span className="nav-logo-mini">{logo()}</span>:<span>{icon}</span>}
+function navIcon(_id:View,icon:string){return <span>{icon}</span>}
 
 
 const nav:{id:View;label:string;icon:string}[]=[
- {id:"inicio",label:"Inicio",icon:"⌂"},{id:"comer",label:"Comer",icon:"◉"},{id:"comprar",label:"Comprar",icon:"🛒"},{id:"casa",label:"Casa",icon:"⌑"},{id:"finanzas",label:"Finanzas",icon:"€"}
+ {id:"inicio",label:"Inicio",icon:"⌂"},{id:"comer",label:"Comer",icon:"♨"},{id:"comprar",label:"Comprar",icon:"⌁"},{id:"casa",label:"Casa",icon:"⌂"},{id:"finanzas",label:"Finanzas",icon:"▥"}
 ];
 
 export default function HomeOS(){
@@ -854,12 +854,15 @@ export default function HomeOS(){
  return <div className="app-shell">
   <aside className="sidebar">
    <div className="brand">{logo()}<div><strong>HomeOS</strong><span>Tu cocina, sin carga mental</span></div></div>
-   <nav>{nav.map(n=><button key={n.id} className={view===n.id?"nav active":"nav"} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}{n.label}</button>)}</nav>
-   <button className="profile" onClick={()=>setProfileOpen(true)}><span>FR</span><div><strong>Mi hogar</strong><small>{state.profile.householdSize} personas</small></div></button>
+   <nav>
+    {nav.map(n=><button key={n.id} className={view===n.id&&!(n.id==="comer"&&comerFocus==="habitos")?"nav active":"nav"} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}{n.label}</button>)}
+    <button className={view==="comer"&&comerFocus==="habitos"?"nav active":"nav"} onClick={()=>{setComerFocus("habitos");setView("comer")}}><span>◴</span>Hábitos</button>
+   </nav>
+   <button className="profile settings-entry" onClick={()=>setProfileOpen(true)}><span>⚙</span><div><strong>Configuración</strong><small>Hogar y preferencias</small></div></button>
   </aside>
 
   <main className="main">
-   <header className="topbar"><div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("ideas");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
@@ -867,7 +870,7 @@ export default function HomeOS(){
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
-  <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}</nav>
+  <nav className="bottom-nav">{nav.filter(n=>n.id!=="finanzas").map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}<button onClick={()=>setProfileOpen(true)}><span>•••</span><small>Más</small></button></nav>
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
@@ -941,7 +944,16 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
 function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openWeekly}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openWeekly:()=>void}){
  const [now,setNow]=useState(()=>new Date());
  const [calendarOpen,setCalendarOpen]=useState(false);
+ const [weather,setWeather]=useState<number|null>(null);
  useEffect(()=>{const id=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(id)},[]);
+ useEffect(()=>{
+  let active=true;
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=41.5486&longitude=2.1074&current=temperature_2m&timezone=Europe%2FMadrid")
+   .then(r=>r.ok?r.json():Promise.reject())
+   .then(data=>{const value=Number(data?.current?.temperature_2m);if(active&&Number.isFinite(value))setWeather(Math.round(value))})
+   .catch(()=>{});
+  return()=>{active=false};
+ },[]);
  const localIso=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
  const todayIso=localIso(now);
  const pending=state.shopping.filter(i=>i.status==="pendiente").length;
@@ -959,7 +971,8 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const hour=now.getHours();
  const primaryName=(state.members[0]?.name||"").trim();
  const showName=primaryName&&!["tu","tú","yo","miembro 1"].includes(norm(primaryName));
- const greeting=(hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches")+(showName?", "+primaryName:"");
+ const greetingName=showName?primaryName:"Fran";
+ const greeting=(hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches")+", "+greetingName;
  const currentMeal:WeeklyMeal=hour<12?"Desayuno":hour<18?"Comida":"Cena";
  const mealOrder:WeeklyMeal[]=["Desayuno","Comida","Cena"];
  let todayMenuSlots:WeeklyMenuPlan["slots"]=[];
@@ -979,7 +992,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  return <section className="home-final">
   <header className="home-final-head">
    <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
-   <time>{now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</time>
+   <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{weather!==null?"Sabadell":"Ahora"}</small></div></div>
   </header>
 
   <section className="home-final-top">
@@ -1012,7 +1025,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    </div>
 
    {state.profile.nutrition!=="off"&&<article className="home-final-habits">
-    <div className="home-card-head"><div><small>HÁBITOS ALIMENTARIOS</small><strong>{habitLearning?"Aprendiendo":"Últimas comidas confirmadas"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
+    <div className="home-card-head"><div><small>HÁBITOS ALIMENTARIOS (7 DÍAS)</small><strong>{habitLearning?"Aprendiendo":"Equilibrio reciente"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
     <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}><span className="ring"/><div><strong>{x.label}</strong><em>{x.status}</em></div></button>)}</div>
    </article>}
   </section>
