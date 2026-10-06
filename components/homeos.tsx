@@ -976,7 +976,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   }
  }
  const weeklyMissing=[...weeklyNeedMap.values()].map(need=>{
-  const candidates=state.inventory.filter(i=>productMatchesNeed(i,need.key)&&usableInventoryItem(i));
+  const candidates=planningInventory(state,weeklyPlan?.id).filter(i=>productMatchesNeed(i,need.key)&&usableInventoryItem(i));
   let availableBase=0;
   for(const i of candidates){
    const itemFamily=unitFamily(i.unit);
@@ -992,38 +992,61 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
 
  function generateWeek(){
   const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
-  const inventory=state.inventory.filter(usableInventoryItem).map(i=>i.name);
-  const priority=state.inventory.filter(usableInventoryItem).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
+  const inventory=planningInventory(state,state.weeklyMenu?.id).map(i=>i.name);
+  const priority=planningInventory(state,state.weeklyMenu?.id).filter(i=>i.stock==="mucho"||daysUntil(i.expires)<=5||daysUntil(i.estimatedExpires)<=5).map(i=>i.name);
   const plan=buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize,priority});
-  setState(s=>({...s,weeklyMenu:plan}));
-  setToast("Menú semanal preparado con lo que hay en casa");
+  setState(s=>{
+   const oldId=s.weeklyMenu?.id;
+   const shopping=oldId?s.shopping.flatMap(item=>{
+    const nextSources=shoppingSources(item).filter(src=>!(src.type==="weekly"&&src.planId===oldId));
+    const updated=withShoppingSources(item,nextSources);
+    return updated?[updated]:[];
+   }):s.shopping;
+   const inventory=oldId?s.inventory.map(i=>{
+    const next=(i.planReservations||[]).filter(src=>!(src.type==="weekly"&&src.planId===oldId));
+    return {...i,planReservations:next.length?next:undefined};
+   }):s.inventory;
+   return {...s,weeklyMenu:plan,shopping,inventory};
+  });
+  setToast(state.weeklyMenu?"Menú regenerado · la compra anterior se ha limpiado":"Menú semanal preparado con lo que hay en casa");
  }
  function openWeekRecipe(r:Recipe){
   chooseRecipe(r);setOpen(true);
  }
  function addWeekMissing(){
-  if(!weeklyMissing.length){setToast("El menú ya encaja con lo que tienes");return}
-  const grouped=new Map<string,{name:string;qty:number;unit:string;category:string}>();
+  if(!weeklyPlan){setToast("Primero crea el menú semanal");return}
+  const grouped=new Map<string,{name:string;qty:number;unit:string;category:string;canonical:string}>();
   for(const ing of weeklyMissing){
    const parsed=parseQty(ing.qty);
    const unit=parsed?.unit||inferUnit(ing.name);
    const qty=parsed?.amount||1;
-   const key=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical)+"|"+unit;
+   const canonical=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical);
+   const key=canonical+"|"+planUnitFamily(unit);
    const prev=grouped.get(key);
    if(prev)prev.qty=Math.round((prev.qty+qty)*100)/100;
-   else grouped.set(key,{name:ing.name,qty,unit,category:inferCategory(ing.name)});
+   else grouped.set(key,{name:ing.name,qty,unit,category:inferCategory(ing.name),canonical});
   }
   setState(s=>{
-   const shopping=[...s.shopping];
+   let shopping=s.shopping.flatMap(item=>{
+    const nextSources=shoppingSources(item).filter(src=>!(src.type==="weekly"&&src.planId===weeklyPlan.id));
+    const updated=withShoppingSources(item,nextSources);
+    return updated?[updated]:[];
+   });
    for(const item of grouped.values()){
     const p=classifyProduct(item.name,item.category);
-    const existing=shopping.findIndex(x=>norm(classifyProduct(x.name,x.category).canonical)===norm(p.canonical)&&x.status==="pendiente");
-    if(existing>=0)shopping[existing]={...shopping[existing],qty:Math.max(shopping[existing].qty,item.qty),reason:"receta"};
-    else shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty,unit:item.unit,category:p.category,subcategory:p.subcategory,requestedBy:"Menú semanal",reason:"receta",status:"pendiente"});
+    const source:ShoppingSource={id:"weekly:"+weeklyPlan.id+":"+item.canonical,type:"weekly",label:"Menú semanal",qty:item.qty,unit:item.unit,planId:weeklyPlan.id};
+    const existing=shopping.findIndex(x=>x.status==="pendiente"&&planUnitFamily(x.unit)===planUnitFamily(item.unit)&&norm(classifyProduct(x.name,x.category).canonical)===item.canonical);
+    if(existing>=0){
+     const q=shopping[existing];
+     const updated=withShoppingSources(q,[...shoppingSources(q),source]);
+     if(updated)shopping[existing]={...updated,requestedBy:"Menú semanal"};
+    }else{
+     shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty,unit:item.unit,category:p.category,subcategory:p.subcategory,requestedBy:"Menú semanal",reason:"receta",status:"pendiente",sources:[source]});
+    }
    }
    return {...s,shopping};
   });
-  setToast(grouped.size+" productos del menú añadidos a compra");
+  setToast(grouped.size?grouped.size+" productos del menú sincronizados con Comprar":"El menú ya encaja con Casa");
  }
 
  function completeReuse(){
@@ -1488,11 +1511,16 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   setToast("Producto eliminado de la lista");
  }
  function shoppingRecipeContext(i:ShoppingItem){
-  const ids=[...(i.recipePlanIds||[]),...(i.recipePlanId?[i.recipePlanId]:[])];
-  const titles=[...new Set(ids.map(id=>state.recipePlans.find(p=>p.id===id)?.recipe.title).filter(Boolean) as string[])];
-  if(!titles.length)return "";
-  if(titles.length===1)return "Para "+titles[0];
-  return "Para "+titles.length+" recetas";
+  const sources=shoppingSources(i);
+  const recipeIds=[...new Set(sources.filter(x=>x.type==="recipe"&&x.planId).map(x=>x.planId!))];
+  const titles=[...new Set(recipeIds.map(id=>state.recipePlans.find(p=>p.id===id)?.recipe.title).filter(Boolean) as string[])];
+  const weekly=sources.some(x=>x.type==="weekly");
+  const manual=sources.some(x=>x.type==="manual");
+  if(titles.length&&weekly)return (manual?"Habitual + ":"")+"menú + "+titles.length+" receta"+(titles.length===1?"":"s");
+  if(titles.length===1)return (manual?"Habitual + ":"")+"para "+titles[0];
+  if(titles.length>1)return (manual?"Habitual + ":"")+"para "+titles.length+" recetas";
+  if(weekly)return manual?"Habitual + menú semanal":"Menú semanal";
+  return "";
  }
  function shoppingRecipeDue(i:ShoppingItem){
   const ids=[...(i.recipePlanIds||[]),...(i.recipePlanId?[i.recipePlanId]:[])];
