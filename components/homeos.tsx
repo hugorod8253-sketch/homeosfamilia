@@ -367,7 +367,7 @@ function habitSignals(state:AppState){
  ] as [string,boolean][];
 }
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
-function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="13" rx="4" fill="currentColor"/><path d="M5.5 11.5c0 3.7 2.9 6.6 6.5 6.6s6.5-2.9 6.5-6.6M12 18.1v3.1M8.7 21.2h6.6" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round"/></svg>}
+function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.25" y="2.75" width="7.5" height="12.5" rx="3.75" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M5.75 11.75v.5a6.25 6.25 0 0 0 12.5 0v-.5M12 18.5v2.75M8.75 21.25h6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
 function navIcon(id:View,icon:string){return id==="inicio"?<span className="nav-logo-mini">{logo()}</span>:<span>{icon}</span>}
 
 
