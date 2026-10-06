@@ -24,7 +24,7 @@ type InventoryItem = {
 };
 type ShoppingItem = {
   id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
-  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipeId?:string;
+  requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string;
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
@@ -118,6 +118,8 @@ function loadState():AppState{
 }
 function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:00:00");return Math.ceil((d.getTime()-Date.now())/86400000)}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
+function isoAfterDays(days:number){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+function weekendPlanIso(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay();if(day===6||day===0)return d.toISOString().slice(0,10);d.setDate(d.getDate()+(6-day));return d.toISOString().slice(0,10)}
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function usableInventoryItem(i:InventoryItem){
  if(i.stock==="falta"||i.qty<=0)return false;
@@ -373,8 +375,19 @@ export default function HomeOS(){
  const syncCreateRef=useRef(false);
  const syncTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const stateRef=useRef(state);
+ const readyPlansRef=useRef<Set<string>>(new Set());
+ const readyPlansInitializedRef=useRef(false);
 
  useEffect(()=>{stateRef.current=state},[state]);
+ useEffect(()=>{
+  if(!hydrated)return;
+  const readyNow=new Set(state.recipePlans.filter(p=>p.status==="saved"&&missing(p.recipe,state.inventory).length===0).map(p=>p.id));
+  if(!readyPlansInitializedRef.current){readyPlansRef.current=readyNow;readyPlansInitializedRef.current=true;return}
+  const newlyReady=state.recipePlans.filter(p=>readyNow.has(p.id)&&!readyPlansRef.current.has(p.id));
+  readyPlansRef.current=readyNow;
+  if(newlyReady.length===1)setToast("Ya tienes todo para "+newlyReady[0].recipe.title);
+  else if(newlyReady.length>1)setToast(newlyReady.length+" recetas guardadas ya están listas para cocinar");
+ },[hydrated,state.inventory,state.recipePlans]);
  useEffect(()=>{if(!hydrated)return;const saved=localStorage.getItem("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
  useEffect(()=>{if(hydrated&&deviceMemberId)localStorage.setItem("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId]);
 
@@ -558,9 +571,12 @@ export default function HomeOS(){
     const existing=shopping.findIndex(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key)));
     if(existing>=0){
      const q=shopping[existing];
-     shopping[existing]={...q,recipePlanId:q.recipePlanId||saved.planId,recipeId:q.recipeId||recipe.id};
+     const ids=[...(q.recipePlanIds||[]),...(q.recipePlanId?[q.recipePlanId]:[])];
+     const alreadyLinked=ids.includes(saved.planId);
+     const recipePlanIds=[...new Set([...ids,saved.planId])];
+     shopping[existing]={...q,qty:alreadyLinked?q.qty:Math.round((q.qty+(parsed?.amount||1))*100)/100,recipePlanIds,recipePlanId:recipePlanIds[0],recipeId:q.recipeId||recipe.id,requestedBy:recipePlanIds.length>1?"Varias recetas":q.requestedBy};
     }else{
-     shopping.push({id:crypto.randomUUID(),name:m.name,qty:parsed?.amount||1,unit:parsed?.unit||inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Receta · "+recipe.title,reason:"receta" as const,status:"pendiente" as const,recipePlanId:saved.planId,recipeId:recipe.id});
+     shopping.push({id:crypto.randomUUID(),name:m.name,qty:parsed?.amount||1,unit:parsed?.unit||inferUnit(m.name),category:inferCategory(m.name),requestedBy:"Receta · "+recipe.title,reason:"receta" as const,status:"pendiente" as const,recipePlanId:saved.planId,recipePlanIds:[saved.planId],recipeId:recipe.id});
     }
    }
    return {...s,recipePlans:saved.plans,shopping};
@@ -1059,7 +1075,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,setToast,mealSeed,cl
     id:crypto.randomUUID(),date:today,recipeId:recipe.id,title:recipe.title,servings:eatenServings,
     ingredients:recipe.ingredients.map(i=>({name:i.name,key:i.key,category:inferCategory(i.name)}))
    }].slice(-400):s.mealHistory;
-   return {...s,inventory,mealHistory};
+   return {...s,inventory,mealHistory,recipePlans:s.recipePlans.filter(p=>p.recipe.id!==recipe.id)};
   });
   setOpen(false);setSavePreparedAfter(false);
   setToast(servingsToStore>0?(wasExact?"Ingredientes descontados · preparado guardado":"Preparado guardado · revisa una cantidad"):(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar"));
