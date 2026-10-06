@@ -644,13 +644,14 @@ export default function HomeOS(){
     const frozenAt=reserveAllowed?today:undefined;
     const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
     const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
+    const planReservations=shoppingSources(x).filter(src=>Boolean(src.planId)&&src.qty>0);
     const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed));
     if(idx>=0){
      const current=inventory[idx];
      const estimatedExpires=current.expires?current.estimatedExpires:(current.estimatedExpires&&estimated?.date?(current.estimatedExpires<estimated.date?current.estimatedExpires:estimated.date):(current.estimatedExpires||estimated?.date));
-     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+x.qty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
+     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+x.qty,stock:"hay",purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:[...(current.planReservations||[]).filter(r=>!planReservations.some(n=>n.id===r.id)),...planReservations],...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
     }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:x.qty,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
     }
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
@@ -1127,7 +1128,9 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
     id:crypto.randomUUID(),date:today,recipeId:recipe.id,title:recipe.title,servings:eatenServings,
     ingredients:recipe.ingredients.map(i=>({name:i.name,key:i.key,category:inferCategory(i.name)}))
    }].slice(-400):s.mealHistory;
-   return {...s,inventory,mealHistory,recipePlans:s.recipePlans.filter(p=>p.recipe.id!==recipe.id)};
+   const completedPlanIds=s.recipePlans.filter(p=>p.recipe.id===recipe.id).map(p=>p.id);
+   const releasedInventory=inventory.map(i=>({...i,planReservations:(i.planReservations||[]).filter(r=>!r.planId||!completedPlanIds.includes(r.planId))}));
+   return {...s,inventory:releasedInventory,mealHistory,recipePlans:s.recipePlans.filter(p=>p.recipe.id!==recipe.id)};
   });
   setOpen(false);setSavePreparedAfter(false);
   setToast(servingsToStore>0?(wasExact?"Ingredientes descontados · preparado guardado":"Preparado guardado · revisa una cantidad"):(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar"));
