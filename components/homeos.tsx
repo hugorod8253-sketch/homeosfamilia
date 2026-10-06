@@ -947,6 +947,12 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
   const known=state.inventory.find(x=>norm(x.name)===norm(item.name)&&typeof x.price==="number");
   return sum+(known?.price||0);
  },0);
+ const recommendedMissing=state.inventory.filter(i=>{
+  if(i.storageMode==="reserva"||i.category==="Preparados")return false;
+  if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente"))return false;
+  return inventoryEstimate(state,i).prob<.32;
+ }).slice(0,8);
+
 
  function add(){
   let value=quick.trim();if(!value)return;
@@ -984,6 +990,15 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
  function moveHere(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,supermarket:activeStore,status:"pendiente"}:i)}))}
  function cart(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,status:i.status==="carrito"?"pendiente":"carrito"}:i)}))}
  function toggleReserve(id:string){setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,reserve:!i.reserve}:i)}));setToast("Reserva actualizada")}
+ function addRecommendedMissing(){
+  if(!recommendedMissing.length){setToast("No hay faltas claras ahora mismo");return}
+  setState(s=>({...s,shopping:[...s.shopping,...recommendedMissing.map(i=>{
+   const canonical=norm(classifyProduct(i.name,i.category).canonical);
+   const last=[...s.purchaseHistory].reverse().find(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical);
+   return {id:crypto.randomUUID(),name:i.name,qty:last?.qty||1,unit:last?.unit||i.unit,category:i.category,subcategory:i.subcategory,requestedBy:"HomeOS",reason:"recomienda" as const,status:"pendiente" as const};
+  })]}));
+  setToast(recommendedMissing.length+" sugerencias añadidas");
+ }
  function changeShoppingQty(id:string,delta:number){
   setState(s=>({...s,shopping:s.shopping.map(i=>i.id===id?{...i,qty:Math.max(0.1,Math.round((i.qty+delta)*100)/100)}:i)}));
  }
@@ -1013,7 +1028,7 @@ function Comprar({state,setState,activeStore,setActiveStore,shoppingActive,setSh
     <input ref={receiptCameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>ticketSelected(e.target.files?.[0])}/>
     <input ref={receiptRef} hidden type="file" accept="image/*,.pdf" onChange={e=>ticketSelected(e.target.files?.[0])}/>
     {shoppingActive&&<label className="purchase-total"><span>Total de la compra <small>{state.profile.financeMode==="preciso"?"obligatorio en modo preciso":"opcional"}</small></span><div><input inputMode="decimal" value={purchaseTotal} onChange={e=>setPurchaseTotal(e.target.value)} placeholder={estimatedTotal>0?"≈ "+estimatedTotal.toFixed(2):"0,00"}/><b>€</b></div>{state.profile.financeMode==="orientativo"&&estimatedTotal>0&&<small>Si lo dejas vacío, HomeOS usará ≈ {estimatedTotal.toFixed(2)} € con los precios que ya conoce.</small>}</label>}
-    <article className="tool-card"><span>✦</span><div><strong>Reposición sugerida</strong><p>{state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length} productos marcados por posible falta.</p></div></article>
+    <article className="tool-card smart-restock"><span>✦</span><div><strong>Reposición sugerida</strong><p>{recommendedMissing.length?recommendedMissing.length+" productos parecen faltar por vuestro ritmo de consumo.":"No hay faltas claras que añadir ahora."}</p>{recommendedMissing.length>0&&<button onClick={addRecommendedMissing}>Añadir sugeridos</button>}</div></article>
    </aside>
   </div>}
 
