@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { classifyProduct, detectProductsInText, freezerQualityGuide } from "../lib/product-engine";
 import { parseReceiptText } from "../lib/receipt-local";
 import { EXTRA_RECIPES } from "../lib/extra-recipes";
@@ -145,6 +146,13 @@ assert(mergeAdditiveCounter(100,120,130)===150,"additive counters should combine
 const fakeCreds={householdId:"123e4567-e89b-12d3-a456-426614174000",token:"12345678901234567890123456789012"};
 assert(JSON.stringify(parseConnectionCode(connectionCode(fakeCreds)))===JSON.stringify(fakeCreds),"household connection code should round-trip");
 assert(parseConnectionCode("HOS1.bad.short")===null,"invalid household connection codes must be rejected");
+const manifest=JSON.parse(readFileSync("public/manifest.webmanifest","utf8"));
+assert(manifest.name==="HomeOS"&&manifest.short_name==="HomeOS","PWA manifest must use the HomeOS identity");
+assert(manifest.display==="standalone"&&manifest.start_url==="/","PWA manifest must install as a standalone app from root");
+assert(Array.isArray(manifest.icons)&&manifest.icons.some((x:any)=>String(x.src||"").includes("/icon.svg")),"PWA manifest must include the HomeOS icon");
+const serviceWorker=readFileSync("public/sw.js","utf8");
+new Function(serviceWorker);
+assert(serviceWorker.includes("/manifest.webmanifest")&&serviceWorker.includes("/icon.svg"),"service worker shell must cache the current manifest and icon");
 const reservedMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"]);
 assert(reservedMilk[0].qty===0.5,"general suggestions must not spend milk reserved for a recipe");
 const ownerMilk=freeInventoryAfterReservations([{name:"Leche",qty:1,unit:"L",category:"Lácteos",stock:"hay",planReservations:[{id:"r1",type:"recipe",label:"Tortitas",qty:500,unit:"ml",planId:"p1"}]}],["p1"],"p1");
