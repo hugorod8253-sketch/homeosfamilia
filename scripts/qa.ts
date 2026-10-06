@@ -9,7 +9,7 @@ import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOC
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
-import { freeInventoryAfterReservations, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
+import { freeInventoryAfterReservations, planFromBase, planToBase, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
@@ -124,6 +124,8 @@ assert(shortages.some(x=>x.key==="leche"&&x.missing===300),"recipe shortage shou
 assert(shortages.some(x=>x.key==="huevo"&&x.missing===2),"recipe shortage should subtract eggs already at home");
 const sourceTotal=sumSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"L");
 assert(sourceTotal===1.5,"shopping sources should merge compatible recipe and manual quantities");
+assert(planFromBase(planToBase(1,"L"),"ml")===1000,"shopping unit conversion must preserve 1 L as 1000 ml");
+assert(planFromBase(planToBase(750,"g"),"kg")===0.75,"shopping unit conversion must preserve 750 g as 0.75 kg");
 const remainingSources=removePlanFromSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"p1");
 assert(remainingSources.length===1&&remainingSources[0].type==="manual","cancelling a recipe must preserve manual shopping demand");
 const aiParsed=parseLocalAiResponse('prefix [{"title":"Tortilla rápida","description":"Simple","time":12,"servings":2,"ingredients":[{"name":"Huevos","qty":"4 uds","key":"huevo"}],"steps":["Batir","Cuajar"],"tools":["Sartén"]}] suffix',2);
