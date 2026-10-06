@@ -39,7 +39,7 @@ type Recipe = {
   mode:CookingStyle[]; servings:number; calories:number; protein:number; carbs:number; fat:number;
   ingredients:RecipeIngredient[]; steps:string[]; description:string; tools?:string[]; source?:"local-ai";
 };
-type RecipePlan = {id:string;recipe:Recipe;createdAt:string;plannedFor?:string;status:"saved"|"done"};
+type RecipePlan = {id:string;recipe:Recipe;createdAt:string;plannedFor?:string;status:"saved"|"done";shoppingLinked?:boolean};
 type Profile = {
   householdSize:number; supermarkets:string[]; mainSupermarket:string; goals:Goal[];
   nutrition:NutritionMode; cooking:CookingStyle; shoppingCycle:"diaria"|"semanal"|"quincenal"|"mensual"|"mixta";
@@ -570,13 +570,39 @@ export default function HomeOS(){
  const available=state.budget-monthlySpent;
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
 
- function ensureRecipePlan(s:AppState,recipe:Recipe,plannedFor?:string){
+ function ensureRecipePlan(s:AppState,recipe:Recipe,plannedFor?:string,shoppingLinked=false){
   const existing=s.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===recipe.id);
   if(existing){
-   return {plans:s.recipePlans.map(p=>p.id===existing.id?{...p,recipe,plannedFor:plannedFor||p.plannedFor}:p),planId:existing.id};
+   return {plans:s.recipePlans.map(p=>p.id===existing.id?{...p,recipe,plannedFor:plannedFor||p.plannedFor,shoppingLinked:p.shoppingLinked||shoppingLinked}:p),planId:existing.id};
   }
   const planId=crypto.randomUUID();
-  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:new Date().toISOString().slice(0,10),plannedFor,status:"saved" as const}].slice(-80),planId};
+  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:new Date().toISOString().slice(0,10),plannedFor,status:"saved" as const,shoppingLinked}].slice(-80),planId};
+ }
+ function reconcileRecipeShopping(base:AppState,onlyPlanIds?:string[]){
+  let shopping=[...base.shopping];
+  const targets=base.recipePlans.filter(p=>p.status==="saved"&&p.shoppingLinked&&(!onlyPlanIds||onlyPlanIds.includes(p.id)));
+  for(const plan of targets){
+   shopping=shopping.flatMap(item=>{
+    const next=shoppingSources(item).filter(src=>src.planId!==plan.id);
+    const updated=withShoppingSources(item,next);
+    return updated?[updated]:[];
+   });
+   const shortages=recipeShortages(plan.recipe.ingredients,planningInventory({...base,shopping},plan.id));
+   for(const shortage of shortages){
+    const unit=shortage.unit||inferUnit(shortage.name);
+    const canonical=norm(classifyProduct(shortage.name,inferCategory(shortage.name)).canonical);
+    const source:ShoppingSource={id:"recipe:"+plan.id+":"+canonical,type:"recipe",label:plan.recipe.title,qty:shortage.missing,unit,planId:plan.id,recipeId:plan.recipe.id,plannedFor:plan.plannedFor};
+    const existing=shopping.findIndex(q=>q.status==="pendiente"&&planUnitFamily(q.unit)===planUnitFamily(unit)&&norm(classifyProduct(q.name,q.category).canonical)===canonical);
+    if(existing>=0){
+     const q=shopping[existing];
+     const updated=withShoppingSources(q,[...shoppingSources(q),source]);
+     if(updated)shopping[existing]={...updated,requestedBy:updated.recipePlanIds&&updated.recipePlanIds.length>1?"Varias recetas":q.requestedBy};
+    }else{
+     shopping.push({id:crypto.randomUUID(),name:shortage.name,qty:shortage.missing,unit,category:inferCategory(shortage.name),requestedBy:"Receta · "+plan.recipe.title,reason:"receta",status:"pendiente",recipePlanId:plan.id,recipePlanIds:[plan.id],recipeId:plan.recipe.id,sources:[source]});
+    }
+   }
+  }
+  return {...base,shopping};
  }
  function saveRecipePlan(recipe:Recipe,plannedFor?:string){
   setState(s=>{
@@ -587,35 +613,8 @@ export default function HomeOS(){
  }
  function addFromRecipe(recipe:Recipe,plannedFor?:string){
   setState(s=>{
-   const saved=ensureRecipePlan(s,recipe,plannedFor);
-   const shortages=recipeShortages(recipe.ingredients,planningInventory(s,saved.planId));
-   let shopping=[...s.shopping];
-   for(const shortage of shortages){
-    const unit=shortage.unit||inferUnit(shortage.name);
-    const sourceId="recipe:"+saved.planId+":"+norm(shortage.key)+":"+unit;
-    let existing=shopping.findIndex(q=>q.status==="pendiente"&&planUnitFamily(q.unit)===planUnitFamily(unit)&&(norm(classifyProduct(q.name,q.category).canonical)===norm(classifyProduct(shortage.name,inferCategory(shortage.name)).canonical)||norm(q.name).includes(norm(shortage.key))));
-    if(existing<0){
-     const source:ShoppingSource={id:sourceId,type:"recipe",label:recipe.title,qty:shortage.missing,unit,planId:saved.planId,recipeId:recipe.id,plannedFor};
-     shopping.push({id:crypto.randomUUID(),name:shortage.name,qty:shortage.missing,unit,category:inferCategory(shortage.name),requestedBy:"Receta · "+recipe.title,reason:"receta",status:"pendiente",recipePlanId:saved.planId,recipePlanIds:[saved.planId],recipeId:recipe.id,sources:[source]});
-    }else{
-     const q=shopping[existing];
-     const current=shoppingSources(q).filter(x=>x.id!==sourceId);
-     const source:ShoppingSource={id:sourceId,type:"recipe",label:recipe.title,qty:shortage.missing,unit:q.unit,planId:saved.planId,recipeId:recipe.id,plannedFor};
-     const updated=withShoppingSources(q,[...current,source]);
-     if(updated)shopping[existing]={...updated,requestedBy:updated.recipePlanIds&&updated.recipePlanIds.length>1?"Varias recetas":q.requestedBy};
-    }
-   }
-   // If the recipe now needs less than before, remove stale recipe contributions.
-   shopping=shopping.flatMap(q=>{
-    const sources=shoppingSources(q);
-    const own=sources.filter(x=>x.planId===saved.planId);
-    if(!own.length)return [q];
-    const shortageKeys=new Set(shortages.map(x=>norm(x.key)));
-    const next=sources.filter(x=>x.planId!==saved.planId||shortageKeys.has(norm(classifyProduct(q.name,q.category).canonical))||[...shortageKeys].some(k=>norm(q.name).includes(k)));
-    const updated=withShoppingSources(q,next);
-    return updated?[updated]:[];
-   });
-   return {...s,recipePlans:saved.plans,shopping};
+   const saved=ensureRecipePlan(s,recipe,plannedFor,true);
+   return reconcileRecipeShopping({...s,recipePlans:saved.plans},[saved.planId]);
   });
   const currentPlan=state.recipePlans.find(p=>p.status==="saved"&&p.recipe.id===recipe.id);
   const currentShortages=recipeShortages(recipe.ingredients,planningInventory(state,currentPlan?.id));
@@ -676,7 +675,8 @@ export default function HomeOS(){
     };
    })].slice(-600);
    const purchaseSessions=typeof total==="number"&&total>=0?[...s.purchaseSessions,{id:crypto.randomUUID(),date:today,total,supermarket:activeStore||undefined}].slice(-240):s.purchaseSessions;
-   return {...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
+   const purchasedState={...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:s.shopping.filter(i=>i.status!=="carrito")};
+   return reconcileRecipeShopping(purchasedState);
   });
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
