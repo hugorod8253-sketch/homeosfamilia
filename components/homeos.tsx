@@ -343,7 +343,7 @@ export default function HomeOS(){
  const [shoppingActive,setShoppingActive]=useState(false);
  const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
  const [mealSeed,setMealSeed]=useState("");
- const [comerFocus,setComerFocus]=useState<"ideas"|"aprovechar"|"habitos"|null>(null);
+ const [comerFocus,setComerFocus]=useState<"ideas"|"aprovechar"|"menu"|"habitos"|null>(null);
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
@@ -738,9 +738,9 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
   </article>
 }
 
-function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,focusTab,clearFocusTab}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void;focusTab:"ideas"|"aprovechar"|"habitos"|null;clearFocusTab:()=>void}){
+function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,focusTab,clearFocusTab}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void;focusTab:"ideas"|"aprovechar"|"menu"|"habitos"|null;clearFocusTab:()=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
- const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
+ const [tab,setTab]=useState<"ideas"|"aprovechar"|"menu"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
  const [open,setOpen]=useState(false);
  const [savePreparedAfter,setSavePreparedAfter]=useState(false);
@@ -799,6 +799,46 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
  const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
  const preferenceMembers=state.members.slice(0,state.profile.householdSize).filter(m=>m.dislikes.trim());
+ const weekDays=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+ const weeklyPlan=state.weeklyMenu;
+ const weeklySlots=weeklyPlan?.slots||[];
+ const weeklyRecipes=weeklySlots.map(slot=>({slot,recipe:RECIPES.find(r=>r.id===slot.recipeId)})).filter(x=>x.recipe) as {slot:WeeklyMenuPlan["slots"][number];recipe:Recipe}[];
+ const weeklyMissing=weeklyRecipes.flatMap(x=>missing(x.recipe,state.inventory).map(i=>({...i,recipeTitle:x.recipe.title})));
+
+ function generateWeek(){
+  const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
+  const inventory=state.inventory.filter(usableInventoryItem).map(i=>i.name);
+  const plan=buildWeeklyMenu(RECIPES,{inventory,dislikes,tools:state.profile.kitchenTools,people:state.profile.householdSize});
+  setState(s=>({...s,weeklyMenu:plan}));
+  setToast("Menú semanal preparado con lo que hay en casa");
+ }
+ function openWeekRecipe(r:Recipe){
+  chooseRecipe(r);setOpen(true);
+ }
+ function addWeekMissing(){
+  if(!weeklyMissing.length){setToast("El menú ya encaja con lo que tienes");return}
+  const grouped=new Map<string,{name:string;qty:number;unit:string;category:string}>();
+  for(const ing of weeklyMissing){
+   const parsed=parseQty(ing.qty);
+   const unit=parsed?.unit||inferUnit(ing.name);
+   const qty=parsed?.amount||1;
+   const key=norm(classifyProduct(ing.name,inferCategory(ing.name)).canonical)+"|"+unit;
+   const prev=grouped.get(key);
+   if(prev)prev.qty=Math.round((prev.qty+qty)*100)/100;
+   else grouped.set(key,{name:ing.name,qty,unit,category:inferCategory(ing.name)});
+  }
+  setState(s=>{
+   const shopping=[...s.shopping];
+   for(const item of grouped.values()){
+    const p=classifyProduct(item.name,item.category);
+    const existing=shopping.findIndex(x=>norm(classifyProduct(x.name,x.category).canonical)===norm(p.canonical)&&x.status==="pendiente");
+    if(existing>=0)shopping[existing]={...shopping[existing],qty:Math.max(shopping[existing].qty,item.qty),reason:"receta"};
+    else shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty,unit:item.unit,category:p.category,subcategory:p.subcategory,requestedBy:"Menú semanal",reason:"receta",status:"pendiente"});
+   }
+   return {...s,shopping};
+  });
+  setToast(grouped.size+" productos del menú añadidos a compra");
+ }
 
  function completeReuse(){
   if(!selectedReuse)return;
@@ -912,7 +952,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
  }
 
  return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button><button className={tab==="aprovechar"?"active":""} onClick={()=>setTab("aprovechar")}>Aprovechar</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
+  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button><button className={tab==="aprovechar"?"active":""} onClick={()=>setTab("aprovechar")}>Aprovechar</button><button className={tab==="menu"?"active":""} onClick={()=>setTab("menu")}>Menú semanal</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
   {preferenceMembers.length>0&&<div className="meal-household-strip"><span>✓</span><p><b>Preferencias activas:</b> HomeOS tiene en cuenta lo que no gusta a {preferenceMembers.map(m=>m.name).join(", ")} al ordenar y avisar sobre recetas.</p></div>}
 
   {tab==="ideas"?<>
@@ -948,6 +988,21 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
 
    <div className="reuse-section-head"><div><small>CON LO QUE HAY EN CASA</small><h3>Aprovechar o transformar</h3><p>Las ideas listas aparecen primero. Las demás te enseñan qué ingrediente falta.</p></div></div>
    <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(state.inventory,n)?"have":hasNeed(state.inventory,n)?"some":"missing"} key={n.key}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
+  </>:tab==="menu"?<>
+   <article className="weekly-menu-hero">
+    <div><small>MENÚ SEMANAL</small><h3>14 comidas pensadas para tu casa</h3><p>Combina variedad, lo que probablemente tienes, gustos del hogar, tiempo y equipamiento. No es una dieta médica: es planificación doméstica práctica.</p></div>
+    <div className="weekly-menu-actions"><button className="secondary" onClick={generateWeek}>{weeklyPlan?"Regenerar semana":"Crear mi semana"}</button>{weeklyPlan&&<button className="primary" disabled={!weeklyMissing.length} onClick={addWeekMissing}>{weeklyMissing.length?"Añadir faltantes a compra":"No falta nada"}</button>}</div>
+   </article>
+   {!weeklyPlan?<article className="weekly-menu-empty"><span>📅</span><h3>Una semana sin pensar cada día qué cocinar</h3><p>HomeOS usará el inventario conocido, evitará lo que no gusta y repartirá las recetas para no repetir siempre lo mismo.</p><button onClick={generateWeek}>Generar menú semanal</button></article>:
+   <div className="weekly-menu-grid">{weekDays.map((day,dayIndex)=>{
+    const daySlots=weeklySlots.filter(s=>s.day===dayIndex);
+    return <article className="weekly-day" key={day}><div className="weekly-day-head"><span>{dayIndex+1}</span><strong>{day}</strong></div>{["Comida","Cena"].map(meal=>{
+     const slot=daySlots.find(s=>s.meal===meal);
+     const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
+     return <div className="weekly-slot" key={meal}><small>{meal.toUpperCase()}</small>{r?<button onClick={()=>openWeekRecipe(r)}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><b>{r.title}</b><em>{r.time} min · {missing(r,state.inventory).length?missing(r,state.inventory).length+" por completar":"encaja con Casa"}</em></div><strong>›</strong></button>:<p>Sin propuesta</p>}{slot?.why&&<i>{slot.why}</i>}</div>
+    })}</article>
+   })}</div>}
+   {weeklyPlan&&<article className="weekly-menu-summary"><div><small>COMPRA DE LA SEMANA</small><h3>{weeklyMissing.length?weeklyMissing.length+" ingredientes por completar":"Tienes lo necesario"}</h3><p>HomeOS calcula los faltantes contra Casa. Los productos repetidos se agrupan al enviarlos a Comprar.</p></div><button disabled={!weeklyMissing.length} onClick={addWeekMissing}>🛒 Pasar faltantes a Comprar</button></article>}
   </>:<Habitos state={state}/>} 
 
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{recipe.source==="local-ai"?<div className="recipe-total"><span>Receta generada localmente</span><b>Sin cálculo nutricional automático</b></div>:<div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div>}{!savePreparedAfter?<div className="recipe-finish-actions"><button className="secondary" onClick={()=>completeRecipe(0)}>Comido ahora</button><button className="primary" onClick={()=>{setLeftoverServings(Math.max(1,recipe.servings));setSavePreparedAfter(true)}}>Guardar para después</button></div>:<div className="save-prepared-after"><div><span>¿Cuántas raciones guardas?</span><p>Solo se crea un preparado si realmente queda comida para otro momento.</p></div><div className="stepper"><button onClick={()=>setLeftoverServings(n=>Math.max(1,n-1))}>−</button><b>{leftoverServings}</b><button onClick={()=>setLeftoverServings(n=>Math.min(recipe.servings,n+1))}>+</button></div><button className="primary" onClick={()=>completeRecipe(leftoverServings)}>Guardar {leftoverServings} ración{leftoverServings===1?"":"es"}</button></div>}</div></div>}
