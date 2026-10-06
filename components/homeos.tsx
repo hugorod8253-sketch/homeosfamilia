@@ -1243,7 +1243,8 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
     people:state.profile.householdSize,
     dislikes,
     tools:state.profile.kitchenTools,
-    mode
+    mode,
+    scope:recipeScope
    },p=>{setAiProgress(p.progress);setAiProgressText(p.text)});
    const mapped:Recipe[]=generated.map((r,idx)=>({
     id:"local-ai-"+Date.now()+"-"+idx,
