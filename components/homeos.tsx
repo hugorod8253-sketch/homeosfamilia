@@ -345,6 +345,17 @@ function rotationBand(name:string,cat:string,location?:string){
  const r=classifyProduct(name,cat).rotation;
  return {key:r,label:r==="alta"?"Vida útil corta":r==="media"?"Vida útil media":"Vida útil larga"};
 }
+function recommendedBuyAfter(name:string,cat:string,plannedFor?:string){
+ if(!plannedFor)return undefined;
+ const band=rotationBand(name,cat).key;
+ const daysBefore=band==="alta"?2:band==="media"?5:14;
+ const d=new Date(plannedFor+"T12:00:00");
+ if(Number.isNaN(d.getTime()))return undefined;
+ d.setDate(d.getDate()-daysBefore);
+ const iso=d.toISOString().slice(0,10);
+ const today=new Date().toISOString().slice(0,10);
+ return iso>today?iso:undefined;
+}
 function median(values:number[]){
  const xs=values.filter(Number.isFinite).sort((a,b)=>a-b);
  if(!xs.length)return 0;
@@ -650,7 +661,7 @@ export default function HomeOS(){
    for(const shortage of shortages){
     const unit=shortage.unit||inferUnit(shortage.name);
     const canonical=norm(classifyProduct(shortage.name,inferCategory(shortage.name)).canonical);
-    const source:ShoppingSource={id:"recipe:"+plan.id+":"+canonical,type:"recipe",label:plan.recipe.title,qty:shortage.missing,unit,planId:plan.id,recipeId:plan.recipe.id,plannedFor:plan.plannedFor};
+    const source:ShoppingSource={id:"recipe:"+plan.id+":"+canonical,type:"recipe",label:plan.recipe.title,qty:shortage.missing,unit,planId:plan.id,recipeId:plan.recipe.id,plannedFor:plan.plannedFor,buyAfter:recommendedBuyAfter(shortage.name,inferCategory(shortage.name),plan.plannedFor)};
     const existing=shopping.findIndex(q=>q.status==="pendiente"&&planUnitFamily(q.unit)===planUnitFamily(unit)&&norm(classifyProduct(q.name,q.category).canonical)===canonical);
     if(existing>=0){
      const q=shopping[existing];
@@ -1586,13 +1597,17 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   const titles=[...new Set(recipeIds.map(id=>state.recipePlans.find(p=>p.id===id)?.recipe.title).filter(Boolean) as string[])];
   const weekly=sources.some(x=>x.type==="weekly");
   const manual=sources.some(x=>x.type==="manual");
-  if(titles.length&&weekly)return (manual?"Habitual + ":"")+"menú + "+titles.length+" receta"+(titles.length===1?"":"s");
-  if(titles.length===1)return (manual?"Habitual + ":"")+"para "+titles[0];
-  if(titles.length>1)return (manual?"Habitual + ":"")+"para "+titles.length+" recetas";
+  const buyAfter=sources.map(x=>x.buyAfter).filter((x):x is string=>Boolean(x)&&x!=="").sort()[0];
+  const timing=buyAfter&&buyAfter>new Date().toISOString().slice(0,10)?" · mejor desde "+new Date(buyAfter+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric"}):"";
+  if(titles.length&&weekly)return (manual?"Habitual + ":"")+"menú + "+titles.length+" receta"+(titles.length===1?"":"s")+timing;
+  if(titles.length===1)return (manual?"Habitual + ":"")+"para "+titles[0]+timing;
+  if(titles.length>1)return (manual?"Habitual + ":"")+"para "+titles.length+" recetas"+timing;
   if(weekly)return manual?"Habitual + menú semanal":"Menú semanal";
   return "";
  }
  function shoppingRecipeDue(i:ShoppingItem){
+  const sourceDue=shoppingSources(i).map(x=>x.buyAfter||x.plannedFor).filter((x):x is string=>Boolean(x)).sort()[0];
+  if(sourceDue)return sourceDue;
   const ids=[...(i.recipePlanIds||[]),...(i.recipePlanId?[i.recipePlanId]:[])];
   return ids.map(id=>state.recipePlans.find(p=>p.id===id)?.plannedFor||"9999-12-31").sort()[0]||"9999-12-31";
  }
