@@ -6,7 +6,7 @@ export type WeeklyMenuRecipe={
 };
 
 export type WeeklyMenuSlot={day:number;meal:"Comida"|"Cena";recipeId:string;why:string};
-export type WeeklyMenuPlan={id:string;createdAt:string;slots:WeeklyMenuSlot[]};
+export type WeeklyMenuPlan={id:string;createdAt:string;startDate:string;slots:WeeklyMenuSlot[]};
 
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9ñ\s]/g," ").replace(/\s+/g," ").trim()}
 function recipeText(r:WeeklyMenuRecipe){return norm([r.title,...r.ingredients.map(i=>i.name)].join(" "))}
@@ -70,5 +70,6 @@ export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:strin
   const why=invHits>=2?"Aprovecha varios productos que ya tienes":group(best)===target?"Da variedad a la semana":meal==="Cena"&&best.time<=25?"Cena rápida":"Encaja con el hogar";
   slots.push({day:Math.floor(i/2),meal,recipeId:best.id,why});
  }
- return {id:"week-"+Date.now(),createdAt:new Date().toISOString().slice(0,10),slots};
+ const today=new Date().toISOString().slice(0,10);
+ return {id:"week-"+Date.now(),createdAt:today,startDate:today,slots};
 }
