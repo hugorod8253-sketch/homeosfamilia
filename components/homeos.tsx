@@ -609,12 +609,14 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
 
 function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
- const [tab,setTab]=useState<"ideas"|"habitos">("ideas");
+ const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
  const [open,setOpen]=useState(false);
  const [useMuch,setUseMuch]=useState("");
  const [craving,setCraving]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
+ const [reuseOpen,setReuseOpen]=useState(false);
+ const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
  const options=RECIPES.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:RECIPES;
  const autoRecipe=pool[index%pool.length];
@@ -635,24 +637,56 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
   return {name:member.name,matches};
  }).filter(x=>x.matches.length);
 
+ const reuseIdeas=REUSE_IDEAS.map(idea=>{
+  const matched=idea.needs.filter(n=>hasNeed(state.inventory,n)).length;
+  return {...idea,matched,ready:matched===idea.needs.length};
+ }).sort((a,b)=>Number(b.ready)-Number(a.ready)||b.matched-a.matched);
+ const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
+ const expiringForReuse=state.inventory.filter(i=>i.stock!=="falta"&&(daysUntil(i.expires)<=5||i.stock==="mucho")).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires)).slice(0,6);
+
+ function completeReuse(){
+  if(!selectedReuse)return;
+  let exact=true;
+  setState(s=>{
+   let inv=s.inventory;
+   for(const need of selectedReuse.needs){
+    const result=consumeNeed(inv,need);
+    inv=result.inventory;exact=exact&&result.exact;
+   }
+   if(selectedReuse.output){
+    const out=selectedReuse.output;
+    const profile=classifyProduct(out.name,out.category);
+    const existing=inv.findIndex(i=>norm(i.name)===norm(out.name)&&i.unit===out.unit&&i.location===out.location);
+    if(existing>=0){
+     inv=inv.map((i,idx)=>idx===existing?{...i,qty:i.qty+out.qty,stock:"hay",purchasedAt:new Date().toISOString().slice(0,10),preparedAt:new Date().toISOString().slice(0,10)}:i);
+    }else{
+     inv=[{id:crypto.randomUUID(),name:out.name,qty:out.qty,unit:out.unit,location:out.location,category:out.category,subcategory:profile.subcategory,stock:"hay",purchasedAt:new Date().toISOString().slice(0,10),preparedAt:new Date().toISOString().slice(0,10),source:"receta"},...inv];
+    }
+   }
+   return {...s,inventory:inv};
+  });
+  setReuseOpen(false);
+  if(!exact) setTimeout(()=>alert("HomeOS ha actualizado lo que conoce con precisión. Algún ingrediente quedó para revisar porque estaba guardado en una unidad distinta."),0);
+ }
+
  function chooseRecipe(r:Recipe){
   setSelectedRecipeId(r.id);
   setMode(r.mode.includes(mode)?mode:r.mode[0]);
   setIndex(0);
  }
  function completeRecipe(){
-  const usedKeys=recipe.ingredients.map(x=>norm(x.key));
-  setState(s=>({...s,inventory:s.inventory.map(i=>{
-   const itemName=norm(i.name);
-   const match=usedKeys.some(k=>itemName.includes(k)||k.includes(itemName.split(" ")[0]));
-   if(!match||i.stock==="falta") return i;
-   return {...i,stock:i.stock==="poco"?"falta":"poco"};
-  })}));
+  let wasExact=true;
+  setState(s=>{
+   const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients);
+   wasExact=consumed.exact;
+   return {...s,inventory:consumed.inventory};
+  });
   setOpen(false);
+  if(!wasExact) setTimeout(()=>alert("HomeOS ha descontado las cantidades conocidas. Algún producto quedó marcado para revisar porque sus unidades no permiten un cálculo exacto."),0);
  }
 
  return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
+  <div className="page-intro"><div><span className="eyebrow">COMER</span><h2>Qué te apetece y qué puedes hacer con lo que hay</h2><p>HomeOS prioriza recetas que encajan con tu inventario, tu tiempo y las preferencias del hogar.</p></div><div className="view-tabs eat-tabs"><button className={tab==="ideas"?"active":""} onClick={()=>setTab("ideas")}>Ideas para comer</button><button className={tab==="aprovechar"?"active":""} onClick={()=>setTab("aprovechar")}>Aprovechar</button>{state.profile.nutrition!=="off"&&<button className={tab==="habitos"?"active":""} onClick={()=>setTab("habitos")}>Cómo comemos</button>}</div></div>
 
   {tab==="ideas"?<>
    <article className="meal-request">
@@ -673,9 +707,18 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
    <div className="ingredient-summary clearer"><article><small>YA TIENES EN CASA</small><strong>{recipe.ingredients.length-miss.length} de {recipe.ingredients.length}</strong>{recipe.ingredients.filter(i=>!miss.some(m=>m.name===i.name)).map(i=><span key={i.name}>✓ {i.name}</span>)}</article><article><small>NECESITAS PARA COMPLETARLA</small><strong>{miss.length?String(miss.length)+" ingredientes":"Nada"}</strong>{miss.length?miss.map(i=><span key={i.name}>• {i.name}</span>):<span>✓ Está todo listo</span>}<button onClick={()=>addFromRecipe(recipe)} disabled={!miss.length}>Añadir lo que falta a compra</button></article></div>
 
    <article className="use-more-card"><div><small>APROVECHAR PRODUCTO</small><h3>¿Qué quieres gastar antes?</h3><p>Escribe un producto que tengas de sobra y te mostramos recetas donde realmente se usa.</p></div><input value={useMuch} onChange={e=>setUseMuch(e.target.value)} placeholder="Ej. leche, tomates, huevos…"/>{useMuch&&<div className="recipe-mini-list">{filtered.length?filtered.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setUseMuch("")}}><strong>{r.title}</strong><span>{r.time} min · {missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" por completar":"puedes hacerlo ya"}</span></button>):<div className="recipe-empty">No hay una receta preparada con ese ingrediente todavía.</div>}</div>}</article>
-  </>:<Habitos state={state}/>}
+  </>:tab==="aprovechar"?<>
+   <article className="reuse-hero"><div><small>APROVECHAMIENTO INTELIGENTE</small><h3>Ideas para gastar, transformar y no tirar</h3><p>HomeOS mira lo que tienes y propone usos concretos. Si conviertes unos ingredientes en otro producto, también actualiza el inventario.</p></div><span>♻️</span></article>
+
+   {expiringForReuse.length>0&&<div className="reuse-priority"><div className="recipe-options-head"><div><small>GASTAR PRIMERO</small><h3>Productos que merecen atención</h3></div></div><div className="reuse-priority-grid">{expiringForReuse.map(i=><button key={i.id} onClick={()=>{const found=reuseIdeas.find(x=>reuseIdeaMatchesProduct(x,i.name,i.category));if(found){setSelectedReuseId(found.id);setReuseOpen(true)}}}><span>{productIcon(i.name,i.category)}</span><div><strong>{i.name}</strong><small>{i.expires&&daysUntil(i.expires)<=5?("Fecha próxima · "+Math.max(0,daysUntil(i.expires))+" días"):i.stock==="mucho"?"Hay bastante":"Conviene revisar"}</small></div><b>›</b></button>)}</div></div>}
+
+   <div className="reuse-section-head"><div><small>CON LO QUE HAY EN CASA</small><h3>Aprovechar o transformar</h3><p>Las ideas listas aparecen primero. Las demás te enseñan qué ingrediente falta.</p></div></div>
+   <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={hasNeed(state.inventory,n)?"have":"missing"} key={n.key}>{hasNeed(state.inventory,n)?"✓":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
+  </>:<Habitos state={state}/>} 
 
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div><button className="primary modal-save" onClick={completeRecipe}>He terminado</button></div></div>}
+  {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={hasNeed(state.inventory,n)?"need-ok":"need-missing"}>{hasNeed(state.inventory,n)?"✓":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>hasNeed(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
+
  </section>
 }
 
