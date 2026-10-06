@@ -38,7 +38,7 @@ function toolOk(r:WeeklyMenuRecipe,tools:string[]){
 
 const TARGETS=["poultry","fish","plant","meat","plant","fish","egg","poultry","mixed","plant","meat","fish","poultry","mixed"];
 
-export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;priority?:string[];seed?:number}):WeeklyMenuPlan{
+export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;priority?:string[];seed?:number;costByRecipe?:Record<string,number>;budgetPressure?:boolean}):WeeklyMenuPlan{
  const candidates=recipes.filter(r=>toolOk(r,opts.tools)&&dislikeHits(r,opts.dislikes)===0);
  const pool=candidates.length>=8?candidates:recipes.filter(r=>dislikeHits(r,opts.dislikes)===0);
  const used=new Map<string,number>();
@@ -64,6 +64,7 @@ export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:strin
     if(r.mode.includes("mealprep"))score+=2;
    }
    if(r.servings>=Math.max(1,opts.people))score+=1;
+   if(opts.budgetPressure){const cost=opts.costByRecipe?.[r.id];if(typeof cost==="number"&&Number.isFinite(cost))score-=Math.min(12,cost*.7)}
    if(score>bestScore){bestScore=score;best=r}
   }
   if(!best)break;
