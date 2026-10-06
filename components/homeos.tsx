@@ -955,11 +955,10 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const currentSlot=todayMenuSlots.find(s=>s.meal===currentMeal);
  const currentRecipe=currentSlot?RECIPES.find(r=>r.id===currentSlot.recipeId):undefined;
  const spotlight=homeIdeas[spotlightIndex]||homeIdeas[0];
- const signals=habitSignals(state);
- const coreSignals=signals.filter(([label])=>label!=="Dulces/snacks");
- const knownCore=coreSignals.filter(([,seen])=>seen).length;
- const habitStatus=state.purchaseHistory.length+state.mealHistory.length<3?"Aprendiendo":knownCore===coreSignals.length?"Buena cobertura":knownCore>=2?"Va tomando forma":"Faltan datos";
- const missingSignalNames=coreSignals.filter(([,seen])=>!seen).map(([label])=>label.toLowerCase());
+ const habitBalance=habitBalanceSignals(state);
+ const habitLearning=habitBalance.every(x=>x.tone==="learning");
+ const habitGood=habitBalance.filter(x=>x.tone==="good").length;
+ const habitStatus=habitLearning?"Aprendiendo":habitGood>=3?"Va bien":habitGood>=2?"Mejorable":"Conviene revisar";
  const householdConfigured=state.profile.householdSize>0&&state.members.length>=state.profile.householdSize;
  const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}):"Sin eventos";
 
@@ -1009,15 +1008,15 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   </section>
 
   <div className="home-action-row">
-   <button onClick={()=>setView("comer")}><span>🍳</span><strong>Comer</strong><small>Ideas y recetas</small></button>
-   <button onClick={()=>setView("comprar")}><span>🛒</span><strong>Comprar</strong><small>{pending?pending+" pendientes":"Lista al día"}</small></button>
-   <button onClick={()=>setView("casa")}><span>⌂</span><strong>Casa</strong><small>Inventario y preparados</small></button>
-   <button onClick={openWeekly}><span>📅</span><strong>Semana</strong><small>{state.weeklyMenu?"Menú preparado":"Planificar"}</small></button>
+   <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong><small>Buscar o crear una idea</small></button>
+   <button onClick={scanTicket}><span>▣</span><strong>Escanear ticket</strong><small>Cámara · varios productos</small></button>
+   <button onClick={()=>setView("casa")}><span>⌂</span><strong>Añadir a Casa</strong><small>Producto o preparado</small></button>
+   <button onClick={openWeekly}><span>□</span><strong>Menú semanal</strong><small>{state.weeklyMenu?"Semana preparada":"Planificar"}</small></button>
   </div>
 
   {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS GUARDADAS</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" listas para preparar":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("Faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
 
-  {state.profile.nutrition!=="off"&&<article className="home-habit-brief"><div><small>HÁBITOS · ÚLTIMOS 28 DÍAS</small><strong>{habitStatus}</strong><p>{missingSignalNames.length?"Aún faltan señales de "+missingSignalNames.slice(0,2).join(" y ")+".":"HomeOS ya ve proteína, verdura, fruta y carbohidratos."}</p></div><div className="home-habit-score"><span>{knownCore}/{coreSignals.length}</span><small>grupos observados</small></div><button onClick={openHabits}>Ver detalle →</button></article>}
+  {state.profile.nutrition!=="off"&&<article className="home-habit-brief home-habit-balance"><div className="home-habit-copy"><small>HÁBITOS · COMIDAS CONFIRMADAS</small><strong>{habitStatus}</strong><p>{habitLearning?"Necesito algunas comidas más para valorar tendencias sin inventar datos.":"Lectura orientativa del patrón reciente; no es una valoración médica."}</p></div><div className="home-habit-indicators">{habitBalance.map(x=><span className={"habit-indicator "+x.tone} key={x.key}><b>{x.label}</b><em>{x.status}</em></span>)}</div><button onClick={openHabits}>Ver detalle →</button></article>}
 
   {!householdConfigured&&<button className="family-warning" onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Completa el perfil del hogar para mejorar cantidades y sugerencias.</button>}
   {calendarOpen&&<CalendarCard state={state} setState={setState}/>}
@@ -1069,7 +1068,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
         </div>
       </div>
     </div>
-    <div className="apple-calendar-legend"><span className="legend-dot today-dot"/>Hoy <span className="legend-dot event-dot"/>Evento</div>
+    <div className="apple-calendar-top-actions"><div className="apple-calendar-legend"><span className="legend-dot today-dot"/>Hoy <span className="legend-dot event-dot"/>Evento</div><button className="calendar-add-event" onClick={()=>{setSelectedDate(selectedDate||todayIso);setSelectedEventId("");requestAnimationFrame(()=>eventInputRef.current?.focus())}}>＋ Añadir evento</button></div>
    </div>
 
    <div className="apple-calendar-body">
@@ -1093,7 +1092,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
     <aside className={selectedDate?"apple-event-panel open":"apple-event-panel"}>
       {selectedDate?<><div className="event-panel-date"><small>FECHA SELECCIONADA</small><strong>{new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}</strong></div>
       {selectedEvents.length>0&&<div className="event-existing">{selectedEvents.map(ev=><div className={selectedEventId===ev.id?"event-row selected":"event-row"} key={ev.id} onClick={()=>setSelectedEventId(ev.id)}><span className="event-color-dot"/><b>{ev.title}</b><button className="event-delete" onClick={(e)=>{e.stopPropagation();setState(s=>({...s,events:s.events.filter(x=>x.id!==ev.id)}));setSelectedEventId("")}}>Eliminar</button></div>)}<small className="keyboard-hint">Selecciona un evento y pulsa Supr/Delete para eliminarlo.</small></div>}
-      <form className="event-compose" onSubmit={e=>{e.preventDefault();add()}}><label htmlFor="calendar-event-input">Escribe el evento</label><div className="event-compose-row"><input ref={eventInputRef} id="calendar-event-input" value={title} onChange={e=>setTitle(e.target.value)} enterKeyHint="send" autoComplete="off" placeholder="Ej. comida familiar"/><button type="submit" disabled={!title.trim()}>Confirmar</button></div><small>Enter en ordenador · Enviar en móvil</small></form></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
+      <form className="event-compose" onSubmit={e=>{e.preventDefault();add()}}><label htmlFor="calendar-event-date">Fecha</label><input id="calendar-event-date" className="event-date-input" type="date" value={selectedDate} onChange={e=>{const value=e.target.value;setSelectedDate(value);if(value){const d=new Date(value+"T12:00:00");setCursor(new Date(d.getFullYear(),d.getMonth(),1))}}}/><label htmlFor="calendar-event-input">Evento</label><div className="event-compose-row"><input ref={eventInputRef} id="calendar-event-input" value={title} onChange={e=>setTitle(e.target.value)} enterKeyHint="send" autoComplete="off" placeholder="Ej. comida familiar"/><button type="submit" disabled={!title.trim()||!selectedDate}>Guardar</button></div><small>En iPhone/iPad la fecha usa el selector nativo del sistema.</small></form></>:<div className="event-empty"><span>＋</span><strong>Selecciona un día</strong><p>Haz clic en cualquier fecha para añadir o ver eventos.</p></div>}
     </aside>
    </div>
   </article>
