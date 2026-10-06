@@ -492,8 +492,18 @@ function suspiciousRepeatedText(value:string){
  const unique=new Set(words);
  return unique.size===1||words.every((w,i)=>i===0||w===words[0]);
 }
-function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
+function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="6" y="6" width="52" height="52" rx="15" className="logo-bg"/><rect className="logo-h" x="17" y="17" width="8" height="30" rx="2"/><rect className="logo-h" x="39" y="17" width="8" height="30" rx="2"/><rect className="logo-h" x="23" y="28" width="18" height="8" rx="2"/><ellipse className="logo-spoon" cx="32" cy="20.5" rx="4.6" ry="5.6"/><rect className="logo-spoon" x="30.3" y="25" width="3.4" height="20" rx="1.7"/></svg></div>}
 function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.25" y="2.75" width="7.5" height="12.5" rx="3.75" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M5.75 11.75v.5a6.25 6.25 0 0 0 12.5 0v-.5M12 18.5v2.75M8.75 21.25h6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+function habitIcon(key:string){
+ const common={fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round" as const,strokeLinejoin:"round" as const};
+ return <span className={"habit-symbol habit-symbol-"+key} aria-hidden="true"><svg viewBox="0 0 24 24">
+  {key==="protein"?<><path d="M8.5 14.5c-2.4-2.4-2.5-5.9-.2-8.2s5.8-2.2 8.2.2 2.2 5.9-.1 8.2-5.5 2.2-7.9-.2Z" {...common}/><path d="m7.2 15.8-2.1 2.1M4.2 17.1l2.7 2.7M3.8 20.2l1.3-1.3" {...common}/></>
+  :key==="veg"?<><path d="M18.8 5.2C12.7 4.7 7.4 7.6 6.1 13c-.7 3 1 5.5 3.8 5.8 5.8.7 8.8-5 8.9-13.6Z" {...common}/><path d="M5.2 19.5c3.8-4.7 6.8-7.5 11.4-10.6" {...common}/></>
+  :key==="carbs"?<><path d="M12 4v16M12 8c-2.4 0-4-1.3-4.6-3.2 2.4-.1 4 .9 4.6 3.2ZM12 12c-2.4 0-4-1.3-4.6-3.2 2.4-.1 4 .9 4.6 3.2ZM12 16c-2.4 0-4-1.3-4.6-3.2 2.4-.1 4 .9 4.6 3.2ZM12 8c2.4 0 4-1.3 4.6-3.2-2.4-.1-4 .9-4.6 3.2ZM12 12c2.4 0 4-1.3 4.6-3.2-2.4-.1-4 .9-4.6 3.2ZM12 16c2.4 0 4-1.3 4.6-3.2-2.4-.1-4 .9-4.6 3.2Z" {...common}/></>
+  :<><path d="m8 8 8 8M16 8l-8 8" {...common}/><path d="M8 8 5 6l-2 2 3 3M16 8l3-2 2 2-3 3M8 16l-3 2-2-2 3-3M16 16l3 2 2-2-3-3" {...common}/><rect x="7" y="7" width="10" height="10" rx="3" {...common}/></>}
+ </svg></span>
+}
+
 function navIcon(id:View,_icon:string){
  const common={fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round" as const,strokeLinejoin:"round" as const};
  return <span className={"nav-icon nav-icon-"+id} aria-hidden="true"><svg viewBox="0 0 24 24">
@@ -1054,7 +1064,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
 
    {state.profile.nutrition!=="off"&&<article className="home-final-habits">
     <div className="home-card-head"><div><small>HÁBITOS ALIMENTARIOS (7 DÍAS)</small><strong>{habitLearning?"Aprendiendo":"Equilibrio reciente"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
-    <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}><span className="ring"/><div><strong>{x.label}</strong><em>{x.status}</em></div></button>)}</div>
+    <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}>{habitIcon(x.key)}<div><strong>{x.label}</strong><em>{x.status}</em></div></button>)}</div>
    </article>}
   </section>
 
