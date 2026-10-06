@@ -1,7 +1,7 @@
 {
-  "name": "HomeOS Familia",
+  "name": "HomeOS",
   "short_name": "HomeOS",
-  "description": "Recuerda qué hay en casa, qué comprar y qué cocinar con el mínimo trabajo manual.",
+  "description": "Organiza qué hay en casa, qué comprar y qué cocinar con el mínimo trabajo manual.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,8 +9,17 @@
   "background_color": "#f7f8f4",
   "theme_color": "#f7f8f4",
   "lang": "es",
-  "categories": ["food", "lifestyle", "utilities"],
+  "categories": [
+    "food",
+    "lifestyle",
+    "utilities"
+  ],
   "icons": [
-    {"src":"/icon.svg?v=2","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {
+      "src": "/icon.svg?v=3",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }
