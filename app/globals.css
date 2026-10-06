@@ -859,3 +859,5 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .home-weekly-strip>span{width:36px;height:36px;border-radius:10px;background:#eaf1eb;display:grid;place-items:center;font-size:17px}
 .home-weekly-strip>div{display:grid;gap:2px}.home-weekly-strip small{font-size:7px;letter-spacing:.08em;font-weight:900;color:#748078}.home-weekly-strip strong{font-size:11px}.home-weekly-strip p{font-size:8px;color:var(--muted);margin:0}.home-weekly-strip>b{font-size:8px;color:#587061}
 @media(max-width:720px){.home-weekly-strip{grid-template-columns:auto 1fr}.home-weekly-strip>b{grid-column:2}}
+
+.inventory-actions .action-eat{background:#edf5f8!important;color:#466c77!important;border-color:#d7e6eb!important}
