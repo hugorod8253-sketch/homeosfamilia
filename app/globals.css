@@ -916,3 +916,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* Approximate shelf-life dates */
 .date-alert.estimate{background:#f4f1e8;color:#7a693d;border:1px dashed #d8cba7;border-radius:8px;padding:4px 6px;font-weight:700}
 
+/* Custom supermarket inline add */
+.add-store-button{border:1px dashed #b9c8bd!important;background:#f7faf7!important;color:#456451!important;font-weight:800!important}
+.inline-store-add{display:grid;grid-template-columns:minmax(160px,.8fr) minmax(220px,1.5fr) auto auto;gap:8px;align-items:center;border:1px solid #dfe6e1;background:#f8faf8;border-radius:14px;padding:10px 12px}
+.inline-store-add>div{display:grid;gap:2px}.inline-store-add strong{font-size:11px}.inline-store-add small{font-size:8px;color:var(--muted)}
+.inline-store-add input{width:100%;border:1px solid #d8dfda;background:#fff;border-radius:10px;padding:9px 10px;font-size:11px;outline:0}
+.inline-store-add button{white-space:nowrap}
+@media(max-width:720px){.inline-store-add{grid-template-columns:1fr 1fr}.inline-store-add>div,.inline-store-add input{grid-column:1/-1}}
+
