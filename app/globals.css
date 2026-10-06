@@ -1407,3 +1407,71 @@ html,body{background:var(--bg)}
  .home-final-habit-grid{grid-template-columns:1fr}.home-final-habit-grid button{grid-template-columns:12px minmax(0,1fr)}.home-final-habit-grid button>div{grid-template-columns:68px minmax(45px,1fr) 34px}.home-final-recommend{grid-template-columns:92px minmax(0,1fr)}.home-final-recommend>img{width:92px;min-height:88px}
  .bottom-nav{left:0;right:0;bottom:0;border-radius:0;border:0;border-top:1px solid #e8e8e2;box-shadow:0 -6px 20px rgba(40,52,44,.06);padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,252,.97)}.bottom-nav button{border-radius:9px;padding:5px 2px;background:transparent!important}.bottom-nav button.active{color:#217149}.bottom-nav span{font-size:15px}.bottom-nav small{font-size:7px}
 }
+
+
+/* Comer visual + meal prep repair v4 */
+button{color:inherit}
+.nav-icon{width:30px!important;height:24px!important;border-radius:8px;display:grid!important;place-items:center!important;background:#f0f2ee;color:#647169;flex:0 0 30px}
+.nav-icon svg{width:18px;height:18px;display:block}
+.nav.active .nav-icon{background:#e4eee7;color:#176942}
+.nav-icon-casa{background:#f2eee8}
+.nav.active .nav-icon-casa{background:#e7efe8}
+.nav-icon-comer{background:#fff0e6;color:#bd6c43}
+.nav.active .nav-icon-comer{background:#ffe4d4;color:#a9532f}
+.nav-icon-comprar{background:#f5f0e5;color:#8b7440}
+.nav-icon-finanzas{background:#eef1ec;color:#55675b}
+.nav-icon-habits{background:#f3ebf6;color:#765a7f}
+@media(max-width:720px){.bottom-nav .nav-icon{width:27px!important;height:22px!important;border-radius:7px}.bottom-nav .nav-icon svg{width:16px;height:16px}}
+
+.eat-tabs{background:#f5eee8!important;border:1px solid #eadfd6!important}
+.eat-tabs button{color:#685b53!important}
+.eat-tabs button.active{background:#d9784e!important;color:#fff!important;box-shadow:0 4px 12px rgba(178,95,58,.18)!important}
+.meal-modes{background:#f5eee8!important}
+.meal-modes button{color:#6d6058!important}
+.meal-modes button.active{background:#fff!important;color:#b45f3d!important;box-shadow:0 3px 10px rgba(167,91,55,.12)!important}
+.meal-request{border-color:#ead9ce!important;background:linear-gradient(135deg,#fff4ec,#fffaf6)!important}
+.meal-request small,.recipe-options-head small,.recipe-catalog-head small{color:#a46649!important}
+.local-ai-meals{border-color:#eadcd2!important;background:linear-gradient(135deg,#fff6ef,#fffdf9)!important}
+.local-ai-meals small{color:#a46649!important}
+.local-ai-run{background:#b9603d!important}
+.recipe-scope-switch>button.active{background:#fff2e8!important;border-color:#e2bca7!important;box-shadow:inset 0 0 0 1px #efd4c5!important}
+.recipe-option,.catalog-recipe{color:#1d281f!important}
+.recipe-option strong,.catalog-recipe strong{color:#1d281f!important}
+.recipe-option.selected,.catalog-recipe.selected{outline-color:#d47b55!important}
+.recipe-catalog-toggle{border-color:#e6cbbb!important;background:#fff8f3!important;color:#a55839!important}
+.recipe-catalog-toggle:hover{background:#fff0e5!important}
+.recipe-catalog{border-color:#eadfd6!important;background:#fffcf9!important}
+.featured-meal{border-color:#eadfd6!important}
+.featured-copy .eyebrow{color:#a96042!important}
+.featured-copy .primary{background:#b9603d!important}
+.recipe-plan-when .buy-missing-plan{background:#fff0e6!important;color:#9d583c!important;border-color:#e9c7b5!important}
+.reuse-hero{border-color:#ead9ce!important;background:linear-gradient(135deg,#fff3e9,#fffaf5)!important}
+.reuse-hero small,.reuse-section-head small{color:#a36245!important}
+.weekly-menu-hero{border-color:#ead9ce!important;background:linear-gradient(135deg,#fff3e9,#fffaf5)!important}
+.weekly-menu-hero small,.weekly-menu-summary small{color:#a36245!important}
+.weekly-menu-actions .primary,.weekly-menu-summary button{background:#b9603d!important}
+.weekly-day-head>span{background:#fff0e5!important;color:#a75d3f!important}
+.weekly-slot>button{color:#27332b!important}
+.meal-request-results button{color:#27332b!important}
+
+.recipe-option img{height:110px!important}
+.catalog-recipe img{height:105px!important}
+.catalog-recipe{grid-template-rows:105px auto!important}
+.featured-meal>img{min-height:330px!important}
+@media(max-width:720px){
+ .recipe-option img{height:92px!important}
+ .catalog-recipe img{height:90px!important}
+ .catalog-recipe{grid-template-rows:90px auto!important}
+ .featured-meal>img{height:220px!important;min-height:220px!important}
+}
+
+.mealprep-tracker{margin-top:9px;border:1px solid #ead7ca;background:#fff7f1;border-radius:13px;padding:10px 11px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.mealprep-tracker>div:first-child{display:grid;gap:2px}.mealprep-tracker small{font-size:7px;letter-spacing:.08em;font-weight:900;color:#a76749}.mealprep-tracker strong{font-size:13px}.mealprep-tracker span{font-size:8px;color:#7d756f}
+.mealprep-stepper,.mealprep-days{display:grid;grid-template-columns:34px auto 34px;gap:5px;align-items:center}
+.mealprep-stepper button,.mealprep-days button{width:34px;height:34px;border:1px solid #e7cfc0;background:#fff;border-radius:9px;font-size:18px;color:#a45b3e}
+.mealprep-stepper b,.mealprep-days b{min-width:36px;text-align:center;font-size:13px}
+.prepared-kind{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.prepared-kind button{border:1px solid #dfe4df;background:#fafbf9;border-radius:11px;padding:10px;font-size:10px;font-weight:800}
+.prepared-kind button.active{background:#fff0e6;border-color:#e1bda9;color:#a75b3d}
+.prepared-form label>small{font-size:9px;color:#7b827d;line-height:1.4}
+@media(max-width:720px){.mealprep-tracker{grid-template-columns:1fr auto}.prepared-kind{grid-template-columns:1fr 1fr}}
