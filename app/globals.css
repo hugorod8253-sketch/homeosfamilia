@@ -629,3 +629,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .save-prepared-after{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;margin-top:12px;border:1px solid var(--line);background:#f8faf8;border-radius:13px;padding:11px}
 .save-prepared-after>div:first-child{display:grid;gap:2px}.save-prepared-after span{font-size:10px;font-weight:850}.save-prepared-after p{font-size:8px;color:var(--muted);margin:0}.save-prepared-after .stepper{margin:0}
 @media(max-width:720px){.recipe-finish-actions{grid-template-columns:1fr}.save-prepared-after{grid-template-columns:1fr auto}.save-prepared-after>button{grid-column:1/-1}}
+
+/* Installable zero-cost PWA */
+.pwa-install-chip{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;width:min(430px,calc(100vw - 24px));display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:rgba(35,53,44,.96);color:#f7f8f4;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:11px 12px;box-shadow:0 12px 35px rgba(25,40,32,.22);backdrop-filter:blur(12px)}
+.pwa-install-chip>div{display:grid;gap:2px}.pwa-install-chip strong{font-size:11px}.pwa-install-chip small{font-size:8px;line-height:1.35;color:#d8e0da}.pwa-install-chip>button{border:0;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:850;background:#f4f7f4;color:#26382e}.pwa-install-chip .pwa-close{width:28px;height:28px;padding:0;background:transparent;color:#dce4de;font-size:18px}
+.pwa-help-backdrop{position:fixed;inset:0;background:rgba(22,30,26,.48);z-index:100;display:grid;place-items:center;padding:20px}.pwa-help{width:min(420px,100%);background:#fff;border-radius:20px;padding:20px;display:grid;gap:12px;position:relative;box-shadow:0 24px 70px rgba(20,30,25,.25)}.pwa-help strong{font-size:17px}.pwa-help p{font-size:11px;line-height:1.55;color:#667169;margin:0}.pwa-help-close{position:absolute;right:10px;top:10px;width:30px;height:30px;border:0;background:#f2f4f2;border-radius:50%;font-size:17px}
+@media(max-width:720px){.pwa-install-chip{bottom:calc(72px + env(safe-area-inset-bottom));grid-template-columns:1fr auto auto}}
+
+/* Shopping corrections should take seconds, not editing forms */
+.shop-inline-controls{position:absolute;right:8px;bottom:8px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.94);border:1px solid #e5e9e6;border-radius:999px;padding:3px 4px;z-index:2}
+.shop-inline-controls button{width:23px;height:23px;border:0;border-radius:50%;background:#f2f5f2;color:#56645b;font-size:13px;display:grid;place-items:center;padding:0}
+.shop-inline-controls b{min-width:18px;text-align:center;font-size:8px;color:#657168}
+.shop-inline-controls .remove{background:#f7eeee;color:#925f59}
+.shop-visual-card:has(.reserve-buy) .shop-inline-controls{right:8px}
