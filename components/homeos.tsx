@@ -258,7 +258,7 @@ function median(values:number[]){
 }
 function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.location!=="Congelador"&&item.expires&&item.dateType==="caducidad"&&daysUntil(item.expires)<0)return {prob:.01,label:"Caducado",tone:"falta",basis:"La fecha de caducidad registrada ya ha pasado"};
- if(item.location!=="Congelador"&&item.expires&&item.dateType==="consumo_preferente"&&daysUntil(item.expires)<0)return {prob:.55,label:"Revisar calidad",tone:"review",basis:"El consumo preferente ha pasado; revisa calidad antes de usarlo"};
+ if(item.location!=="Congelador"&&item.expires&&item.dateType==="preferente"&&daysUntil(item.expires)<0)return {prob:.55,label:"Revisar calidad",tone:"review",basis:"El consumo preferente ha pasado; revisa calidad antes de usarlo"};
  if(item.stock==="falta"||item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
  if(item.storageMode==="reserva"){
   const reviewDue=item.qualityReviewAt&&daysUntil(item.qualityReviewAt)<=0;
