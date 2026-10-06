@@ -32,7 +32,7 @@ type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:str
 type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
 type MealRecord = {id:string;date:string;recipeId:string;title:string;servings:number;ingredients:{name:string;key:string;category:string}[]};
 type ProductPreference = {location?:Location;category?:string};
-type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string};
+type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string;dailyCalories?:number};
 type EventItem = {id:string;title:string;date:string};
 type RecipeIngredient = {name:string;qty:string;key:string};
 type Recipe = {
@@ -77,7 +77,7 @@ const DEFAULT:AppState={
  weeklyMenu:null,
  recipePlans:[],
  productPreferences:{},
- members:[{id:"m1",name:"Tú",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:""}],
+ members:[{id:"m1",name:"Tú",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:"",dailyCalories:0}],
  events:[],
  budget:0,spent:0,waste:0,wasteSaved:0,productEngineVersion:1,
  profile:{householdSize:1,supermarkets:[],mainSupermarket:"",goals:[],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo",kitchenTools:[]}
@@ -94,7 +94,7 @@ function normalizeState(x:any):AppState{
  profile.goals=Array.isArray(profile.goals)?profile.goals.filter((v:any)=>["organizar","ahorrar","desperdicio","equilibrio"].includes(v)):DEFAULT.profile.goals;
  profile.mainSupermarket=typeof profile.mainSupermarket==="string"?profile.mainSupermarket:"";
  if(profile.nutrition==="detallada")profile.nutrition="basica";
- const baseMembers=rawMembers.slice(0,12).map((m:any,i:number)=>({...((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""}) as Member),...(m&&typeof m==="object"?m:{})}));
+ const baseMembers=rawMembers.slice(0,12).map((m:any,i:number)=>{const base=((DEFAULT.members[i]||{id:"m"+(i+1),name:"Miembro "+(i+1),relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:"",dailyCalories:0}) as Member);const merged={...base,...(m&&typeof m==="object"?m:{})};const rawCalories=Number(merged.dailyCalories)||0;return {...merged,dailyCalories:rawCalories>=1200&&rawCalories<=5000?Math.round(rawCalories):0}});
  const members=ensureMembers(baseMembers,profile.householdSize);
  const productPreferences=raw.productPreferences&&typeof raw.productPreferences==="object"&&!Array.isArray(raw.productPreferences)?raw.productPreferences:{};
  const needsProductMigration=(Number(raw.productEngineVersion)||0)<1;
@@ -337,7 +337,7 @@ function ensureMembers(members:Member[],count:number){
  const out=[...members];
  while(out.length<count){
   const n=out.length+1;
-  out.push({id:"m"+n,name:"Miembro "+n,relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:""});
+  out.push({id:"m"+n,name:"Miembro "+n,relation:"Miembro",presence:"variable",appetite:"normal",dislikes:"",notes:"",dailyCalories:0});
  }
  return out;
 }
@@ -1967,7 +1967,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
   {tab==="miembros"?<div className="member-profile-grid">{members.map((m,i)=><article className="member-profile-card" key={m.id}>
     <div className="member-title"><span>{m.name.slice(0,1).toUpperCase()||"?"}</span><div><input value={m.name} onChange={e=>updateMember(m.id,{name:e.target.value})}/><small>{m.relation||"Miembro "+(i+1)}</small></div></div>
     <label><span>Rutina</span><select value={m.presence} onChange={e=>updateMember(m.id,{presence:e.target.value as Member["presence"]})}><option value="casa">Suele comer en casa</option><option value="fuera_dia">Fuera durante el día</option><option value="fines_semana">Sobre todo fines de semana</option><option value="variable">Rutina variable</option></select></label>
-    <label><span>Consumo habitual</span><select value={m.appetite} onChange={e=>updateMember(m.id,{appetite:e.target.value as Member["appetite"]})}><option value="poco">Come poco</option><option value="normal">Normal</option><option value="mucho">Come bastante</option></select></label>
+    <label><span>Consumo habitual</span><select value={m.appetite} onChange={e=>updateMember(m.id,{appetite:e.target.value as Member["appetite"]})}><option value="poco">Come poco</option><option value="normal">Normal</option><option value="mucho">Come bastante</option></select></label><label className="text-field"><span>Calorías/día orientativas</span><input type="number" min="1200" max="5000" step="50" value={m.dailyCalories||""} onChange={e=>{const v=Number(e.target.value)||0;updateMember(m.id,{dailyCalories:v?Math.max(1200,Math.min(5000,Math.round(v))):0})}} placeholder="Opcional · ej. 2200"/><small>Solo ayuda a repartir desayuno, comida y cena. No es una prescripción médica.</small></label>
     <label className="text-field"><span>No le gusta / evita</span><input value={m.dislikes} onChange={e=>updateMember(m.id,{dislikes:e.target.value})} placeholder="Ej. queso, frankfurt, hamburguesa…"/><small>Se usa para avisar y priorizar recetas que encajen mejor con esta persona.</small></label>
     <label className="text-field"><span>Nota útil</span><textarea value={m.notes} onChange={e=>updateMember(m.id,{notes:e.target.value})} placeholder="Ej. come fuera entre semana, suele llevar tupper…"/></label>
     <div className="member-summary"><b>{presenceText(m.presence)}</b><span>{appetiteText(m.appetite)}</span></div>
