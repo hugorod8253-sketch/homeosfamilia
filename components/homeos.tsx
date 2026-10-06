@@ -328,6 +328,7 @@ export default function HomeOS(){
  const [hydrated,setHydrated]=useState(false);
  const [toast,setToast]=useState("");
  const [profileOpen,setProfileOpen]=useState(false);
+ const [tourOpen,setTourOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
  const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
@@ -437,6 +438,14 @@ export default function HomeOS(){
  },[hydrated,syncCreds]);
 
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
+ useEffect(()=>{
+  if(!hydrated||!state.profile.onboardingDone||typeof window==="undefined")return;
+  if(localStorage.getItem("homeos:quick-guide-seen")!=="1")setTourOpen(true);
+ },[hydrated,state.profile.onboardingDone]);
+ function closeQuickGuide(){
+  localStorage.setItem("homeos:quick-guide-seen","1");
+  setTourOpen(false);
+ }
  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"})},[view]);
 
  async function connectHome(code:string){
@@ -561,6 +570,7 @@ export default function HomeOS(){
 
   <nav className="bottom-nav">{nav.map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}</nav>
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
+  {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
  </div>
 }
@@ -587,6 +597,21 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
   {step===5&&<div className="ob-panel"><span className="eyebrow">TIENDAS</span><h1>¿Dónde compráis?</h1><p>Opcional. Si no quieres configurarlo ahora, HomeOS usará “Compra general”.</p><div className="market-grid">{SUPERMARKETS.map(m=><button key={m} className={state.profile.supermarkets.includes(m)?"choice active":"choice"} onClick={()=>toggleMarket(m)}>{m}</button>)}</div></div>}
   <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" onClick={()=>setStep(x=>x+1)}>Continuar</button>:<button className="primary" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar en HomeOS</button>}</div>{step===0&&<button className="onboarding-skip" onClick={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}>Entrar rápido · lo configuro después</button>}
   <div className="existing-home">{!joinOpen?<button className="join-link" onClick={()=>setJoinOpen(true)}>Ya tengo HomeOS en otro dispositivo</button>:<div className="join-box"><div><strong>Conectar con mi hogar</strong><small>Pega el código que aparece en HomeOS del otro dispositivo.</small></div><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button className="primary" disabled={!joinCode.trim()||syncStatus==="connecting"} onClick={joinExisting}>{syncStatus==="connecting"?"Conectando…":"Conectar"}</button>{joinError&&<span className="form-error">{joinError}</span>}<button className="join-cancel" onClick={()=>{setJoinOpen(false);setJoinError("")}}>Cancelar</button></div>}</div>
+ </div></div>
+}
+
+function QuickStartGuide({close}:{close:()=>void}){
+ const steps=[
+  ["Inicio","Lo urgente de casa: compra, caducidades, preparados y próximos eventos."],
+  ["Comer","Dices qué te apetece o qué quieres gastar. HomeOS cruza inventario, gustos y recetas."],
+  ["Comprar","Apunta por voz o texto, compra en tienda y usa el ticket para actualizar Casa."],
+  ["Casa","Consulta lo que probablemente queda, corrige solo cuando haga falta y pide recetas desde un producto."],
+  ["Finanzas","Ve gasto mensual, categorías y desperdicio sin llevar otra contabilidad aparte."]
+ ];
+ return <div className="modal-backdrop quick-guide-backdrop" onMouseDown={close}><div className="quick-guide" onMouseDown={e=>e.stopPropagation()}>
+  <div className="quick-guide-head">{logo()}<div><small>HOMEOS EN 30 SEGUNDOS</small><h2>La app trabaja por ti</h2><p>No necesitas mantener un inventario perfecto. Compra, corrige excepciones y consulta.</p></div><button onClick={close} aria-label="Cerrar">×</button></div>
+  <div className="quick-guide-steps">{steps.map(([name,desc],i)=><article key={name}><span>{i+1}</span><div><strong>{name}</strong><p>{desc}</p></div></article>)}</div>
+  <div className="quick-guide-bottom"><span>Consejo: usa la voz siempre que te dé pereza escribir.</span><button className="primary" onClick={close}>Entendido · entrar</button></div>
  </div></div>
 }
 
