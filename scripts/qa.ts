@@ -111,8 +111,16 @@ const menu=buildWeeklyMenu(EXTRA_RECIPES,{
 });
 assert(menu.slots.length===14,"weekly menu should create lunch and dinner for 7 days");
 assert(new Set(menu.slots.map(x=>x.day)).size===7,"weekly menu should cover all 7 days");
+assert(menu.slots.filter(x=>x.meal==="Desayuno").length===7,"weekly menu should include 7 breakfasts");
 assert(menu.slots.filter(x=>x.meal==="Comida").length===7,"weekly menu should include 7 lunches");
 assert(menu.slots.filter(x=>x.meal==="Cena").length===7,"weekly menu should include 7 dinners");
+const threeMealPlan=buildWeeklyMenu([
+ {id:"breakfast",title:"Avena con yogur y fruta",time:8,servings:2,calories:380,protein:18,ingredients:[{name:"Avena",qty:"100 g",key:"avena"},{name:"Yogur",qty:"2 uds",key:"yogur"}],mode:["rapido"]},
+ {id:"lunch",title:"Pollo con arroz y verduras",time:30,servings:4,calories:700,protein:45,ingredients:[{name:"Pollo",qty:"600 g",key:"pollo"},{name:"Arroz",qty:"300 g",key:"arroz"},{name:"Verduras",qty:"400 g",key:"verdura"}],mode:["normal"]},
+ {id:"dinner",title:"Merluza con verduras",time:20,servings:4,calories:480,protein:38,ingredients:[{name:"Merluza",qty:"500 g",key:"merluza"},{name:"Verduras",qty:"400 g",key:"verdura"}],mode:["normal"]}
+],{inventory:[],dislikes:[],tools:[],people:2,dailyCalories:2000,balancedGoal:true});
+assert(threeMealPlan.slots.length===21,"three-meal weekly planning should fill all 21 moments");
+assert(threeMealPlan.slots.filter(x=>x.meal==="Desayuno").every(x=>x.recipeId==="breakfast"),"breakfast slots should prefer breakfast-like recipes when available");
 const savingMenu=buildWeeklyMenu([
  {id:"cheap",title:"Plato sencillo",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]},
  {id:"expensive",title:"Plato premium",time:20,servings:4,ingredients:[{name:"Arroz",qty:"300 g",key:"arroz"}],mode:["normal"]}
