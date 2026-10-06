@@ -913,115 +913,125 @@ function QuickStartGuide({close}:{close:()=>void}){
  </div></div>
 }
 
+function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
+ const today=new Date();
+ const year=today.getFullYear(),month=today.getMonth();
+ const first=(new Date(year,month,1).getDay()+6)%7;
+ const days=new Date(year,month+1,0).getDate();
+ const todayIso=`${year}-${String(month+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+ const events=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+ const eventDays=new Set(state.events.filter(e=>e.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).map(e=>Number(e.date.slice(-2))));
+ const monthLabel=new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(today);
+ return <article className="home-mini-agenda">
+  <div className="home-card-head"><div><small>AGENDA DE HOY</small><strong>{monthLabel.charAt(0).toUpperCase()+monthLabel.slice(1)}</strong></div><button onClick={onOpen}>Ver mes →</button></div>
+  <div className="home-mini-agenda-body">
+   <div className="home-mini-calendar" onClick={onOpen}>
+    <div className="home-mini-weekdays">{["L","M","X","J","V","S","D"].map(d=><span key={d}>{d}</span>)}</div>
+    <div className="home-mini-days">{Array.from({length:first}).map((_,i)=><span key={"b"+i}/>)}
+     {Array.from({length:days},(_,i)=>i+1).map(d=><button key={d} className={(d===today.getDate()?"today ":"")+(eventDays.has(d)?"has-event":"")} onClick={e=>{e.stopPropagation();onOpen()}}>{d}</button>)}
+    </div>
+   </div>
+   <div className="home-mini-events">{events.length?events.map(ev=><button key={ev.id} onClick={onOpen}><time>{new Date(ev.date+"T12:00:00").toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</time><span>{ev.title}</span><b>›</b></button>):<button className="empty" onClick={onOpen}>Sin eventos próximos · añadir uno</button>}
+   </div>
+  </div>
+  <button className="home-mini-add" onClick={onOpen}>＋ Añadir evento</button>
+ </article>
+}
+
 function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openWeekly}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openWeekly:()=>void}){
  const [now,setNow]=useState(()=>new Date());
- const [spotlightIndex,setSpotlightIndex]=useState(0);
  const [calendarOpen,setCalendarOpen]=useState(false);
  useEffect(()=>{const id=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(id)},[]);
  const localIso=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
  const todayIso=localIso(now);
- const nextEvents=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
- const next=nextEvents[0];
  const pending=state.shopping.filter(i=>i.status==="pendiente").length;
  const readyServings=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0);
- const reserveDue=state.inventory.filter(i=>i.storageMode==="reserva"&&i.qualityReviewAt&&daysUntil(i.qualityReviewAt)<=0);
- const savedRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).sort((a,b)=>(a.plannedFor||"9999").localeCompare(b.plannedFor||"9999")||a.createdAt.localeCompare(b.createdAt));
- const readyRecipePlans=savedRecipePlans.filter(p=>p.missing.length===0);
- const nextRecipePlan=savedRecipePlans[0];
  const homeInventory=planningInventory(state);
  const householdDislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>norm(x.trim())).filter(Boolean));
  const homeIdeas=RECIPES.map(r=>{
   const miss=missing(r,homeInventory);
   const text=norm([r.title,...r.ingredients.map(i=>i.name)].join(" "));
-  const urgentHits=expiring.filter(item=>r.ingredients.some(ing=>norm(ing.key).includes(norm(item.name))||norm(item.name).includes(norm(ing.key))||norm(ing.name).includes(norm(item.name)))).length;
   const blocked=householdDislikes.some(d=>d&&text.includes(d));
-  const toolPenalty=r.tools?.length&&state.profile.kitchenTools.length&&!r.tools.some(t=>state.profile.kitchenTools.includes(t))?1:0;
-  return {r,miss,urgentHits,blocked,toolPenalty};
- }).filter(x=>!x.blocked).sort((a,b)=>a.toolPenalty-b.toolPenalty||a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).filter((x,i,a)=>a.findIndex(y=>y.r.image===x.r.image)===i).slice(0,5);
- useEffect(()=>{if(homeIdeas.length<2)return;const id=window.setInterval(()=>setSpotlightIndex(i=>(i+1)%homeIdeas.length),8000);return()=>window.clearInterval(id)},[homeIdeas.length]);
- useEffect(()=>{if(spotlightIndex>=homeIdeas.length)setSpotlightIndex(0)},[homeIdeas.length,spotlightIndex]);
+  const urgentHits=expiring.filter(item=>r.ingredients.some(ing=>norm(ing.key).includes(norm(item.name))||norm(item.name).includes(norm(ing.key))||norm(ing.name).includes(norm(item.name)))).length;
+  return {r,miss,blocked,urgentHits};
+ }).filter(x=>!x.blocked).sort((a,b)=>a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).slice(0,4);
 
  const hour=now.getHours();
  const greeting=hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches";
  const currentMeal:WeeklyMeal=hour<12?"Desayuno":hour<18?"Comida":"Cena";
  const mealOrder:WeeklyMeal[]=["Desayuno","Comida","Cena"];
- let todayMenuSlots=state.weeklyMenu?.slots.filter(()=>false)||[];
+ let todayMenuSlots:WeeklyMenuPlan["slots"]=[];
  if(state.weeklyMenu){
   const startDate=new Date(state.weeklyMenu.startDate+"T12:00:00");
   const todayNoon=new Date(now);todayNoon.setHours(12,0,0,0);
   const dayIndex=Math.round((todayNoon.getTime()-startDate.getTime())/86400000);
   if(dayIndex>=0&&dayIndex<7)todayMenuSlots=state.weeklyMenu.slots.filter(s=>s.day===dayIndex);
  }
- const currentSlot=todayMenuSlots.find(s=>s.meal===currentMeal);
- const currentRecipe=currentSlot?RECIPES.find(r=>r.id===currentSlot.recipeId):undefined;
- const spotlight=homeIdeas[spotlightIndex]||homeIdeas[0];
  const habitBalance=habitBalanceSignals(state);
  const habitLearning=habitBalance.every(x=>x.tone==="learning");
- const habitGood=habitBalance.filter(x=>x.tone==="good").length;
- const habitStatus=habitLearning?"Aprendiendo":habitGood>=3?"Va bien":habitGood>=2?"Mejorable":"Conviene revisar";
- const householdConfigured=state.profile.householdSize>0&&state.members.length>=state.profile.householdSize;
- const nextDate=next?new Date(next.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}):"Sin eventos";
  const currentMonthKey=todayIso.slice(0,7);
- const monthSpentBrief=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(currentMonthKey)).reduce((n,x)=>n+x.total,0):state.spent;
+ const monthSpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(currentMonthKey)).reduce((n,x)=>n+x.total,0):state.spent;
  const openCalendar=()=>{setCalendarOpen(true);requestAnimationFrame(()=>setTimeout(()=>document.querySelector(".apple-calendar")?.scrollIntoView({behavior:"smooth",block:"start"}),60))};
+ const primaryIdea=homeIdeas[0];
 
- return <section className="stack home-brief">
-  <header className="home-brief-head">
-   <div><span className="eyebrow">HOMEOS · {new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now).toUpperCase()}</span><h2>{greeting}.</h2><p>Tu resumen de casa para decidir rápido.</p></div>
+ return <section className="home-final">
+  <header className="home-final-head">
+   <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
    <time>{now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</time>
   </header>
 
-  <section className="home-brief-grid">
-   <article className="home-now-card">
-    <div className="home-now-top"><div><small>AHORA · {currentMeal.toUpperCase()}</small><h3>{currentRecipe?currentRecipe.title:spotlight?.r.title||"¿Qué te apetece?"}</h3></div>{currentRecipe&&<span>{currentRecipe.time} min</span>}</div>
-    {currentRecipe?<div className="home-now-content"><img src={currentRecipe.image} alt="" loading="lazy"/><div><p>{weeklyMealPeople(state,state.weeklyMenu?.startDate||todayIso,currentSlot?.day||0,currentMeal)===0?"Hoy no está previsto comer en casa.":"Este es el plato previsto en tu menú semanal."}</p><button onClick={()=>openRecipeIdea(currentRecipe.title)}>Ver receta y preparar →</button></div></div>:<div className="home-now-empty"><p>{state.weeklyMenu?"No hay un plato previsto para este momento.":"Activa el menú semanal o elige una idea con lo que ya tienes."}</p><button onClick={state.weeklyMenu?()=>setView("comer"):openWeekly}>{state.weeklyMenu?"Ver ideas →":"Crear menú semanal →"}</button></div>}
+  <section className="home-final-top">
+   <article className="home-final-menu">
+    <div className="home-card-head"><div><small>{state.weeklyMenu?"MENÚ DE HOY":"IDEAS PARA HOY"}</small><strong>{state.weeklyMenu?"Desayuno, comida y cena":"Con lo que ya tienes en Casa"}</strong></div><button onClick={state.weeklyMenu?openWeekly:()=>setView("comer")}>{state.weeklyMenu?"Ver semana →":"Ver todas →"}</button></div>
+    {state.weeklyMenu&&todayMenuSlots.length?<div className="home-final-meals">{mealOrder.map(meal=>{
+      const slot=todayMenuSlots.find(s=>s.meal===meal);
+      const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
+      const miss=r?missing(r,planningInventory(state,state.weeklyMenu?.id)):[];
+      return <button key={meal} className={meal===currentMeal?"active":""} disabled={!r} onClick={()=>r&&openRecipeIdea(r.title)}>
+       {r&&<img src={r.image} alt="" loading="lazy"/>}
+       <div><small>{meal.toUpperCase()}</small><strong>{r?.title||"Sin plato"}</strong><span>{r?(miss.length?miss.length+" por completar":"✓ listo"):"Puedes añadir uno"}</span></div><b>›</b>
+      </button>
+    })}</div>:<div className="home-final-ideas">{homeIdeas.slice(0,3).map(({r,miss})=><button key={r.id} onClick={()=>openRecipeIdea(r.title)}><img src={r.image} alt="" loading="lazy"/><div><strong>{r.title}</strong><span>{r.time} min · {miss.length?miss.length+" por completar":"✓ puedes hacerlo"}</span></div><b>›</b></button>)}
+      <div className="home-no-menu-actions"><button onClick={()=>setView("comer")}>Ver recetas</button><button onClick={openWeekly}>Crear menú semanal</button></div>
+    </div>}
    </article>
-
-   <aside className="home-brief-status">
-    <button onClick={()=>setView("comprar")}><small>COMPRA</small><strong>{pending}</strong><span>{pending?pending===1?"pendiente":"pendientes":"todo al día"}</span><b>Comprar ›</b></button>
-    <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><small>USAR PRONTO</small><strong>{expiring.length}</strong><span>{expiring[0]?.name||"sin urgencias"}</span><b>Casa ›</b></button>
-    <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><small>PREPARADO</small><strong>{readyServings}</strong><span>{readyServings===1?"ración":"raciones"}</span><b>Casa ›</b></button>
-    <button onClick={()=>setView("finanzas")}><small>ESTE MES</small><strong>{monthSpentBrief.toFixed(0)} €</strong><span>{state.budget>0?Math.max(0,state.budget-monthSpentBrief).toFixed(0)+" € disponibles":"gasto registrado"}</span><b>Finanzas ›</b></button>
-   </aside>
+   <MiniAgenda state={state} onOpen={openCalendar}/>
   </section>
 
-  <section className="home-today-menu">
-   <div className="home-brief-section-head"><div><small>MENÚ DE HOY</small><h3>{state.weeklyMenu?"Desayuno, comida y cena":"Todavía no has planificado la semana"}</h3></div><button onClick={openWeekly}>{state.weeklyMenu?"Ver semana →":"Crear menú →"}</button></div>
-   {state.weeklyMenu&&todayMenuSlots.length?<div className="home-meal-row">{mealOrder.map(meal=>{
-    const slot=todayMenuSlots.find(s=>s.meal===meal);
-    const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
-    const active=meal===currentMeal;
-    const people=slot&&state.weeklyMenu?weeklyMealPeople(state,state.weeklyMenu.startDate,slot.day,meal):state.profile.householdSize;
-    return <button key={meal} className={active?"home-meal-card active":"home-meal-card"} disabled={!r} onClick={()=>r&&openRecipeIdea(r.title)}>{r?<><img src={r.image} alt="" loading="lazy"/><div><small>{meal.toUpperCase()}</small><strong>{r.title}</strong><span>{people===0?"Fuera de casa":r.time+" min · "+(missing(r,planningInventory(state,state.weeklyMenu?.id)).length?"faltan ingredientes":"listo")}</span></div><b>›</b></>:<div><small>{meal.toUpperCase()}</small><strong>Sin plato</strong><span>Puedes añadir uno</span></div>}</button>
-   })}</div>:<div className="home-menu-empty"><span>📅</span><div><strong>Planifica una vez y HomeOS te lo recuerda aquí</strong><p>El menú conecta recetas, Casa y Comprar.</p></div><button onClick={openWeekly}>Planificar</button></div>}
+  <section className="home-final-mid">
+   <div className="home-final-summary">
+    <div className="home-card-head"><div><small>TU CASA HOY</small><strong>Resumen rápido</strong></div></div>
+    <div className="home-final-summary-grid">
+     <button onClick={()=>setView("comprar")}><span>🛒</span><small>COMPRA</small><strong>{pending}</strong><em>{pending===1?"pendiente":"pendientes"}</em></button>
+     <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>🍃</span><small>USAR PRONTO</small><strong>{expiring.length}</strong><em>{expiring[0]?.name||"sin urgencias"}</em></button>
+     <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span>▣</span><small>PREPARADO</small><strong>{readyServings}</strong><em>{readyServings===1?"ración":"raciones"}</em></button>
+     <button onClick={()=>setView("finanzas")}><span>↗</span><small>ESTE MES</small><strong>{monthSpent.toFixed(0)} €</strong><em>{state.budget>0?Math.max(0,state.budget-monthSpent).toFixed(0)+" € disponibles":"ver finanzas"}</em></button>
+    </div>
+   </div>
+
+   {state.profile.nutrition!=="off"&&<article className="home-final-habits">
+    <div className="home-card-head"><div><small>HÁBITOS ALIMENTARIOS</small><strong>{habitLearning?"Aprendiendo":"Últimas comidas confirmadas"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
+    <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}><span className="ring"/><div><strong>{x.label}</strong><em>{x.status}</em></div></button>)}</div>
+   </article>}
   </section>
 
-  <section className="home-brief-lower">
-   <article className="home-suggest-card">
-    <div className="home-brief-section-head"><div><small>SUGERENCIA</small><h3>Una idea que cambia sola</h3></div><span>{homeIdeas.length?spotlightIndex+1:0}/{homeIdeas.length}</span></div>
-    {spotlight?<button className="home-suggest-main" onClick={()=>openRecipeIdea(spotlight.r.title)}><img src={spotlight.r.image} alt="" loading="lazy"/><div><strong>{spotlight.r.title}</strong><p>{spotlight.miss.length?spotlight.miss.length+" ingredientes por completar":"Puedes hacerlo con Casa"}{spotlight.urgentHits?" · aprovecha "+spotlight.urgentHits:""}</p><span>{spotlight.r.time} min · ≈ {spotlight.r.calories} kcal/ración</span></div><b>›</b></button>:<p className="home-empty-copy">Añade productos a Casa para recibir sugerencias más precisas.</p>}
-    {homeIdeas.length>1&&<div className="home-suggest-dots">{homeIdeas.map((_,i)=><button key={i} aria-label={"Idea "+(i+1)} className={i===spotlightIndex?"active":""} onClick={()=>setSpotlightIndex(i)}/>)}</div>}
-   </article>
-
-   <article className="home-agenda-card">
-    <div className="home-brief-section-head"><div><small>AGENDA</small><h3>{nextDate}</h3></div><button onClick={()=>calendarOpen?setCalendarOpen(false):openCalendar()}>{calendarOpen?"Cerrar":"Calendario →"}</button></div>
-    {nextEvents.length?<div className="home-agenda-list">{nextEvents.map(ev=><button key={ev.id} onClick={openCalendar}><time>{new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><strong>{ev.title}</strong><b>›</b></button>)}</div>:<div className="home-agenda-empty"><span>Sin eventos próximos</span><button onClick={openCalendar}>Añadir uno</button></div>}
-    <div className="home-agenda-foot"><span>🍱 {readyServings} raciones listas</span><span>❄️ {reserveDue.length} reservas por revisar</span></div>
+  <section className="home-final-bottom">
+   {primaryIdea&&<article className="home-final-recommend">
+    <img src={primaryIdea.r.image} alt="" loading="lazy"/>
+    <div><small>RECETA RECOMENDADA</small><strong>{primaryIdea.r.title}</strong><p>{primaryIdea.miss.length?primaryIdea.miss.length+" ingredientes por completar":"Ideal para hoy con lo que tienes en casa."}</p><span>{primaryIdea.r.time} min · {primaryIdea.r.difficulty}</span><button onClick={()=>openRecipeIdea(primaryIdea.r.title)}>Ver receta →</button></div>
+   </article>}
+   <article className="home-final-actions">
+    <div className="home-card-head"><div><small>ACCESOS RÁPIDOS</small><strong>Hazlo en un toque</strong></div></div>
+    <div className="home-final-action-grid">
+     <button onClick={()=>{setView("comer")}}><span>⚡</span><strong>Cenas rápidas</strong></button>
+     <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong></button>
+     <button onClick={scanTicket}><span>▣</span><strong>Escanear ticket</strong></button>
+     <button onClick={()=>setView("casa")}><span>⌂</span><strong>Añadir a Casa</strong></button>
+     <button onClick={openWeekly}><span>□</span><strong>Menú semanal</strong></button>
+    </div>
    </article>
   </section>
 
-  <div className="home-action-row">
-   <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong><small>Buscar o crear una idea</small></button>
-   <button onClick={scanTicket}><span>▣</span><strong>Escanear ticket</strong><small>Cámara · varios productos</small></button>
-   <button onClick={()=>setView("casa")}><span>⌂</span><strong>Añadir a Casa</strong><small>Producto o preparado</small></button>
-   <button onClick={openWeekly}><span>□</span><strong>Menú semanal</strong><small>{state.weeklyMenu?"Semana preparada":"Planificar"}</small></button>
-  </div>
-
-  {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS GUARDADAS</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" listas para preparar":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("Faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
-
-  {state.profile.nutrition!=="off"&&<article className="home-habit-brief home-habit-balance"><div className="home-habit-copy"><small>HÁBITOS · COMIDAS CONFIRMADAS</small><strong>{habitStatus}</strong><p>{habitLearning?"Necesito algunas comidas más para valorar tendencias sin inventar datos.":"Lectura orientativa del patrón reciente; no es una valoración médica."}</p></div><div className="home-habit-indicators">{habitBalance.map(x=><button className={"habit-indicator "+x.tone} key={x.key} onClick={openHabits}><b>{x.label}</b><em>{x.status}</em><i>›</i></button>)}</div><button onClick={openHabits}>Ver detalle →</button></article>}
-
-  {!householdConfigured&&<button className="family-warning" onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Completa el perfil del hogar para mejorar cantidades y sugerencias.</button>}
   {calendarOpen&&<CalendarCard state={state} setState={setState}/>}
  </section>
 }
