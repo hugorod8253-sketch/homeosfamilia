@@ -607,7 +607,7 @@ export default function HomeOS(){
     const own=sources.filter(x=>x.planId===saved.planId);
     if(!own.length)return [q];
     const shortageKeys=new Set(shortages.map(x=>norm(x.key)));
-    const next=sources.filter(x=>x.planId!==saved.planId||shortageKeys.has(norm(classifyProduct(q.name,q.category).canonical))||shortageKeys.some(k=>norm(q.name).includes(k)));
+    const next=sources.filter(x=>x.planId!==saved.planId||shortageKeys.has(norm(classifyProduct(q.name,q.category).canonical))||[...shortageKeys].some(k=>norm(q.name).includes(k)));
     const updated=withShoppingSources(q,next);
     return updated?[updated]:[];
    });
