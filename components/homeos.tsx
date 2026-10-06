@@ -355,6 +355,18 @@ function ensureMembers(members:Member[],count:number){
  return out;
 }
 function statusLabel(s:StockState){return s==="hay"?"Hay":s==="poco"?"Queda poco":s==="falta"?"Probablemente falta":s==="mucho"?"Hay bastante":"Revisar"}
+function storeClass(name:string){
+ const n=norm(name);
+ if(n.includes("mercadona"))return "store-mercadona";
+ if(n.includes("lidl"))return "store-lidl";
+ if(n.includes("aldi"))return "store-aldi";
+ if(n.includes("carrefour"))return "store-carrefour";
+ if(n.includes("bonpreu")||n.includes("esclat"))return "store-bonpreu";
+ if(n.includes("consum"))return "store-consum";
+ if(n.includes("dia"))return "store-dia";
+ if(n.includes("cualquiera")||n.includes("compra general"))return "store-any";
+ return "store-other";
+}
 function productIcon(name:string,cat:string){return <ProductGlyph name={name} category={cat}/>}
 function rotationBand(name:string,cat:string,location?:string){
  if(location==="Congelador") return {key:"baja",label:"Larga duración"};
@@ -485,14 +497,13 @@ function micIcon(){return <svg className="mic-svg" viewBox="0 0 24 24" aria-hidd
 function navIcon(id:View,_icon:string){
  const common={fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round" as const,strokeLinejoin:"round" as const};
  return <span className={"nav-icon nav-icon-"+id} aria-hidden="true"><svg viewBox="0 0 24 24">
-  {id==="inicio"?<><rect x="4" y="4" width="6" height="6" rx="1.5" {...common}/><rect x="14" y="4" width="6" height="6" rx="1.5" {...common}/><rect x="4" y="14" width="6" height="6" rx="1.5" {...common}/><rect x="14" y="14" width="6" height="6" rx="1.5" {...common}/></>
+  {id==="inicio"?<><path d="M3.8 11.2 12 4.5l8.2 6.7v8.1a1.7 1.7 0 0 1-1.7 1.7h-13a1.7 1.7 0 0 1-1.7-1.7v-8.1Z" fill="currentColor" stroke="none"/><path d="M9.2 21v-6.3h5.6V21" fill="var(--paper)" stroke="none"/></>
   :id==="comer"?<><path d="M5 3v7M8 3v7M5 7h3M6.5 10v11" {...common}/><path d="M15 3v18M15 3c3 2.5 4 7 1.5 10H15" {...common}/></>
   :id==="comprar"?<><path d="M3 5h2l2 10h10l2-7H6" {...common}/><circle cx="9" cy="19" r="1.2" {...common}/><circle cx="17" cy="19" r="1.2" {...common}/></>
-  :id==="casa"?<><rect x="2.5" y="3.5" width="19" height="17" rx="5" {...common}/><path d="M7 12l5-4 5 4v5h-3v-3h-4v3H7z" {...common}/></>
-  :<><path d="M5 19V11M12 19V5M19 19V8" {...common}/><path d="M3 19h18" {...common}/></>}
+  :id==="casa"?<><path d="M3.8 11.2 12 4.5l8.2 6.7v8.1a1.7 1.7 0 0 1-1.7 1.7h-13a1.7 1.7 0 0 1-1.7-1.7v-8.1Z" {...common}/><path d="M9.2 21v-6.3h5.6V21" {...common}/></>
+  :<><path d="M5 19V12M10 19V9M15 19V5M20 19V8" {...common}/><path d="M3 20.5h19" {...common}/></>}
  </svg></span>
 }
-
 
 const nav:{id:View;label:string;icon:string}[]=[
  {id:"inicio",label:"Inicio",icon:"⌂"},{id:"comer",label:"Comer",icon:"♨"},{id:"comprar",label:"Comprar",icon:"⌁"},{id:"casa",label:"Casa",icon:"⌂"},{id:"finanzas",label:"Finanzas",icon:"▥"}
@@ -505,6 +516,7 @@ export default function HomeOS(){
  const [toast,setToast]=useState("");
  const [profileOpen,setProfileOpen]=useState(false);
  const [tourOpen,setTourOpen]=useState(false);
+ const [mobileMoreOpen,setMobileMoreOpen]=useState(false);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
  const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
@@ -723,7 +735,11 @@ export default function HomeOS(){
   }
  }
 
- const expiring=useMemo(()=>state.inventory.filter(i=>daysUntil(i.expires)<=3&&i.stock!=="falta"),[state.inventory]);
+ const expiring=useMemo(()=>state.inventory.filter(i=>{
+  if(i.stock==="falta"||i.location==="Congelador"||i.storageMode==="reserva")return false;
+  const date=i.expires||i.estimatedExpires;
+  return Boolean(date)&&daysUntil(date)<=3;
+ }),[state.inventory]);
  const monthKey=new Date().toISOString().slice(0,7);
  const monthlySpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(monthKey)).reduce((n,x)=>n+x.total,0):state.spent;
  const available=state.budget-monthlySpent;
@@ -871,7 +887,7 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button><button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("ideas");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
@@ -879,7 +895,8 @@ export default function HomeOS(){
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
-  <nav className="bottom-nav">{nav.filter(n=>n.id!=="finanzas").map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}<button onClick={()=>setProfileOpen(true)}><span>•••</span><small>Más</small></button></nav>
+  <nav className="bottom-nav">{nav.filter(n=>n.id!=="finanzas").map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");setMobileMoreOpen(false);setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}<button className={mobileMoreOpen||view==="finanzas"?"active more-tab": "more-tab"} onClick={()=>setMobileMoreOpen(v=>!v)}><span className="more-dots">•••</span><small>Más</small></button></nav>
+  {mobileMoreOpen&&<div className="mobile-more-backdrop" onMouseDown={()=>setMobileMoreOpen(false)}><div className="mobile-more-sheet" onMouseDown={e=>e.stopPropagation()}><div className="mobile-more-handle"/><button onClick={()=>{setView("finanzas");setMobileMoreOpen(false)}}><span className="more-icon finance">▥</span><div><strong>Finanzas</strong><small>Gasto, presupuesto y categorías</small></div><b>›</b></button>{state.profile.nutrition!=="off"&&<button onClick={()=>{setComerFocus("habitos");setView("comer");setMobileMoreOpen(false)}}><span className="more-icon habits">◴</span><div><strong>Hábitos</strong><small>Cómo está comiendo el hogar</small></div><b>›</b></button>}<button onClick={()=>{setProfileOpen(true);setMobileMoreOpen(false)}}><span className="more-icon settings">⚙</span><div><strong>Configuración</strong><small>Hogar, preferencias y sincronización</small></div><b>›</b></button></div></div>}
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
@@ -999,6 +1016,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const primaryIdea=homeIdeas[0];
 
  return <section className="home-final">
+  <div className="home-mobile-brand"><div className="home-mobile-brand-id">{logo()}<div><strong>HomeOS</strong><small>Tu cocina, sin carga mental</small></div></div><div className="home-mobile-brand-actions"><button className="notification-button" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button><button className="avatar">FR</button></div></div>
   <header className="home-final-head">
    <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
    <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{weather!==null?"Sabadell":"Ahora"}</small></div></div>
@@ -1006,14 +1024,15 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
 
   <section className="home-final-top">
    <article className="home-final-menu">
-    <div className="home-card-head"><div><small>{state.weeklyMenu?"MENÚ DE HOY":"IDEAS PARA HOY"}</small><strong>{state.weeklyMenu?"Desayuno, comida y cena":"Con lo que ya tienes en Casa"}</strong></div><button onClick={state.weeklyMenu?openWeekly:()=>setView("comer")}>{state.weeklyMenu?"Ver semana →":"Ver todas →"}</button></div>
+    <div className="home-card-head home-menu-head"><div><div className="home-title-line"><strong>{state.weeklyMenu?"Menú de hoy":"Ideas para hoy"}</strong>{state.weeklyMenu&&<span className="home-menu-badge">Del menú semanal</span>}</div><small>{state.weeklyMenu?"Desayuno, comida y cena":"Recetas según lo que tienes en casa"}</small></div><button onClick={state.weeklyMenu?openWeekly:()=>setView("comer")}>{state.weeklyMenu?"Ver semana ›":"Ver todas ›"}</button></div>
     {state.weeklyMenu&&todayMenuSlots.length?<div className="home-final-meals">{mealOrder.map(meal=>{
       const slot=todayMenuSlots.find(s=>s.meal===meal);
       const r=slot?RECIPES.find(x=>x.id===slot.recipeId):undefined;
       const miss=r?missing(r,planningInventory(state,state.weeklyMenu?.id)):[];
+      const mealTime=meal==="Desayuno"?"08:00":meal==="Comida"?"14:00":"20:30";
       return <button key={meal} className={meal===currentMeal?"active":""} disabled={!r} onClick={()=>r&&openRecipeIdea(r.title)}>
        {r&&<img src={r.image} alt="" loading="lazy"/>}
-       <div><small>{meal.toUpperCase()}</small><strong>{r?.title||"Sin plato"}</strong><span>{r?(miss.length?miss.length+" por completar":"✓ listo"):"Puedes añadir uno"}</span></div><b>›</b>
+       <div className="home-meal-copy"><small>{meal}</small><time>{mealTime}</time><strong>{r?.title||"Sin plato"}</strong>{r&&<span className="home-meal-meta">◷ {r.time} min <i>•</i> {r.difficulty}</span>}<em className="home-meal-cta">Ver receta →</em></div><b>›</b>
       </button>
     })}</div>:<div className="home-final-ideas">{homeIdeas.slice(0,3).map(({r,miss})=><button key={r.id} onClick={()=>openRecipeIdea(r.title)}><img src={r.image} alt="" loading="lazy"/><div><strong>{r.title}</strong><span>{r.time} min · {miss.length?miss.length+" por completar":"✓ puedes hacerlo"}</span></div><b>›</b></button>)}
       <div className="home-no-menu-actions"><button onClick={()=>setView("comer")}>Ver recetas</button><button onClick={openWeekly}>Crear menú semanal</button></div>
@@ -1027,7 +1046,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
     <div className="home-card-head"><div><small>TU CASA HOY</small><strong>Resumen rápido</strong></div></div>
     <div className="home-final-summary-grid">
      <button onClick={()=>setView("comprar")}><span>🛒</span><small>COMPRA</small><strong>{pending}</strong><em>{pending===1?"pendiente":"pendientes"}</em></button>
-     <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>🍃</span><small>USAR PRONTO</small><strong>{expiring.length}</strong><em>{expiring[0]?.name||"sin urgencias"}</em></button>
+     <button onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>🍃</span><small>USAR PRONTO</small><strong>{expiring.length}</strong><em>{expiring[0]?expiring[0].name+" · "+(expiring[0].expires?"fecha real":"fecha estimada"):"sin urgencias"}</em></button>
      <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span>▣</span><small>PREPARADO</small><strong>{readyServings}</strong><em>{readyServings===1?"ración":"raciones"}</em></button>
      <button onClick={()=>setView("finanzas")}><span>↗</span><small>ESTE MES</small><strong>{monthSpent.toFixed(0)} €</strong><em>{state.budget>0?Math.max(0,state.budget-monthSpent).toFixed(0)+" € disponibles":"ver finanzas"}</em></button>
     </div>
@@ -1900,14 +1919,14 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Añade productos y HomeOS los organiza por tienda y categoría.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
 
   {pendingRecipePlans.length>0&&<article className="shopping-recipe-memory"><span>🍳</span><div><small>RECETAS GUARDADAS</small><strong>{pendingRecipePlans.length} receta{pendingRecipePlans.length===1?"":"s"} esperando ingredientes</strong><p>{recipeShoppingItems?recipeShoppingItems+" productos ya están vinculados a esas recetas.":"Puedes añadir los faltantes sin volver a buscar las recetas."}</p></div><button onClick={()=>pendingRecipePlans.forEach(p=>addFromRecipe(p.recipe,p.plannedFor))}>Añadir faltantes</button></article>}
-  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. leche, 2 yogures y 1 kg de pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":micIcon()}</button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={activeStore===s?"active":""} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
+  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. leche, 2 yogures y 1 kg de pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":micIcon()}</button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
 
-  {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={storeFilter===s?"active":""} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={storeFilter==="Cualquiera"?"active":""} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button><button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Supermercado</button></div>}
+  {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={(storeFilter===s?"active ":"")+storeClass(s)} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={(storeFilter==="Cualquiera"?"active ":"")+"store-any"} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button><button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Supermercado</button></div>}
   {hasPlanLines&&<div className="shopping-intent-tabs"><button className={shoppingIntentFilter==="todos"?"active":""} onClick={()=>setShoppingIntentFilter("todos")}>Todo</button><button className={shoppingIntentFilter==="habitual"?"active":""} onClick={()=>setShoppingIntentFilter("habitual")}>Compra habitual</button><button className={shoppingIntentFilter==="planes"?"active":""} onClick={()=>setShoppingIntentFilter("planes")}>Recetas y menú</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
   {addingStore&&<div className="inline-store-add"><div><strong>Añadir supermercado</strong><small>Se guardará para futuras compras.</small></div><input autoFocus value={newStoreName} onChange={e=>setNewStoreName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSupermarket(shoppingActive);if(e.key==="Escape"){setAddingStore(false);setNewStoreName("")}}} placeholder="Ej. BonÀrea, Ametller, tienda del barrio…"/><button className="primary" onClick={()=>addSupermarket(shoppingActive)} disabled={!newStoreName.trim()}>Guardar</button><button className="secondary" onClick={()=>{setAddingStore(false);setNewStoreName("")}}>Cancelar</button></div>}
 
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em>{i.supermarket}</em>}<div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty}</b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em className={"store-label "+storeClass(i.supermarket)}>{i.supermarket}</em>}<div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty}</b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
 
    <aside className="purchase-tools">
     <div className="ticket-actions">
@@ -1941,7 +1960,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  const [mealPrepDays,setMealPrepDays]=useState(7);
  useEffect(()=>{if(focus!=="all"){setLoc(focus==="reserve"?"Congelador":"Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
- const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?daysUntil(i.expires)<=3&&i.stock!=="falta":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
+ const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?Boolean(i.expires||i.estimatedExpires)&&daysUntil(i.expires||i.estimatedExpires)<=3&&i.stock!=="falta"&&i.location!=="Congelador":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
  function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
  function confirmStillHere(id:string){
