@@ -900,6 +900,13 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const nextRecipePlan=savedRecipePlans[0];
  const homeInventory=planningInventory(state);
  const householdDislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>norm(x.trim())).filter(Boolean));
+ const hour=new Date().getHours();
+ const greeting=hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches";
+ const primaryName=(state.members[0]?.name||"").trim();
+ const welcomeName=primaryName&&norm(primaryName)!=="tu"&&norm(primaryName)!=="tú"?", "+primaryName:"";
+ const routineMembers=state.members.slice(0,state.profile.householdSize);
+ const daytimeAway=routineMembers.filter(m=>m.presence==="fuera_dia").length;
+ const weekendOnly=routineMembers.filter(m=>m.presence==="fines_semana").length;
  const homeIdeas=RECIPES.map(r=>{
   const miss=missing(r,homeInventory);
   const text=norm([r.title,...r.ingredients.map(i=>i.name)].join(" "));
@@ -908,12 +915,29 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   const toolPenalty=r.tools?.length&&state.profile.kitchenTools.length&&!r.tools.some(t=>state.profile.kitchenTools.includes(t))?1:0;
   return {r,miss,urgentHits,blocked,toolPenalty};
  }).filter(x=>!x.blocked).sort((a,b)=>a.toolPenalty-b.toolPenalty||a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).slice(0,4);
- return <section className="stack">
-  <div className="dashboard-hero"><div>{logo()}<span className="eyebrow">HOY EN CASA</span><h2>{state.profile.householdSize===1?"Tu casa, sin tener que recordarlo todo":"Lo importante de casa, de un vistazo"}</h2><p>{pending?String(pending)+" productos pendientes de compra.":"La lista de compra está al día."} {recommended?String(recommended)+" son sugerencias de reposición de HomeOS.":""}</p></div><div className="inventory-trust"><span>ESTADO DEL INVENTARIO</span><strong>{known} productos con estado conocido</strong><small>{review?String(review)+" necesitan revisión":"Nada pendiente de revisar"}</small></div></div>
+ return <section className="stack home-start">
+  <section className="home-welcome">
+   <div className="home-welcome-copy">
+    <div className="home-welcome-kicker">{logo()}<span>HOMEOS · TU CASA HOY</span></div>
+    <h2>{greeting}{welcomeName}.<br/><em>¿Qué hacemos hoy?</em></h2>
+    <p>Ideas para comer, compra y casa en orden sin tener que acordarte de todo.</p>
+    <div className="home-welcome-pills">
+     <span><b>{pending}</b> por comprar</span>
+     <span><b>{expiring.length}</b> por usar pronto</span>
+     <span><b>{readyServings}</b> raciones listas</span>
+     <span className={state.weeklyMenu?"ready":""}><b>{state.weeklyMenu?"✓":"7"}</b> {state.weeklyMenu?"menú preparado":"días por planificar"}</span>
+    </div>
+    <div className="home-welcome-actions"><button className="welcome-primary" onClick={()=>setView("comer")}>Ver ideas para hoy</button><button className="welcome-secondary" onClick={()=>setView("comprar")}>{pending?"Abrir compra · "+pending:"Abrir compra"}</button></div>
+   </div>
+   <div className="home-welcome-visual" aria-label="Ideas de comida para hoy">
+    {homeIdeas.slice(0,3).map(({r},i)=><button key={r.id} className={"welcome-food welcome-food-"+i} onClick={()=>openRecipeIdea(r.title)}><img src={r.image} alt={r.title}/><span>{r.title}</span></button>)}
+    <div className="welcome-float-card"><small>HOY</small><strong>{homeIdeas.filter(x=>x.miss.length===0).length||homeIdeas.length} ideas viables</strong><span>según Casa y tus gustos</span></div>
+   </div>
+  </section>
 
-  <div className="household-context">
-   <div><small>PERFIL DEL HOGAR</small><strong>{state.profile.householdSize===1?"Perfil personal":String(peopleAtHome)+" comen habitualmente en casa"}</strong><span>{state.profile.householdSize===1?"Tus gustos y rutina ajustan las sugerencias.":state.members.slice(0,state.profile.householdSize).filter(m=>m.presence==="fuera_dia").length+" fuera durante el día · "+state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length+" con consumo alto"}</span></div>
-   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Configurar hogar</button>
+  <div className="household-context home-household-context">
+   <div><small>{state.profile.householdSize===1?"TU PERFIL":"TU HOGAR"}</small><strong>{state.profile.householdSize===1?"HomeOS aprende tu rutina":state.profile.householdSize+" personas configuradas"}</strong><span>{state.profile.householdSize===1?"Tus gustos y hábitos ajustan lo que ves.":[daytimeAway?daytimeAway+" fuera durante el día":"",weekendOnly?weekendOnly+" principalmente fines de semana":"",state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length?state.members.slice(0,state.profile.householdSize).filter(m=>m.appetite==="mucho").length+" con consumo alto":""].filter(Boolean).join(" · ")||"Rutina del hogar configurada"}</span></div>
+   <button onClick={()=>document.querySelector<HTMLButtonElement>(".avatar")?.click()}>Ajustar hogar</button>
   </div>
 
   <section className="home-today-ideas">
@@ -921,12 +945,13 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    <div className="home-today-grid">{homeIdeas.map(({r,miss,urgentHits})=><button key={r.id} className="home-today-card" onClick={()=>openRecipeIdea(r.title)}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><strong>{r.title}</strong><span>{r.time} min · {r.calories?("≈ "+r.calories+" kcal/ración"):"orientativo"}</span><small className={miss.length?"needs":"ready"}>{miss.length?(miss.length===1?"Falta 1 ingrediente":("Faltan "+miss.length+" ingredientes")):"✓ Puedes hacerlo"}{urgentHits?" · aprovecha "+urgentHits+" producto"+(urgentHits===1?"":"s"):""}</small></div></button>)}</div>
   </section>
 
-  <div className="hero-grid home-primary-actions">
-   <button className="decision-card photo-card" onClick={()=>setView("comer")}><img src={RECIPES[0].image} alt="Idea para comer" decoding="async"/><div className="photo-overlay"><small>¿QUÉ COMEMOS HOY?</small><h2>Ideas con lo que ya tienes</h2><p>Varias opciones según tiempo, inventario y gustos.</p><span className="card-cta">Ver ideas →</span></div></button>
-   <button className="decision-card shopping-decision" onClick={()=>setView("comprar")}><span className="decision-icon">🛒</span><div><small>LISTA DE COMPRA</small><h2>{pending?String(pending)+" pendientes":"Todo al día"}</h2><p>{pending?"Entra, marca lo que coges y termina la compra.":"Añade algo cuando lo necesites."}</p><span className="card-cta">Abrir lista →</span></div></button>
+  <div className="home-quick-grid">
+   <button className="home-quick-card eat" onClick={()=>setView("comer")}><span>🍳</span><div><small>COMER</small><strong>Ideas para hoy</strong><p>{homeIdeas.filter(x=>x.miss.length===0).length?"Tienes opciones listas con Casa.":"Te enseño lo que necesita menos."}</p></div><b>→</b></button>
+   <button className="home-quick-card buy" onClick={()=>setView("comprar")}><span>🛒</span><div><small>COMPRAR</small><strong>{pending?pending+" pendientes":"Lista al día"}</strong><p>{pending?"Compra sin perder el motivo de cada producto.":"Añade cuando lo necesites."}</p></div><b>→</b></button>
+   <button className="home-quick-card house" onClick={()=>setView("casa")}><span>⌂</span><div><small>CASA</small><strong>{known+" conocidos"}</strong><p>{review?review+" por revisar":"Inventario sin revisiones pendientes."}</p></div><b>→</b></button>
+   <button className="home-quick-card week" onClick={openWeekly}><span>📅</span><div><small>SEMANA</small><strong>{state.weeklyMenu?"Menú listo":"Planificar menú"}</strong><p>{state.weeklyMenu?"Desayuno, comida y cena organizados.":"Crea 7 días usando Casa y preferencias."}</p></div><b>→</b></button>
   </div>
   {savedRecipePlans.length>0&&<button className={readyRecipePlans.length?"home-recipe-memory ready":"home-recipe-memory"} onClick={()=>setView("comer")}><span>{readyRecipePlans.length?"✓":"🍳"}</span><div><small>RECETAS QUE QUERÍAS HACER</small><strong>{readyRecipePlans.length?readyRecipePlans.length+" ya "+(readyRecipePlans.length===1?"está":"están")+" listas":nextRecipePlan?.recipe.title}</strong><p>{readyRecipePlans.length?"Ya tienes todos los ingredientes.":nextRecipePlan?.plannedFor?("Planificada para "+new Date(nextRecipePlan.plannedFor+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"})+" · faltan "+nextRecipePlan.missing.length):("No la has perdido · faltan "+(nextRecipePlan?.missing.length||0)+" ingredientes")}</p></div><b>Ver →</b></button>}
-  <button className="home-weekly-strip" onClick={openWeekly}><span>📅</span><div><small>MENÚ SEMANAL</small><strong>{state.weeklyMenu?"Semana preparada":"Planifica 7 días sin pensar cada comida"}</strong><p>{state.weeklyMenu?"Revisa platos y añade de una vez lo que falte a Comprar.":"HomeOS usa Casa, gustos, eventos y recetas."}</p></div><b>Ver menú →</b></button>
 
   <div className="home-status-grid">
    <button className="status-card expiry-card" onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
