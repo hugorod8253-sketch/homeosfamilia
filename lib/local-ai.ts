@@ -11,6 +11,7 @@ export type LocalAiRecipe={
 
 const DESKTOP_MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
 const MOBILE_MODEL="SmolLM2-360M-Instruct-q4f32_1-MLC";
+const MOBILE_FALLBACK_MODEL="SmolLM2-360M-Instruct-q4f16_1-MLC";
 let enginePromise:Promise<any>|null=null;
 let activeModel="";
 
@@ -37,13 +38,19 @@ async function createEngine(modelId:string,onProgress?:(p:LocalAiProgress)=>void
 async function getEngine(onProgress?:(p:LocalAiProgress)=>void){
  if(!localAiSupported())throw new Error("webgpu_unavailable");
  const preferred=preferredLocalAiModel();
- if(enginePromise&&activeModel===preferred)return enginePromise;
- activeModel=preferred;
- enginePromise=createEngine(preferred,onProgress).catch(async()=>{
-  if(preferred===MOBILE_MODEL){enginePromise=null;activeModel="";throw new Error("model_load_failed")}
-  activeModel=MOBILE_MODEL;
-  return createEngine(MOBILE_MODEL,onProgress);
- });
+ const candidates=preferred===DESKTOP_MODEL?[DESKTOP_MODEL,MOBILE_MODEL,MOBILE_FALLBACK_MODEL]:[MOBILE_MODEL,MOBILE_FALLBACK_MODEL];
+ if(enginePromise&&candidates.includes(activeModel))return enginePromise;
+ enginePromise=(async()=>{
+  let lastError:unknown=null;
+  for(let i=0;i<candidates.length;i++){
+   const model=candidates[i];
+   activeModel=model;
+   if(i>0)onProgress?.({progress:0,text:"Probando un modelo local más ligero"});
+   try{return await createEngine(model,onProgress)}catch(err){lastError=err}
+  }
+  activeModel="";
+  throw lastError||new Error("model_load_failed");
+ })();
  try{return await enginePromise}catch(err){enginePromise=null;activeModel="";throw err}
 }
 
@@ -134,3 +141,4 @@ export async function generateLocalRecipes(input:{
 
 export const LOCAL_AI_MODEL=DESKTOP_MODEL;
 export const LOCAL_AI_MOBILE_MODEL=MOBILE_MODEL;
+export const LOCAL_AI_MOBILE_FALLBACK_MODEL=MOBILE_FALLBACK_MODEL;
