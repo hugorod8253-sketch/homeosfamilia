@@ -114,7 +114,13 @@ function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function hasInv(inv:InventoryItem[],key:string){const k=norm(key);return inv.some(i=>i.stock!=="falta"&&(norm(i.name).includes(k)||k.includes(norm(i.name).split(" ")[0])))}
-function missing(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.filter(x=>!hasInv(inv,x.key))}
+function missing(recipe:Recipe,inv:InventoryItem[]){
+ return recipe.ingredients.filter(x=>{
+  const parsed=parseQty(x.qty);
+  if(!parsed)return !hasInv(inv,x.key);
+  return !needAvailable(inv,{key:x.key,label:x.name,amount:parsed.amount,unit:parsed.unit as ReuseNeed["unit"]});
+ });
+}
 function score(recipe:Recipe,inv:InventoryItem[]){return recipe.ingredients.length-missing(recipe,inv).length}
 function reasonText(r:ShoppingItem["reason"]){return r==="persona"?"Pedido por":r==="recomienda"?"HomeOS recomienda":r==="receta"?"Añadido desde receta":"Reposición probable"}
 function inferCategory(name:string){return classifyProduct(name).category}
@@ -171,6 +177,18 @@ function productMatchesNeed(i:InventoryItem,key:string){
  return n.includes(k)||canonical.includes(k)||k.includes(canonical);
 }
 function hasNeed(inv:InventoryItem[],need:ReuseNeed){return inv.some(i=>productMatchesNeed(i,need.key))}
+function needAvailable(inv:InventoryItem[],need:ReuseNeed){
+ const family=unitFamily(need.unit);
+ const required=toBase(need.amount,need.unit);
+ let total=0;
+ for(const i of inv.filter(x=>productMatchesNeed(x,need.key))){
+  const itemFamily=unitFamily(i.unit);
+  if(itemFamily!==family)continue;
+  if(family==="count"&&normalizedUnit(need.unit)!=="ud"&&normalizedUnit(i.unit)!==normalizedUnit(need.unit))continue;
+  total+=toBase(Math.max(0,i.qty),i.unit);
+ }
+ return total>=required;
+}
 function consumeNeed(inv:InventoryItem[],need:{key:string;amount:number;unit:string}){
  let remaining=toBase(need.amount,need.unit);
  const family=unitFamily(need.unit);
@@ -463,7 +481,7 @@ export default function HomeOS(){
   <main className="main">
    <header className="topbar"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus}/>}
-   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe}/>}
+   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
    {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available}/>}
@@ -607,7 +625,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
   </article>
 }
 
-function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void}){
+function Comer({state,setState,addFromRecipe,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
  const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
@@ -638,7 +656,7 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
  }).filter(x=>x.matches.length);
 
  const reuseIdeas=REUSE_IDEAS.map(idea=>{
-  const matched=idea.needs.filter(n=>hasNeed(state.inventory,n)).length;
+  const matched=idea.needs.filter(n=>needAvailable(state.inventory,n)).length;
   return {...idea,matched,ready:matched===idea.needs.length};
  }).sort((a,b)=>Number(b.ready)-Number(a.ready)||b.matched-a.matched);
  const selectedReuse=REUSE_IDEAS.find(x=>x.id===selectedReuseId)||reuseIdeas[0];
@@ -666,7 +684,7 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
    return {...s,inventory:inv};
   });
   setReuseOpen(false);
-  if(!exact) setTimeout(()=>alert("HomeOS ha actualizado lo que conoce con precisión. Algún ingrediente quedó para revisar porque estaba guardado en una unidad distinta."),0);
+  setToast(exact?"Inventario actualizado":"Inventario actualizado · revisa una cantidad incompatible");
  }
 
  function chooseRecipe(r:Recipe){
@@ -682,7 +700,7 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
    return {...s,inventory:consumed.inventory};
   });
   setOpen(false);
-  if(!wasExact) setTimeout(()=>alert("HomeOS ha descontado las cantidades conocidas. Algún producto quedó marcado para revisar porque sus unidades no permiten un cálculo exacto."),0);
+  setToast(wasExact?"Ingredientes descontados del inventario":"Ingredientes actualizados · hay una cantidad por revisar");
  }
 
  return <section className="stack">
@@ -713,11 +731,11 @@ function Comer({state,setState,addFromRecipe}:{state:AppState;setState:React.Dis
    {expiringForReuse.length>0&&<div className="reuse-priority"><div className="recipe-options-head"><div><small>GASTAR PRIMERO</small><h3>Productos que merecen atención</h3></div></div><div className="reuse-priority-grid">{expiringForReuse.map(i=><button key={i.id} onClick={()=>{const found=reuseIdeas.find(x=>reuseIdeaMatchesProduct(x,i.name,i.category));if(found){setSelectedReuseId(found.id);setReuseOpen(true)}}}><span>{productIcon(i.name,i.category)}</span><div><strong>{i.name}</strong><small>{i.expires&&daysUntil(i.expires)<=5?("Fecha próxima · "+Math.max(0,daysUntil(i.expires))+" días"):i.stock==="mucho"?"Hay bastante":"Conviene revisar"}</small></div><b>›</b></button>)}</div></div>}
 
    <div className="reuse-section-head"><div><small>CON LO QUE HAY EN CASA</small><h3>Aprovechar o transformar</h3><p>Las ideas listas aparecen primero. Las demás te enseñan qué ingrediente falta.</p></div></div>
-   <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={hasNeed(state.inventory,n)?"have":"missing"} key={n.key}>{hasNeed(state.inventory,n)?"✓":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
+   <div className="reuse-grid">{reuseIdeas.map(idea=><article className={idea.ready?"reuse-card ready":"reuse-card"} key={idea.id}><div className="reuse-card-top"><span>{idea.icon}</span><em>{idea.kind==="transformar"?"Transformar":"Aprovechar"}</em></div><h3>{idea.title}</h3><p>{idea.summary}</p><div className="reuse-needs">{idea.needs.map(n=><span className={needAvailable(state.inventory,n)?"have":hasNeed(state.inventory,n)?"some":"missing"} key={n.key}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"~":"+"} {n.label}</span>)}</div><div className="reuse-card-foot"><small>{idea.ready?"Puedes hacerlo con lo que tienes":idea.matched+" de "+idea.needs.length+" ingredientes"}</small><button onClick={()=>{setSelectedReuseId(idea.id);setReuseOpen(true)}}>{idea.ready?"Ver cómo":"Ver idea"}</button></div></article>)}</div>
   </>:<Habitos state={state}/>} 
 
   {open&&<div className="modal-backdrop"><div className="modal recipe-modal"><div className="modal-head"><div><span className="eyebrow">PREPARAR</span><h2>{recipe.title}</h2>{availableTools.length>0&&<small className="modal-tool-note">Compatible con {availableTools.join(" · ")}</small>}</div><button onClick={()=>setOpen(false)}>×</button></div><div className="recipe-cols"><div><h4>Ingredientes</h4>{recipe.ingredients.map(i=><p key={i.name}>{i.qty} · {i.name}</p>)}</div><div><h4>Pasos</h4>{recipe.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div><div className="recipe-total"><span>Total receta</span><b>≈ {recipe.calories*recipe.servings} kcal · {recipe.protein*recipe.servings}g proteína</b></div><button className="primary modal-save" onClick={completeRecipe}>He terminado</button></div></div>}
-  {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={hasNeed(state.inventory,n)?"need-ok":"need-missing"}>{hasNeed(state.inventory,n)?"✓":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>hasNeed(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
+  {reuseOpen&&selectedReuse&&<div className="modal-backdrop" onMouseDown={()=>setReuseOpen(false)}><div className="modal recipe-modal reuse-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{selectedReuse.kind==="transformar"?"TRANSFORMAR":"APROVECHAR"}</span><h2>{selectedReuse.title}</h2><p>{selectedReuse.summary}</p></div><button onClick={()=>setReuseOpen(false)}>×</button></div><div className="reuse-modal-grid"><div><h4>Vas a usar</h4>{selectedReuse.needs.map(n=><p key={n.key}><b>{n.amount} {n.unit}</b> · {n.label} <span className={needAvailable(state.inventory,n)?"need-ok":hasNeed(state.inventory,n)?"need-some":"need-missing"}>{needAvailable(state.inventory,n)?"✓":hasNeed(state.inventory,n)?"cantidad insuficiente":"falta"}</span></p>)}{selectedReuse.optional?.length?<><h4>Opcional</h4>{selectedReuse.optional.map(x=><p key={x}>+ {x}</p>)}</>:null}</div><div><h4>Cómo hacerlo</h4>{selectedReuse.steps.map((s,i)=><p key={s}><b>{i+1}.</b> {s}</p>)}</div></div>{selectedReuse.safety&&<div className={selectedReuse.safetyLevel==="attention"?"reuse-safety attention":"reuse-safety"}><b>Seguridad alimentaria</b><span>{selectedReuse.safety}</span></div>}{selectedReuse.output&&<div className="reuse-output"><span>Resultado en Casa</span><strong>{selectedReuse.output.name} · {selectedReuse.output.qty} {selectedReuse.output.unit}</strong></div>}<button className="primary modal-save" disabled={!selectedReuse.needs.every(n=>needAvailable(state.inventory,n))} onClick={completeReuse}>Hecho · actualizar inventario</button></div></div>}
 
  </section>
 }
