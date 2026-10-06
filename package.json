@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build": "npm run qa && next build",
+    "start": "next start",
+    "qa": "tsx scripts/qa.ts"
   },
   "dependencies": {
     "next": "16.2.12",
@@ -18,6 +19,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "tsx": "^4.20.6"
   }
 }
