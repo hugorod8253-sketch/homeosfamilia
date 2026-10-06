@@ -12,6 +12,7 @@ export type ShoppingSource={
  planId?:string;
  recipeId?:string;
  plannedFor?:string;
+ buyAfter?:string;
 };
 
 export function normalizePlanUnit(unit:string){
