@@ -252,9 +252,13 @@ function ensureMembers(members:Member[],count:number){
 function statusLabel(s:StockState){return s==="hay"?"Hay":s==="poco"?"Queda poco":s==="falta"?"Probablemente falta":s==="mucho"?"Hay bastante":"Revisar"}
 function productIcon(name:string,cat:string){return <ProductGlyph name={name} category={cat}/>}
 function rotationBand(name:string,cat:string,location?:string){
- if(location==="Congelador") return {key:"baja",label:"Rotación baja"};
+ if(location==="Congelador") return {key:"baja",label:"Larga duración"};
+ const ref=shelfLifeBandFromReference(name);
+ if(ref==="corta")return {key:"alta",label:"Vida útil corta"};
+ if(ref==="media")return {key:"media",label:"Vida útil media"};
+ if(ref==="larga")return {key:"baja",label:"Vida útil larga"};
  const r=classifyProduct(name,cat).rotation;
- return {key:r,label:r==="alta"?"Rotación alta":r==="media"?"Rotación media":"Rotación baja"};
+ return {key:r,label:r==="alta"?"Vida útil corta":r==="media"?"Vida útil media":"Vida útil larga"};
 }
 function median(values:number[]){
  const xs=values.filter(Number.isFinite).sort((a,b)=>a-b);
