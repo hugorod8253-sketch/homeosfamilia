@@ -38,7 +38,7 @@ function toolOk(r:WeeklyMenuRecipe,tools:string[]){
 
 const TARGETS=["poultry","fish","plant","meat","plant","fish","egg","poultry","mixed","plant","meat","fish","poultry","mixed"];
 
-export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;seed?:number}):WeeklyMenuPlan{
+export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:string[];dislikes:string[];tools:string[];people:number;priority?:string[];seed?:number}):WeeklyMenuPlan{
  const candidates=recipes.filter(r=>toolOk(r,opts.tools)&&dislikeHits(r,opts.dislikes)===0);
  const pool=candidates.length>=8?candidates:recipes.filter(r=>dislikeHits(r,opts.dislikes)===0);
  const used=new Map<string,number>();
@@ -54,6 +54,8 @@ export function buildWeeklyMenu(recipes:WeeklyMenuRecipe[],opts:{inventory:strin
    if(g===target)score+=6;
    if(hasVeg(r))score+=meal==="Cena"?3:2;
    score+=Math.min(4,hasInventory(r,opts.inventory))*2;
+   const priority=(opts.priority||[]).map(norm);
+   if(priority.length&&r.ingredients.some(i=>priority.some(p=>norm(i.name).includes(p)||p.includes(norm(i.key||i.name)))))score+=5;
    score-=Math.max(0,(used.get(r.id)||0))*8;
    if(meal==="Cena"){
     if(r.time<=25)score+=4;
