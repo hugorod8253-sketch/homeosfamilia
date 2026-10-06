@@ -94,3 +94,18 @@ export function sumSources(sources:ShoppingSource[],unit:string){
 export function removePlanFromSources(sources:ShoppingSource[]|undefined,planId:string){
  return (sources||[]).filter(s=>s.planId!==planId);
 }
+
+
+export function freeInventoryAfterReservations<T extends PlanInventoryItem & {planReservations?:ShoppingSource[]}>(items:T[],activePlanIds:string[],exceptPlanId?:string):T[]{
+ const active=new Set(activePlanIds);
+ return items.map(item=>{
+  let freeBase=planToBase(Math.max(0,item.qty),item.unit);
+  for(const reservation of item.planReservations||[]){
+   if(!reservation.planId||!active.has(reservation.planId)||reservation.planId===exceptPlanId)continue;
+   if(planUnitFamily(reservation.unit)!==planUnitFamily(item.unit))continue;
+   freeBase-=planToBase(Math.max(0,reservation.qty),reservation.unit);
+  }
+  const qty=Math.max(0,Math.round(planFromBase(Math.max(0,freeBase),item.unit)*100)/100);
+  return {...item,qty};
+ });
+}
