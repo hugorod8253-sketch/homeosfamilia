@@ -528,7 +528,6 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
  const [joinOpen,setJoinOpen]=useState(false);
  const [joinCode,setJoinCode]=useState("");
  const [joinError,setJoinError]=useState("");
- const [draftDeviceMemberId,setDraftDeviceMemberId]=useState(deviceMemberId);
  async function joinExisting(){setJoinError("");const ok=await connectHome(joinCode);if(!ok)setJoinError("Código no válido o no se pudo conectar.");}
  const toggleGoal=(g:Goal)=>setState(s=>({...s,profile:{...s.profile,goals:s.profile.goals.includes(g)?s.profile.goals.filter(x=>x!==g):[...s.profile.goals,g]}}));
  const toggleMarket=(m:string)=>setState(s=>({...s,profile:{...s.profile,supermarkets:s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m],mainSupermarket:s.profile.mainSupermarket||m}}));
@@ -1179,6 +1178,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
  const [tab,setTab]=useState<"miembros"|"ajustes">("miembros");
  const [joinCode,setJoinCode]=useState("");
  const [joinError,setJoinError]=useState("");
+ const [draftDeviceMemberId,setDraftDeviceMemberId]=useState(deviceMemberId);
  const members=draft.members.slice(0,draft.profile.householdSize);
  const dirty=JSON.stringify(draft)!==JSON.stringify(state)||draftDeviceMemberId!==deviceMemberId;
 
