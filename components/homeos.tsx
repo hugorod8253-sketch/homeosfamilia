@@ -920,9 +920,11 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,foc
   recognition.onresult=(e:any)=>{
    const text=e.results?.[0]?.[0]?.transcript||"";
    setCraving(text);
-   if(/aprovecha|aprovechar|gastar|sobra|sobran|transform/.test(norm(text)))setTab("aprovechar");
-   else setTab("ideas");
-   setToast("He usado lo que acabas de decir como contexto");
+   const spoken=norm(text);
+   if(/menu|semana|semanal|planifica/.test(spoken)){setTab("menu");generateWeek();setToast("Te he preparado una propuesta semanal")}
+   else if(/aprovecha|aprovechar|gastar|sobra|sobran|transform/.test(spoken)){setTab("aprovechar");setToast("He usado lo que acabas de decir como contexto")}
+   else {setTab("ideas");setToast("He usado lo que acabas de decir como contexto")}
+   
   };
   recognition.onerror=()=>setToast("No he podido entender la voz");
   recognition.onend=()=>setMealListening(false);
