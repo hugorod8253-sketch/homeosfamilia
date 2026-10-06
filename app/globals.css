@@ -854,3 +854,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .weekly-day-head>div>strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .weekly-day-head>div>small{font-size:7px;color:#8a938d}
 .weekly-event-note{font-size:7px;line-height:1.35;color:#6d617f;background:#f4f0f8;border:1px solid #e5dced;border-radius:8px;padding:6px}
+
+.home-weekly-strip{width:100%;border:1px solid #dfe5e0;background:#f8faf8;border-radius:15px;padding:11px 13px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left}
+.home-weekly-strip>span{width:36px;height:36px;border-radius:10px;background:#eaf1eb;display:grid;place-items:center;font-size:17px}
+.home-weekly-strip>div{display:grid;gap:2px}.home-weekly-strip small{font-size:7px;letter-spacing:.08em;font-weight:900;color:#748078}.home-weekly-strip strong{font-size:11px}.home-weekly-strip p{font-size:8px;color:var(--muted);margin:0}.home-weekly-strip>b{font-size:8px;color:#587061}
+@media(max-width:720px){.home-weekly-strip{grid-template-columns:auto 1fr}.home-weekly-strip>b{grid-column:2}}
