@@ -321,14 +321,19 @@ function habitSignals(state:AppState){
   const t=new Date(x.date+"T12:00:00").getTime();
   return t<=now&&now-t<=28*86400000;
  });
- const source=recentPurchases.length?recentPurchases:state.inventory.filter(i=>i.stock!=="falta").map(i=>({name:i.name,category:i.category}));
+ const recentMeals=state.mealHistory.filter(x=>{
+  const t=new Date(x.date+"T12:00:00").getTime();
+  return t<=now&&now-t<=28*86400000;
+ }).flatMap(m=>m.ingredients.map(i=>({name:i.name,category:i.category})));
+ const current=state.inventory.filter(usableInventoryItem).map(i=>({name:i.name,category:i.category}));
+ const source=[...recentPurchases,...recentMeals,...current];
  const has=(re:RegExp,cat?:string)=>source.some((i:any)=>(cat&&i.category===cat)||re.test(norm(i.name)));
  return [
-  ["Proteína",has(/pollo|carne|pescado|huevo|proteina|legumbre|lenteja|garbanzo/,"Carne")],
-  ["Verdura",has(/verdura|tomate|zanahoria|cebolla|aguacate|brocoli|lechuga|pepino/)],
+  ["Proteína",has(/pollo|carne|pescado|huevo|proteina|legumbre|lenteja|garbanzo|tofu|seitan/,"Carne")],
+  ["Verdura",has(/verdura|tomate|zanahoria|cebolla|aguacate|brocoli|lechuga|pepino|espinaca/)],
   ["Fruta",has(/platano|banana|manzana|pera|naranja|mandarina|fresa|arandano|kiwi|uva|melon|sandia|piña|mango|fruta/)],
-  ["Carbohidratos",has(/arroz|pasta|pan|patata|avena|cereal/)],
-  ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria|refresco/)]
+  ["Carbohidratos",has(/arroz|pasta|pan|patata|avena|cereal|quinoa|cuscus/)],
+  ["Dulces/snacks",has(/chocolate|galleta|chuche|gominola|snack|bolleria|refresco|helado/)]
  ] as [string,boolean][];
 }
 function logo(){return <div className="logo-mark" aria-label="HomeOS"><svg viewBox="0 0 64 64" role="img"><rect x="7" y="8" width="50" height="48" rx="15" className="logo-bg"/><path className="logo-h" d="M18 18h8v11h12V18h8v28h-8V36H26v10h-8z"/><ellipse className="logo-spoon" cx="32" cy="21.5" rx="4.4" ry="5.3"/><rect className="logo-spoon" x="30.5" y="26" width="3" height="16" rx="1.5"/></svg></div>}
@@ -580,7 +585,7 @@ export default function HomeOS(){
 
   <main className="main">
    <header className="topbar"><div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openHabits={()=>{setComerFocus("habitos");setView("comer")}}/>}
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}}/>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
    {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
@@ -621,7 +626,7 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
 function QuickStartGuide({close}:{close:()=>void}){
  const steps=[
   ["Inicio","Lo urgente de casa: compra, caducidades, preparados y próximos eventos."],
-  ["Comer","Dices qué te apetece o qué quieres gastar. HomeOS cruza inventario, gustos y recetas."],
+  ["Comer","Ideas, aprovechamiento y menú semanal usando inventario, gustos y tiempo disponible."],
   ["Comprar","Apunta por voz o texto, compra en tienda y usa el ticket para actualizar Casa."],
   ["Casa","Consulta lo que probablemente queda, corrige solo cuando haga falta y pide recetas desde un producto."],
   ["Finanzas","Ve gasto mensual, categorías y desperdicio sin llevar otra contabilidad aparte."]
@@ -633,7 +638,7 @@ function QuickStartGuide({close}:{close:()=>void}){
  </div></div>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openHabits}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openHabits:()=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openHabits,openWeekly}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openHabits:()=>void;openWeekly:()=>void}){
  const todayIso=new Date().toISOString().slice(0,10);
  const next=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
  const recommended=state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length;
@@ -656,6 +661,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    <button className="decision-card photo-card" onClick={()=>setView("comer")}><img src={RECIPES[0].image} alt="Idea para comer" decoding="async"/><div className="photo-overlay"><small>¿QUÉ COMEMOS HOY?</small><h2>Ideas con lo que ya tienes</h2><p>Varias opciones según tiempo, inventario y gustos.</p><span className="card-cta">Ver ideas →</span></div></button>
    <button className="decision-card shopping-decision" onClick={()=>setView("comprar")}><span className="decision-icon">🛒</span><div><small>LISTA DE COMPRA</small><h2>{pending?String(pending)+" pendientes":"Todo al día"}</h2><p>{pending?"Entra, marca lo que coges y termina la compra.":"Añade algo cuando lo necesites."}</p><span className="card-cta">Abrir lista →</span></div></button>
   </div>
+  <button className="home-weekly-strip" onClick={openWeekly}><span>📅</span><div><small>MENÚ SEMANAL</small><strong>{state.weeklyMenu?"Semana preparada":"Planifica 7 días sin pensar cada comida"}</strong><p>{state.weeklyMenu?"Revisa platos y añade de una vez lo que falte a Comprar.":"HomeOS usa Casa, gustos, eventos y recetas."}</p></div><b>Ver menú →</b></button>
 
   <div className="home-status-grid">
    <button className="status-card expiry-card" onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>⏳</span><div><small>CADUCA PRONTO</small><strong>{expiring.length}</strong><p>{expiring[0]?.name||"Nada urgente"}</p></div><b>›</b></button>
