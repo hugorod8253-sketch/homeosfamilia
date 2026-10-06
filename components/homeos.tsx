@@ -239,6 +239,41 @@ function rotationBand(name:string,cat:string,location?:string){
  const r=classifyProduct(name,cat).rotation;
  return {key:r,label:r==="alta"?"Rotación alta":r==="media"?"Rotación media":"Rotación baja"};
 }
+function median(values:number[]){
+ const xs=values.filter(Number.isFinite).sort((a,b)=>a-b);
+ if(!xs.length)return 0;
+ const m=Math.floor(xs.length/2);
+ return xs.length%2?xs[m]:(xs[m-1]+xs[m])/2;
+}
+function inventoryEstimate(state:AppState,item:InventoryItem){
+ if(item.stock==="falta"||item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
+ if(item.storageMode==="reserva"){
+  const reviewDue=item.qualityReviewAt&&daysUntil(item.qualityReviewAt)<=0;
+  return {prob:.96,label:"Probablemente hay",tone:reviewDue?"review":"hay",basis:reviewDue?"Reserva registrada · conviene revisar calidad":"Reserva registrada · no se descuenta por rotación normal"};
+ }
+ if(item.stock==="incierto")return {prob:.5,label:"Revisar",tone:"incierto",basis:"Cantidad o estado pendiente de confirmar"};
+ const canonical=norm(classifyProduct(item.name,item.category).canonical);
+ const purchases=state.purchaseHistory.filter(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical).map(p=>new Date(p.date+"T12:00:00").getTime()).sort((a,b)=>a-b);
+ const intervals:number[]=[];
+ for(let i=1;i<purchases.length;i++)intervals.push((purchases[i]-purchases[i-1])/86400000);
+ const learned=intervals.length>=2?median(intervals):0;
+ const rotation=classifyProduct(item.name,item.category).rotation;
+ let expected=learned||(rotation==="alta"?8:rotation==="media"?20:60);
+ if(item.location==="Congelador")expected=learned?Math.max(learned,30):120;
+ else if(item.location==="Despensa")expected*=1.35;
+ if(["Suplementos","Limpieza y hogar","Higiene y cuidado"].includes(item.category))expected*=1.6;
+ const start=item.frozenAt||item.purchasedAt;
+ const age=Math.max(0,Math.floor((Date.now()-new Date(start+"T12:00:00").getTime())/86400000));
+ const ratio=age/Math.max(1,expected);
+ let prob=ratio<=.4?.96:ratio<=.8?.86:ratio<=1.1?.68:ratio<=1.5?.46:ratio<=2?.27:.12;
+ if(item.stock==="poco")prob=Math.min(prob,.42);
+ if(item.stock==="mucho")prob=Math.max(prob,.9);
+ const label=prob>=.78?(age<=2?"Hay":"Probablemente hay"):prob>=.42?"Revisar":"Probablemente falta";
+ const tone=prob>=.78?"hay":prob>=.42?"incierto":"falta";
+ const basis=learned?"Aprende de una reposición típica de ~"+Math.max(1,Math.round(expected))+" días":"Estimación inicial · mejorará con tus compras";
+ return {prob,label,tone,basis};
+}
+
 function presenceText(p:Member["presence"]){return p==="casa"?"Come habitualmente en casa":p==="fuera_dia"?"Fuera durante el día":p==="fines_semana"?"Principalmente fines de semana":"Rutina variable"}
 function appetiteText(a:Member["appetite"]){return a==="poco"?"Come poco":a==="mucho"?"Come bastante":"Consumo normal"}
 function habitSignals(state:AppState){
@@ -1061,10 +1096,11 @@ function Casa({state,setState,cameraRef,galleryRef,setToast,focus,clearFocus}:{s
 
   <div className={"inventory-grid "+density}>{shown.length===0&&<article className="friendly-empty inventory-empty"><span>⌂</span><h3>No hay productos aquí</h3><p>Prueba otro filtro o registra una compra.</p></article>}{shown.map(i=>{
    const displayLocation=i.location==="Suplementos"?"Despensa":i.location;
+   const estimate=inventoryEstimate(state,i);
    return <article className="inventory-card" key={i.id}>
-    <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+i.stock}>{statusLabel(i.stock)}</span></div>
+    <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
     <div className="inventory-name-row"><h3>{i.name}</h3><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>
-    <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}</p>
+    <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}{density==="detail"&&<small className="estimate-basis">{estimate.basis}</small>}</p>
     <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}</div>}
     <div className="inventory-actions">{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"falta")}>Se acabó</button>}{i.stock!=="falta"&&<button onClick={()=>setStock(i.id,"poco")}>Queda poco</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button onClick={()=>freeze(i.id)}>Congelar</button>}{i.stock==="falta"&&<button onClick={()=>addToBuy(i)}>Comprar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
