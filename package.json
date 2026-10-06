@@ -11,7 +11,8 @@
     "next": "16.2.12",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "tesseract.js": "7.0.0"
+    "tesseract.js": "7.0.0",
+    "@mlc-ai/web-llm": "0.2.85"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
