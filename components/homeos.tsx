@@ -106,7 +106,12 @@ function loadState():AppState{
 function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:00:00");return Math.ceil((d.getTime()-Date.now())/86400000)}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-function hasInv(inv:InventoryItem[],key:string){const k=norm(key);return inv.some(i=>i.stock!=="falta"&&(norm(i.name).includes(k)||k.includes(norm(i.name).split(" ")[0])))}
+function usableInventoryItem(i:InventoryItem){
+ if(!usableInventoryItem(i))return false;
+ if(i.location!=="Congelador"&&i.dateType==="caducidad"&&i.expires&&daysUntil(i.expires)<0)return false;
+ return true;
+}
+function hasInv(inv:InventoryItem[],key:string){const k=norm(key);return inv.some(i=>usableInventoryItem(i)&&(norm(i.name).includes(k)||k.includes(norm(i.name).split(" ")[0])))}
 function missing(recipe:Recipe,inv:InventoryItem[]){
  return recipe.ingredients.filter(x=>{
   const parsed=parseQty(x.qty);
@@ -461,7 +466,8 @@ export default function HomeOS(){
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
 
  function addFromRecipe(recipe:Recipe){
-  const miss=missing(recipe,state.inventory);
+  const confirmedForQuery=(ing:RecipeIngredient)=>mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p));
+ const miss=missing(recipe,state.inventory).filter(ing=>!confirmedForQuery(ing));
   if(!miss.length){setToast("Tienes todo para esta receta");return}
   const toAdd=miss.filter(m=>!state.shopping.some(q=>q.status==="pendiente"&&norm(q.name).includes(norm(m.key))));
   if(!toAdd.length){setToast("Los ingredientes que faltan ya están en la compra");return}
@@ -782,7 +788,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
   if(!localAiSupported()){setAiError("Este navegador no ofrece WebGPU. HomeOS seguirá usando el libro local de recetas sin coste.");return}
   setAiLoading(true);setAiProgress(0);setAiProgressText("Preparando IA local");
   try{
-   const inventory=state.inventory.filter(i=>i.stock!=="falta").slice(0,60).map(i=>i.name+" · "+i.qty+" "+i.unit+" · "+i.location);
+   const inventory=state.inventory.filter(usableInventoryItem).slice(0,60).map(i=>i.name+" · "+i.qty+" "+i.unit+" · "+i.location+(i.expires?" · fecha "+i.expires:""));
    const dislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean));
    const generated=await generateLocalRecipes({
     request:craving.trim()||"Dame tres ideas útiles usando lo que tengo en casa",
@@ -847,7 +853,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
     <div><small>¿QUÉ TE APETECE?</small><h3>Dilo o escríbelo como hablarías en casa</h3><p>Ej.: “Tengo leche y yogur y quiero aprovechar ambos” o “quiero una cena rápida con pollo”.</p></div>
     <div className="meal-query-input"><input value={craving} onChange={e=>setCraving(e.target.value)} enterKeyHint="search" placeholder="Tengo leche y yogur, quiero aprovechar ambos…"/><button className={mealListening?"meal-mic listening":"meal-mic"} onClick={startMealVoice} aria-label="Hablar">{mealListening?"…":"🎙"}</button></div>
     {mentionedProducts.length>0&&<div className="meal-confirmed-products">{mentionedProducts.map(p=><span key={p.canonical}>✓ {p.canonical} <small>{state.inventory.some(i=>productMatchesNeed(i,p.canonical))?"en Casa":"confirmado por ti para esta consulta"}</small></span>)}</div>}
-    {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{missing(r,state.inventory).length?String(missing(r,state.inventory).length)+" ingredientes por completar":"Puedes hacerlo con lo que tienes"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. La IA local puede crear opciones nuevas sin enviar tus datos a una API de pago.</div>}</div>}
+    {craving.trim()&&<div className="meal-request-results">{cravingMatches.length?cravingMatches.slice(0,4).map(r=><button key={r.id} onClick={()=>{chooseRecipe(r);setCraving("")}}><span>{productIcon(r.ingredients[0]?.name||r.title,inferCategory(r.ingredients[0]?.name||""))}</span><div><strong>{r.title}</strong><small>{Math.max(0,missing(r,state.inventory).filter(ing=>!mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p))).length)?String(missing(r,state.inventory).filter(ing=>!mentionedProducts.some(p=>recipeUses({ingredients:[ing]} as Recipe,p))).length)+" ingredientes por completar":"Puedes hacerlo con lo que has confirmado"}</small></div><b>›</b></button>):<div className="recipe-empty">No hay una coincidencia exacta en las recetas disponibles. La IA local puede crear opciones nuevas sin enviar tus datos a una API de pago.</div>}</div>}
     <div className="local-ai-meals">
      <div><small>IA LOCAL · SIN COSTE POR USO</small><strong>Crea recetas nuevas en tu propio dispositivo</strong><p>La primera vez descarga el modelo. Después queda en caché del navegador. No necesita clave de API ni saldo.</p></div>
      <button className="local-ai-run" disabled={aiLoading} onClick={runLocalAI}>{aiLoading?"Preparando "+aiProgress+"%":"✦ Generar con IA local"}</button>
