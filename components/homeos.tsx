@@ -333,6 +333,7 @@ export default function HomeOS(){
  const [shoppingActive,setShoppingActive]=useState(false);
  const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
  const [mealSeed,setMealSeed]=useState("");
+ const [comerFocus,setComerFocus]=useState<"ideas"|"aprovechar"|"habitos"|null>(null);
  const [deviceMemberId,setDeviceMemberId]=useState("");
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
@@ -561,10 +562,10 @@ export default function HomeOS(){
 
   <main className="main">
    <header className="topbar"><div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="inicio"?"Inicio":nav.find(n=>n.id===view)?.label}</h1></div></div><div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`}>{syncStatus==="synced"?"● Sincronizado":syncStatus==="connecting"?"↻ Guardando":syncStatus==="error"?"! Sin conexión":"Local"}</span>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus}/>}
-   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")}/>}
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openHabits={()=>{setComerFocus("habitos");setView("comer")}}/>}
+   {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId}/>}
-   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setMealSeed(name);setView("comer")}}/>}
+   {view==="casa"&&<Casa state={state} setState={setState} cameraRef={cameraRef} galleryRef={galleryRef} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
@@ -615,7 +616,7 @@ function QuickStartGuide({close}:{close:()=>void}){
  </div></div>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openHabits}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openHabits:()=>void}){
  const todayIso=new Date().toISOString().slice(0,10);
  const next=state.events.filter(e=>e.date>=todayIso).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
  const recommended=state.shopping.filter(i=>i.reason==="recomienda"&&i.status==="pendiente").length;
@@ -647,7 +648,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   </div>
   {reserveDue.length>0&&<button className="reserve-review-banner" onClick={()=>{setCasaFocus("reserve");setView("casa")}}><span>❄️</span><div><small>RESERVA DEL CONGELADOR</small><strong>{reserveDue.length} producto{reserveDue.length===1?"":"s"} para revisar</strong><p>No significa que esté caducado: HomeOS te recuerda revisar calidad y decidir si conviene usarlo pronto.</p></div><b>Ver reservas →</b></button>}
 
-  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={()=>setView("comer")}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
+  {state.profile.nutrition!=="off"&&<article className="home-habits-card simplified-habits"><div className="home-habits-head"><div><small>CÓMO COME EL HOGAR · APRENDIENDO</small><h3>Qué señales conoce HomeOS</h3></div><button onClick={openHabits}>Ver detalle</button></div><div className="habit-signal-chips">{habitSignals(state).map(([label,seen])=><span className={seen?"known":""} key={label}><b>{seen?"✓":"·"}</b>{label}</span>)}</div><p>No confundimos compras con consumo: esta parte gana precisión con recetas preparadas, correcciones y reposiciones reales.</p></article>}
 
   <CalendarCard state={state} setState={setState}/>
  </section>
@@ -728,7 +729,7 @@ function CalendarCard({state,setState}:{state:AppState;setState:React.Dispatch<R
   </article>
 }
 
-function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void}){
+function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed,focusTab,clearFocusTab}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe)=>void;setToast:(s:string)=>void;mealSeed:string;clearMealSeed:()=>void;focusTab:"ideas"|"aprovechar"|"habitos"|null;clearFocusTab:()=>void}){
  const [mode,setMode]=useState<CookingStyle>(state.profile.cooking);
  const [tab,setTab]=useState<"ideas"|"aprovechar"|"habitos">("ideas");
  const [index,setIndex]=useState(0);
@@ -747,6 +748,7 @@ function Comer({state,setState,addFromRecipe,setToast,mealSeed,clearMealSeed}:{s
  const [reuseOpen,setReuseOpen]=useState(false);
  const [selectedReuseId,setSelectedReuseId]=useState<string|null>(null);
  useEffect(()=>{if(mealSeed){setCraving(mealSeed);setTab("ideas");clearMealSeed()}},[mealSeed]);
+ useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
  const allRecipes=[...RECIPES,...aiRecipes];
  const options=allRecipes.filter(r=>r.mode.includes(mode)).sort((a,b)=>score(b,state.inventory)-score(a,state.inventory));
  const pool=options.length?options:allRecipes;
