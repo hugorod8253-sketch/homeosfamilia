@@ -1151,7 +1151,8 @@ function Habitos({state}:{state:AppState}){
   const presence={casa:1,fuera_dia:.65,fines_semana:.38,variable:.65}[m.presence];
   const appetite={poco:.82,normal:1,mucho:1.22}[m.appetite];
   const score=presence*appetite;
-  return {m,score,label:score>=1.05?"Demanda alta":score<=.55?"Demanda baja":"Demanda media"};
+  const requested=purchaseSource.filter(p=>norm(p.requestedBy||"")===norm(m.name)).length;
+  return {m,score,requested,label:score>=1.05?"Demanda alta":score<=.55?"Demanda baja":"Demanda media"};
  });
 
  return <div className="habits-dashboard">
@@ -1190,7 +1191,7 @@ function Habitos({state}:{state:AppState}){
 
   <article className="habit-members">
    <div><small>PERSONAS DEL HOGAR</small><h3>Demanda estimada, sin obligar a registrar cada plato</h3><p>La app usa presencia y consumo habitual para ajustar compras y stock. No atribuye una comida concreta a una persona si nadie lo ha confirmado.</p></div>
-   <div>{memberDemand.map(({m,label})=><span key={m.id}><b>{m.name}</b><em>{label}</em><small>{presenceText(m.presence)} · {appetiteText(m.appetite)}{m.dislikes.trim()?" · evita "+m.dislikes:""}</small></span>)}</div>
+   <div>{memberDemand.map(({m,label,requested})=><span key={m.id}><b>{m.name}</b><em>{label}</em><small>{presenceText(m.presence)} · {appetiteText(m.appetite)}{requested?" · "+requested+" compras atribuidas":""}{m.dislikes.trim()?" · evita "+m.dislikes:""}</small></span>)}</div>
   </article>
  </div>
 }
