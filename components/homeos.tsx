@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
 import { canStoreAt, classifyProduct, recommendedLocation, storageWarning } from "../lib/product-engine";
 import { ProductGlyph } from "./product-glyph";
+import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -126,6 +127,85 @@ function inferUnit(name:string){
  if(/rollo/.test(n)) return "rollos";
  return "ud";
 }
+function normalizedUnit(unit:string){
+ const u=norm(unit).replace(/\./g,"").trim();
+ if(["l","litro","litros"].includes(u))return "L";
+ if(["ml","mililitro","mililitros"].includes(u))return "ml";
+ if(["kg","kilo","kilos"].includes(u))return "kg";
+ if(["g","gramo","gramos"].includes(u))return "g";
+ if(["ud","uds","unidad","unidades"].includes(u))return "ud";
+ if(["racion","raciones"].includes(u))return "racion";
+ if(["loncha","lonchas"].includes(u))return "loncha";
+ return u;
+}
+function unitFamily(unit:string){
+ const u=normalizedUnit(unit);
+ if(u==="L"||u==="ml")return "volume";
+ if(u==="kg"||u==="g")return "mass";
+ if(["ud","racion","loncha"].includes(u))return "count";
+ return "other";
+}
+function toBase(amount:number,unit:string){
+ const u=normalizedUnit(unit);
+ if(u==="L")return amount*1000;
+ if(u==="kg")return amount*1000;
+ return amount;
+}
+function fromBase(amount:number,unit:string){
+ const u=normalizedUnit(unit);
+ if(u==="L"||u==="kg")return amount/1000;
+ return amount;
+}
+function parseQty(qty:string){
+ const m=qty.trim().match(/([\d.,]+)\s*([a-zA-Záéíóúñ]+)?/);
+ if(!m)return null;
+ return {amount:Number(m[1].replace(",","."))||0,unit:normalizedUnit(m[2]||"ud")};
+}
+function productMatchesNeed(i:InventoryItem,key:string){
+ if(i.stock==="falta")return false;
+ const k=norm(key);
+ const p=classifyProduct(i.name,i.category);
+ if(k==="verdura")return i.category==="Fruta y verdura"&&p.subcategory!=="Fruta";
+ if(k==="fruta")return i.category==="Fruta y verdura"&&p.subcategory==="Fruta";
+ const n=norm(i.name),canonical=norm(p.canonical);
+ return n.includes(k)||canonical.includes(k)||k.includes(canonical);
+}
+function hasNeed(inv:InventoryItem[],need:ReuseNeed){return inv.some(i=>productMatchesNeed(i,need.key))}
+function consumeNeed(inv:InventoryItem[],need:{key:string;amount:number;unit:string}){
+ let remaining=toBase(need.amount,need.unit);
+ const family=unitFamily(need.unit);
+ let exact=true;
+ const candidates=inv.map((i,index)=>({i,index})).filter(x=>productMatchesNeed(x.i,need.key)).sort((a,b)=>daysUntil(a.i.expires)-daysUntil(b.i.expires));
+ const out=[...inv];
+ for(const {i,index} of candidates){
+  if(remaining<=0)break;
+  const itemFamily=unitFamily(i.unit);
+  if(itemFamily!==family||(family==="count"&&normalizedUnit(i.unit)!==normalizedUnit(need.unit)&&normalizedUnit(need.unit)!=="ud")){
+   out[index]={...out[index],stock:"incierto"};
+   exact=false;
+   continue;
+  }
+  const available=toBase(Math.max(0,i.qty),i.unit);
+  const used=Math.min(available,remaining);
+  const nextBase=Math.max(0,available-used);
+  const nextQty=Math.round(fromBase(nextBase,i.unit)*100)/100;
+  out[index]={...out[index],qty:nextQty,stock:nextQty<=0?"falta":nextBase<=available*.25?"poco":out[index].stock==="mucho"?"hay":out[index].stock};
+  remaining-=used;
+ }
+ if(remaining>0)exact=false;
+ return {inventory:out,exact};
+}
+function consumeRecipeIngredients(inv:InventoryItem[],ingredients:RecipeIngredient[]){
+ let next=inv,exact=true;
+ for(const ing of ingredients){
+  const parsed=parseQty(ing.qty);
+  if(!parsed){exact=false;continue}
+  const result=consumeNeed(next,{key:ing.key,amount:parsed.amount,unit:parsed.unit});
+  next=result.inventory;exact=exact&&result.exact;
+ }
+ return {inventory:next,exact};
+}
+
 function ensureMembers(members:Member[],count:number){
  const out=[...members];
  while(out.length<count){
