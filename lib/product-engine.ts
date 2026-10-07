@@ -1,3 +1,4 @@
+import { PRODUCT_VARIETIES, findProductVariety } from "./product-varieties";
 export type ProductLocation="Nevera"|"Congelador"|"Despensa"|"Suplementos"|"Sin ubicar";
 export type ProductRotation="alta"|"media"|"baja";
 export type ProductSafety="cold-required"|"frozen"|"shelf"|"household"|"supplement"|"flex"|"unknown";
@@ -20,6 +21,7 @@ export function productSuggestions(name:string):ProductProfile[]{
  if(/\bpollo\b/.test(n)&&!/(caldo|sopa|croqueta|nugget|asado)/.test(n)){add("pechuga de pollo");add("solomillo de pollo");add("pollo entero");}
  if(/entrecot|argentino/.test(n)){add("entrecot de vacuno");}
  if(/\bcarne\b/.test(n)){add("carne picada");add("filete de ternera");add("entrecot de vacuno");}
+ if(out.length===0&&n.length>=3)for(const v of PRODUCT_VARIETIES.filter(v=>normalizeProductText(v.name).startsWith(n)).slice(0,8))add(v.name);
  return out;
 }
 
@@ -465,9 +467,37 @@ const CATEGORY_FALLBACKS:Record<string,ProductProfile>={
  "Despensa":{canonical:"despensa",category:"Despensa",subcategory:"Despensa",location:"Despensa",rotation:"baja",icon:"pantry",safety:"shelf"},
 };
 
+const classificationCache=new Map<string,ProductProfile>();
 export function classifyProduct(name:string,currentCategory?:string):ProductProfile{
+ const key=name+"|"+(currentCategory||"");const hit=classificationCache.get(key);if(hit)return hit;
+ const result=classifyProductUncached(name,currentCategory);
+ if(classificationCache.size>5000)classificationCache.clear();classificationCache.set(key,result);return result;
+}
+function classifyProductUncached(name:string,currentCategory?:string):ProductProfile{
  const n=normalizeProductText(name);
- const found=EXTRA_RULES.find(r=>r.match.test(n))||RULES.find(r=>r.match.test(n));
+ const variant=findProductVariety(name);
+ const base=variant?normalizeProductText(variant.base):n;
+ const found=EXTRA_RULES.find(r=>normalizeProductText(r.canonical)===n)||RULES.find(r=>normalizeProductText(r.canonical)===n)||EXTRA_RULES.find(r=>r.match.test(n))||RULES.find(r=>r.match.test(n))||EXTRA_RULES.find(r=>r.match.test(base))||RULES.find(r=>r.match.test(base));
+ if(variant){
+  const defaults:Record<string,ProductProfile>={
+   "setas":{canonical:variant.name,category:"Fruta y verdura",subcategory:"Verdura",location:"Nevera",rotation:"alta",icon:"mushroom",safety:"flex"},
+   "col":{canonical:variant.name,category:"Fruta y verdura",subcategory:"Verdura",location:"Nevera",rotation:"alta",icon:"leafy",safety:"flex"},
+   "marisco cocido":{canonical:variant.name,category:"Preparados",subcategory:"Marisco cocido",location:"Nevera",rotation:"alta",icon:"shellfish",safety:"cold-required"},
+   "conserva de pescado":{canonical:variant.name,category:"Despensa",subcategory:"Conservas",location:"Despensa",rotation:"baja",icon:"can",safety:"shelf"},
+   "legumbres cocidas":{canonical:variant.name,category:"Despensa",subcategory:"Legumbres cocidas",location:"Despensa",rotation:"baja",icon:"beans",safety:"shelf"},
+   "legumbres secas":{canonical:variant.name,category:"Despensa",subcategory:"Legumbres",location:"Despensa",rotation:"baja",icon:"beans",safety:"shelf"},
+   "arroz cocido":{canonical:variant.name,category:"Preparados",subcategory:"Arroz cocido",location:"Nevera",rotation:"alta",icon:"rice",safety:"cold-required"},
+   "especias":{canonical:variant.name,category:"Despensa",subcategory:"Condimentos",location:"Despensa",rotation:"baja",icon:"salt",safety:"shelf"},
+   "salsas":{canonical:variant.name,category:"Despensa",subcategory:"Salsas",location:"Despensa",rotation:"baja",icon:"pantry",safety:"shelf"},
+   "bebida":{canonical:variant.name,category:"Bebidas",subcategory:"Bebida",location:"Despensa",rotation:"media",icon:"drink",safety:"shelf"},
+   "snack":{canonical:variant.name,category:"Snacks y dulces",subcategory:"Snack",location:"Despensa",rotation:"baja",icon:"snack",safety:"shelf"}
+  };
+  const fallback=defaults[variant.base]||CATEGORY_FALLBACKS[currentCategory||"Despensa"];
+  const {match,...profile}=found||{match:/.*/, ...fallback};
+  if(/congelad/.test(n))return {...profile,canonical:variant.name,category:"Congelados",location:"Congelador",rotation:"baja",safety:"frozen",icon:/verdura|fruto|fresa|mango|pina|brocoli|coliflor|espinaca|judia|guisante|haba|zanahoria|alcachofa|menestra/.test(n)?"frozen-vegetables":profile.icon};
+  const forced=["conserva de pescado","legumbres cocidas","legumbres secas","arroz cocido","marisco cocido"].includes(variant.base)?defaults[variant.base]:profile;
+  return {...forced,canonical:variant.name};
+ }
  if(found){
   const {match,...profile}=found;
   return profile;
@@ -549,3 +579,5 @@ export function detectProductsInText(text:string){
  // Prefer the most specific variants when a broad family also matched.
  return out.filter((p,idx,arr)=>!arr.some((q,j)=>j!==idx&&q.canonical!==p.canonical&&q.canonical.includes(p.canonical)&&q.canonical.length>p.canonical.length));
 }
+
+export function registeredProductNames(){return [...new Set([...EXTRA_RULES,...RULES].map(r=>r.canonical).concat(PRODUCT_VARIETIES.map(v=>v.name)))];}

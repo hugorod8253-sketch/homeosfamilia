@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { findProductVariety } from "../lib/product-varieties";
 import { classifyProduct } from "../lib/product-engine";
 import { productIllustration } from "../lib/illustrated-products";
 
@@ -142,8 +143,9 @@ function custom(kind:string){
 
 export function ProductGlyph({name,category,className=""}:{name:string;category?:string;className?:string}){
  const p=classifyProduct(name,category);
- const illustration=productIllustration(name,p.canonical);
- if(illustration) return <span className={"product-glyph "+className} title={illustration.name} role="img" aria-label={illustration.name}>
+ const variety=findProductVariety(name);
+ const illustration=productIllustration(name,p.canonical)||(variety?productIllustration(variety.base,classifyProduct(variety.base).canonical):null);
+ if(illustration) return <span className={"product-glyph "+className} title={illustration.name} role="img" aria-label={name}>
   <span className="product-illustration" style={{backgroundImage:`url(/food-illustrations/atlas-${illustration.sheet}.webp)`,backgroundPosition:`${illustration.column*100/3}% ${illustration.row*100/3}%`}} />
  </span>;
  const raw=name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");

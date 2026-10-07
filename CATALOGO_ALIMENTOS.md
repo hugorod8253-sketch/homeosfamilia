@@ -1,53 +1,1498 @@
-# Catálogo ilustrado de HomeOS
+# Catálogo de alimentos y productos de HomeOS
 
-353 productos registrados con una ilustración asociada. Incluye alimentación y las categorías de hogar ya existentes.
+1461 entradas diferenciadas por variedad o formato. Catálogo genérico para identificar productos; no representa disponibilidad actual ni referencias de marcas de cada supermercado.
 
-Las marcas y formatos pueden compartir ilustración cuando el alimento y su presentación son equivalentes. La variedad o preparación visible tiene su propio dibujo. Este registro no acredita la disponibilidad de una marca o referencia comercial en un supermercado.
+## Fruta y verdura (352)
 
-## Fruta y verdura (72)
+- Acelga roja
+- Acelga verde
+- Achicoria
+- Agua con limón
+- aguacate
+- Aguacate Bacon
+- Aguacate Fuerte
+- Aguacate Hass
+- Aguacate maduro
+- Aguacate para madurar
+- ajo
+- Ajo en polvo
+- Albaricoque
+- alcachofa
+- Alcachofa fresca
+- Almidón de patata
+- apio
+- Apio blanco
+- Apio verde
+- Arándano
+- arándanos
+- Banana
+- Bebida de coco barista
+- Bebida de coco con cacao
+- Bebida de coco con calcio
+- Bebida de coco sin azúcar
+- berenjena
+- Berenjena blanca
+- Berenjena negra
+- Berenjena rayada
+- Berenjena redonda
+- Bizcocho de limón
+- Boletus
+- boniato
+- Borraja
+- Breva
+- brócoli
+- Brotes de alfalfa
+- Brotes de lechuga
+- Brotes de soja
+- calabacín
+- Calabacín amarillo
+- Calabacín blanco
+- Calabacín mini
+- Calabacín redondo
+- Calabacín verde
+- calabaza
+- Calabaza cacahuete
+- Calabaza en dados
+- Calabaza pelada
+- Calabaza potimarrón
+- Calabaza redonda
+- canónigos
+- caqui
+- Caqui clásico
+- Caqui persimon
+- Cardo
+- cebolla
+- Cebolla blanca
+- Cebolla de Figueres
+- Cebolla dulce
+- Cebolla en polvo
+- Cebolla morada
+- Cebolla para encurtir
+- Cebolla tierna
+- Cebolleta
+- cereza
+- Chalota
+- champiñón
+- Champiñón baby
+- Champiñón blanco
+- Champiñón entero
+- Champiñón laminado
+- Champiñón portobello
+- Chirimoya
+- Chirivía
+- Chocolate con naranja
+- Cilantro seco
+- ciruela
+- Ciruela amarilla
+- Ciruela negra
+- Ciruela roja
+- Coco
+- Cogollos de lechuga
+- Col blanca
+- Col china
+- Col de Bruselas
+- Col lombarda
+- Col rizada
+- coliflor
+- Colinabo
+- Colorante alimentario
+- Daikon
+- Endibia
+- Escarola lisa
+- Escarola rizada
+- Espárrago blanco fresco
+- Espárrago verde fino
+- Espárrago verde grueso
+- espárragos
+- espinacas
+- Espinazo de cerdo
+- Frambuesa
+- frambuesas
+- Fresa
+- fresas
+- Fresón
+- fruta
+- fruta del dragón
+- Granada
+- Granadilla
+- Grosella negra
+- Grosella roja
+- Guindilla fresca
+- Guisantes frescos
+- Habas frescas
+- Helado de fresa
+- Helado de limón
+- Helado de mango
+- hierbas frescas
+- higo
+- Higo negro
+- Higo verde
+- Hinojo fresco
+- Judía verde plana
+- Judía verde redonda
+- judías verdes
+- Kale
+- Kéfir con melocotón
+- Kéfir con piña
+- Kéfir de coco
+- Kéfir de fresa
+- Kéfir de limón
+- Kéfir de mango
+- Kéfir de plátano
+- kiwi
+- Kiwi amarillo
+- Kiwi baby
+- Kiwi rojo
+- Kiwi verde
+- lechuga
+- Lechuga batavia
+- Lechuga hoja de roble
+- Lechuga iceberg
+- Lechuga lollo biondo
+- Lechuga lollo rosso
+- Lechuga romana
+- Lechuga trocadero
+- Lichi
+- Lima
+- limón
+- maíz dulce
+- mandarina
+- Mandarina clementina
+- Mandarina Clemenules
+- Mandarina Nadorcott
+- Mandarina Orri
+- Mandarina Satsuma
+- mango
+- Mango listo para comer
+- manzana
+- Manzana amarilla
+- Manzana Ambrosia
+- Manzana Envy
+- Manzana Evelina
+- Manzana Fuji
+- Manzana Gala
+- Manzana Golden
+- Manzana Granny Smith
+- Manzana Kanzi
+- Manzana Pink Lady
+- Manzana Red Delicious
+- Manzana Reineta
+- Manzana roja
+- Manzana verde
+- Maracuyá
+- melocotón
+- Melocotón amarillo
+- Melocotón blanco
+- Melocotón de Calanda
+- Melocotón rojo
+- melón
+- Melón amarillo
+- Melón blanco
+- Melón Cantalupo
+- Melón Charentais
+- Melón Galia
+- Melón Honeydew
+- Melón piel de sapo
+- Membrillo
+- Mezcla de setas
+- Mora
+- nabo
+- Nabo amarillo
+- Nabo blanco
+- naranja
+- Naranja de mesa
+- Naranja Navel
+- Naranja Navelina
+- Naranja para zumo
+- Naranja sanguina
+- Naranja Valencia
+- Néctar de mango
+- Néctar de pera
+- Nectarina amarilla
+- Nectarina blanca
+- Níscalos
+- Níspero
+- Pak choi
+- Papaya
+- Paraguayo amarillo
+- Paraguayo blanco
+- patata
+- Patata agria
+- Patata baby
+- Patata blanca
+- Patata Kennebec
+- Patata lavada
+- Patata monalisa
+- Patata nueva
+- Patata para asar
+- Patata para cocer
+- Patata para freír
+- Patata roja
+- Patata sin lavar
+- Patata vieja
+- Patata violeta
+- pepino
+- pera
+- Pera Abate
+- Pera Alejandrina
+- Pera Blanquilla
+- Pera Comice
+- Pera Conferencia
+- Pera de San Juan
+- Pera Ercolina
+- Pera Limonera
+- Pera Rocha
+- Pera Williams
+- Perejil seco
+- pimiento
+- Pimiento amarillo
+- Pimiento de Padrón
+- Pimiento del piquillo fresco
+- Pimiento italiano
+- Pimiento lamuyo
+- Pimiento mini
+- Pimiento naranja
+- Pimiento rojo
+- Pimiento verde
+- piña
+- Piña tropical
+- Pitahaya amarilla
+- Pitahaya roja
+- plátano
+- Plátano de Canarias
+- Plátano macho
+- Platerina
+- Poleo menta
+- Pomelo blanco
+- Pomelo rosa
+- puerro
+- Rábano blanco
+- Rábano rojo
+- Raviolis frescos de calabaza
+- Rebozuelos
+- Refresco de limón
+- Refresco de naranja
+- remolacha
+- Romanesco
+- rúcula
+- Salsa de champiñones
+- sandía
+- Sandía amarilla
+- Sandía mini
+- Sandía negra
+- Sandía negra sin semillas
+- Sandía rayada
+- Sandía rayada sin semillas
+- Sandía sin semillas
+- Sazonador de patatas
+- Seta de ostra
+- Setas enoki
+- Setas shiitake
+- Setas shimeji
+- Tapioca
+- Tirabeques
+- tomate
+- Tomate amarillo
+- Tomate canario
+- tomate cherry
+- Tomate cherry amarillo
+- Tomate cherry en rama
+- Tomate cherry kumato
+- Tomate cherry pera
+- Tomate cherry rojo
+- Tomate concentrado
+- Tomate corazón de buey
+- Tomate de colgar
+- Tomate en rama
+- Tomate entero pelado
+- Tomate ibérico
+- Tomate kumato
+- Tomate marmande
+- Tomate Montserrat
+- Tomate muchamiel
+- tomate negro
+- Tomate para ensalada
+- Tomate pera
+- Tomate Raf
+- Tomate redondo
+- Tomate rosa
+- Tomate San Marzano
+- Tomate verde
+- Tortellini frescos de calabaza
+- Trompetas de la muerte
+- Uva Aledo
+- Uva Autumn Royal
+- Uva blanca
+- Uva blanca sin pepitas
+- Uva Cotton Candy
+- Uva Crimson
+- Uva Italia
+- Uva Moscatel
+- Uva negra
+- Uva negra sin pepitas
+- Uva Red Globe
+- Uva roja
+- Uva roja sin pepitas
+- uvas
+- verduras variadas
+- Yogur desnatado con melocotón
+- Yogur desnatado con piña
+- Yogur desnatado de coco
+- Yogur desnatado de fresa
+- Yogur desnatado de limón
+- Yogur desnatado de mango
+- Yogur desnatado de plátano
+- Yogur sin lactosa con melocotón
+- Yogur sin lactosa con piña
+- Yogur sin lactosa de coco
+- Yogur sin lactosa de fresa
+- Yogur sin lactosa de limón
+- Yogur sin lactosa de mango
+- Yogur sin lactosa de plátano
+- yuca
+- zanahoria
+- Zumo de manzana
+- Zumo de melocotón
+- Zumo de naranja
+- Zumo de piña
+- Zumo de tomate
 
-lechuga iceberg, lechuga romana, lechuga, canónigos, rúcula, espinacas, brócoli, coliflor, tomate cherry, tomate, pepino, calabacín, berenjena, pimiento, zanahoria, cebolla, ajo, patata, boniato, aguacate, champiñón, verduras variadas, fruta, plátano, manzana, pera, naranja, mandarina, limón, fresas, arándanos, frambuesas, uvas, piña, mango, kiwi, melón, sandía, melocotón, fruta del dragón, papaya, maracuyá, granada, lichi, coco, kale, pak choi, yuca, chirivía, nabo, judías verdes, guisantes frescos, puerro, apio, alcachofa, remolacha, calabaza, maíz dulce, ciruela, cereza, higo, caqui, sandía rayada, sandía negra, sandía mini, melón amarillo, tomate en rama, tomate pera, tomate rosa, tomate raf, tomate negro, tomate cherry amarillo
+## Despensa (418)
 
-## Carne (65)
+- aceite
+- Aceite de girasol
+- Aceite de girasol alto oleico
+- aceite de oliva
+- Aceite de oliva arbequina
+- Aceite de oliva cornicabra
+- Aceite de oliva hojiblanca
+- Aceite de oliva intenso
+- Aceite de oliva picual
+- Aceite de oliva suave
+- Aceite de oliva virgen
+- Aceite de oliva virgen extra
+- albahaca
+- Albahaca seca
+- Alioli
+- Almendras crudas
+- Almendras laminadas
+- Almendras molidas
+- Almendras tostadas
+- Almidón de maíz
+- alubias
+- Alubias blancas cocidos en bote
+- Alubias blancas secos
+- Alubias de Tolosa cocidos en bote
+- Alubias de Tolosa secos
+- Alubias negras cocidos en bote
+- Alubias negras secos
+- Alubias pintas cocidos en bote
+- Alubias pintas secos
+- Alubias rojas cocidos en bote
+- Alubias rojas secos
+- Anacardos crudos
+- Anacardos tostados
+- Anís estrellado
+- arroz
+- Arroz Arborio
+- Arroz basmati
+- Arroz bomba
+- Arroz integral
+- Arroz jazmín
+- Arroz largo
+- Arroz redondo
+- Arroz salvaje
+- Arroz Sushi
+- Arroz vaporizado
+- Atún en conserva al natural
+- Atún en conserva en aceite de girasol
+- Atún en conserva en aceite de oliva
+- Atún en conserva en escabeche
+- atún en lata
+- Avellanas crudas
+- Avellanas tostadas
+- avena
+- Azafrán
+- azúcar
+- Baguette
+- Bebida de arroz barista
+- Bebida de arroz con cacao
+- Bebida de arroz con calcio
+- Bebida de arroz sin azúcar
+- Bebida de avellana barista
+- Bebida de avellana con cacao
+- Bebida de avellana con calcio
+- Bebida de avellana sin azúcar
+- Berberechos en conserva al natural
+- Berberechos en conserva en aceite de girasol
+- Berberechos en conserva en aceite de oliva
+- Berberechos en conserva en escabeche
+- Besugo en filetes
+- Besugo en lomos
+- Besugo fresco
+- Bonito en conserva al natural
+- Bonito en conserva en aceite de girasol
+- Bonito en conserva en aceite de oliva
+- Bonito en conserva en escabeche
+- Bonito en filetes
+- Bonito en lomos
+- Bonito fresco
+- Bucatini de trigo
+- Bucatini integrales
+- Bucatini sin gluten
+- bulgur
+- Caballa en conserva al natural
+- Caballa en conserva en aceite de girasol
+- Caballa en conserva en aceite de oliva
+- Caballa en conserva en escabeche
+- Cacahuetes con cáscara
+- Cacahuetes crudos
+- Cacahuetes tostados
+- cacao soluble
+- café
+- Café descafeinado
+- Café en cápsulas
+- Café en grano
+- Café molido mezcla
+- Café molido natural
+- Café soluble
+- Calamares en conserva al natural
+- Calamares en conserva en aceite de girasol
+- Calamares en conserva en aceite de oliva
+- Calamares en conserva en escabeche
+- caldo
+- Canela en rama
+- Canela molida
+- Cardamomo
+- Cayena
+- Cecina al corte
+- Cecina en lonchas
+- Cecina en taquitos
+- cereales
+- Chapata
+- Chile en copos
+- Chimichurri
+- Chocolate con avellanas
+- Clavo
+- Cola sin azúcar
+- Colines
+- Comino en grano
+- Comino molido
+- Conchiglie de trigo
+- Conchiglie integrales
+- Conchiglie sin gluten
+- conserva
+- Coquitos
+- Corvina en filetes
+- Corvina en lomos
+- Corvina fresco
+- Crema balsámica
+- crema de cacahuete
+- croissant
+- Croissants
+- cubitos de caldo
+- Cúrcuma
+- Curry picante
+- Curry suave
+- cuscús
+- Ditalini de trigo
+- Ditalini integrales
+- Ditalini sin gluten
+- Eneldo seco
+- Entero de conejo
+- Entero de pato
+- Espaguetis de trigo
+- Espaguetis integrales
+- Espaguetis sin gluten
+- especias
+- Estrellitas de trigo
+- Estrellitas integrales
+- Estrellitas sin gluten
+- Farfalle de trigo
+- Farfalle integrales
+- Farfalle sin gluten
+- Fettuccine de trigo
+- Fettuccine integrales
+- Fettuccine sin gluten
+- Fideos finos de trigo
+- Fideos finos integrales
+- Fideos finos sin gluten
+- Fideos gruesos de trigo
+- Fideos gruesos integrales
+- Fideos gruesos sin gluten
+- focaccia
+- frutos secos
+- Fusilli de trigo
+- Fusilli integrales
+- Fusilli sin gluten
+- Galets de trigo
+- Galets integrales
+- Galets sin gluten
+- Galletas de avena
+- Gallo en filetes
+- Gallo en lomos
+- Gallo fresco
+- Garam masala
+- garbanzos
+- Garbanzos castellanos cocidos en bote
+- Garbanzos castellanos secos
+- Garbanzos lechosos cocidos en bote
+- Garbanzos lechosos secos
+- Garbanzos pedrosillanos cocidos en bote
+- Garbanzos pedrosillanos secos
+- granola
+- harina
+- Harina de almendra
+- Harina de arroz
+- Harina de avena
+- Harina de centeno
+- Harina de espelta
+- Harina de fuerza
+- Harina de garbanzo
+- Harina de maíz
+- Harina de repostería
+- Harina de trigo
+- Harina integral de trigo
+- Helado de pistacho
+- Hierbas provenzales
+- Hígado de conejo
+- Hígado de pato
+- Infusión de frutos rojos
+- Infusión de jengibre
+- Jengibre fresco
+- Jengibre molido
+- Judiones cocidos en bote
+- Judiones secos
+- Ketchup
+- Lacón al corte
+- Lacón en lonchas
+- Lacón en taquitos
+- laurel
+- Laurel seco
+- leche condensada
+- leche evaporada
+- lentejas
+- Lentejas castellanas cocidos en bote
+- Lentejas castellanas secos
+- Lentejas pardinas cocidos en bote
+- Lentejas pardinas secos
+- Lentejas rojas cocidos en bote
+- Lentejas rojas secos
+- Lentejas verdes cocidos en bote
+- Lentejas verdes secos
+- Letras de trigo
+- Letras integrales
+- Letras sin gluten
+- levadura
+- Linguine de trigo
+- Linguine integrales
+- Linguine sin gluten
+- Macarrones de trigo
+- Macarrones integrales
+- Macarrones sin gluten
+- Magret de pato
+- maicena
+- Manzanilla
+- Mayonesa
+- Mayonesa ligera
+- Mejillones en conserva al natural
+- Mejillones en conserva en aceite de girasol
+- Mejillones en conserva en aceite de oliva
+- Mejillones en conserva en escabeche
+- mermelada
+- Mezcla de frutos secos
+- miel
+- Mollete
+- mostaza
+- Mostaza antigua
+- Mostaza de Dijon
+- Mostaza dulce
+- muesli
+- Muslos de pato
+- Navajas en conserva al natural
+- Navajas en conserva en aceite de girasol
+- Navajas en conserva en aceite de oliva
+- Navajas en conserva en escabeche
+- Nueces con cáscara
+- Nueces de macadamia
+- Nueces pecanas
+- Nueces peladas
+- Nuez moscada
+- Orecchiette de trigo
+- Orecchiette integrales
+- Orecchiette sin gluten
+- orégano
+- Orégano seco
+- Orzo de trigo
+- Orzo integrales
+- Orzo sin gluten
+- Paletillas de conejo
+- pan
+- Pan blanco
+- Pan brioche de hamburguesa
+- Pan de avena
+- Pan de centeno
+- Pan de cristal
+- Pan de espelta
+- Pan de hamburguesa
+- Pan de masa madre
+- pan de molde
+- Pan de molde blanco
+- Pan de molde integral
+- Pan de molde sin corteza
+- Pan de perrito
+- Pan de pita
+- Pan de pueblo
+- Pan de semillas
+- Pan integral
+- Pan multicereal
+- Pan naan
+- pan rallado
+- Pan rallado fino
+- Pan rallado grueso
+- Pan rústico
+- Pan sin gluten
+- Panko
+- pasta
+- Patatas de bolsa al punto de sal
+- Patatas de bolsa sabor vinagre
+- Penne de trigo
+- Penne integrales
+- Penne sin gluten
+- Pescadilla en filetes
+- Pescadilla en lomos
+- Pescadilla fresco
+- pesto
+- Pesto rojo
+- Pesto verde
+- Picos de pan
+- Piernas de conejo
+- Pimentón ahumado
+- Pimentón dulce
+- Pimentón picante
+- Pimienta blanca
+- pimienta negra
+- Pimienta negra en grano
+- Pimienta negra molida
+- Pimienta rosa
+- Pimienta verde
+- Piñones
+- Pipas de calabaza
+- pipas de girasol
+- Pipas de girasol con cáscara
+- Pipas de girasol peladas
+- Pistachos pelados
+- Pistachos tostados
+- Pulpo en conserva al natural
+- Pulpo en conserva en aceite de girasol
+- Pulpo en conserva en aceite de oliva
+- Pulpo en conserva en escabeche
+- quinoa
+- Ras el hanout
+- Regañás
+- Rigatoni de trigo
+- Rigatoni integrales
+- Rigatoni sin gluten
+- Rodaballo en filetes
+- Rodaballo en lomos
+- Rodaballo fresco
+- romero
+- Romero seco
+- Rooibos
+- sal
+- Sal en escamas
+- Sal fina
+- Sal gruesa
+- Sal marina
+- Sal yodada
+- Salsa barbacoa
+- Salsa bechamel
+- Salsa boloñesa
+- Salsa brava
+- Salsa César
+- Salsa de curry
+- Salsa de ostras
+- Salsa de soja
+- Salsa de tomate y albahaca
+- Salsa holandesa
+- Salsa napolitana
+- Salsa picante
+- Salsa romesco
+- Salsa teriyaki
+- Sardinas en conserva al natural
+- Sardinas en conserva en aceite de girasol
+- Sardinas en conserva en aceite de oliva
+- Sardinas en conserva en escabeche
+- Sardinillas en conserva al natural
+- Sardinillas en conserva en aceite de girasol
+- Sardinillas en conserva en aceite de oliva
+- Sardinillas en conserva en escabeche
+- Sazonador de carne
+- Sazonador de pollo
+- Sazonador de verduras
+- Semillas de cáñamo
+- Semillas de chía
+- Semillas de lino
+- Sémola de trigo
+- Sésamo blanco
+- Sésamo negro
+- siropes
+- Soja amarilla cocidos en bote
+- Soja amarilla secos
+- soja texturizada
+- Soja verde cocidos en bote
+- Soja verde secos
+- Sriracha
+- Tabasco
+- Tagliatelle de trigo
+- Tagliatelle integrales
+- Tagliatelle sin gluten
+- Tahini
+- Tallarines de trigo
+- Tallarines integrales
+- Tallarines sin gluten
+- Té blanco
+- té e infusiones
+- Té negro
+- Té rojo
+- Té verde
+- Tomate frito
+- Tomate triturado
+- tomillo
+- Tomillo seco
+- Tónica sin azúcar
+- tortilla de trigo
+- Tortillas de maíz
+- Tortillas de trigo
+- Tortitas de arroz
+- tostadas
+- Tostadas integrales
+- Troceado de conejo
+- Vieiras frescos
+- vinagre
+- Vinagre balsámico
+- Vinagre de arroz
+- Vinagre de Jerez
+- Vinagre de manzana
+- vinagre de vino
+- Vinagre de vino blanco
+- Vinagre de vino tinto
 
-pechuga de pollo, pechuga de pavo, pavo, pechuga, solomillo de pollo, solomillo de pavo, pavo en lonchas, muslo de pollo, pollo entero, pollo, entrecot de vacuno, solomillo de vacuno, filete de ternera, carne picada, hamburguesa de carne, lomo de cerdo, solomillo de cerdo, costillas, secreto de cerdo, presa ibérica, pluma ibérica, cordero, bacon, jamón serrano, jamón cocido, lomo embuchado, chorizo, salchichón, frankfurt, longaniza, salmón, merluza, bacalao, atún fresco, pescado, gambas, mejillones, chuleta de cerdo, aguja de cerdo, carrillera, carne para guisar, osobuco, chuletón, albóndigas frescas, salchicha fresca, mortadela, fuet, salami, sobrasada, pechuga de pavo lonchas, dorada, lubina, sardinas, boquerones, caballa, trucha, calamar, pulpo, sepia, jamón en taquitos, hígado de ave, corazones de pollo, mollejas de pollo, grasa de pato, picantón
+## Carne (200)
 
-## Lácteos (39)
+- Aguja de cerdo
+- Aguja de ternera
+- albóndigas frescas
+- Alitas de pavo
+- Alitas de pollo
+- Almejas frescos
+- Atún en filetes
+- Atún en lomos
+- Atún fresco
+- Babilla de ternera
+- bacalao
+- Bacalao en filetes
+- Bacalao en lomos
+- Bacalao fresco
+- bacon
+- Bacon al corte
+- Bacon en lonchas
+- Bacon en taquitos
+- Berberechos frescos
+- Boquerón en filetes
+- Boquerón en lomos
+- Boquerón fresco
+- boquerones
+- caballa
+- Caballa en filetes
+- Caballa en lomos
+- Caballa fresco
+- calamar
+- Calamares frescos
+- Callos de ternera
+- Camarones frescos
+- Carcasa de pollo
+- carne para guisar
+- Carne para guisar de cordero
+- Carne para guisar de ternera
+- carne picada
+- Carne picada de cerdo
+- Carne picada de pavo
+- Carne picada de pollo
+- Carne picada de ternera
+- carrillera
+- Carrillera de cerdo
+- Carrillera de ternera
+- chorizo
+- Chorizo al corte
+- Chorizo en lonchas
+- Chorizo en taquitos
+- Chuleta de cerdo
+- Chuletas de cordero
+- chuletón
+- Chuletón de ternera
+- Codillo de cerdo
+- Contra de ternera
+- Contramuslo de pavo
+- Contramuslo de pollo
+- Contramuslo deshuesado de pollo
+- Corazones de pollo
+- cordero
+- Costilla de cerdo
+- Costilla de ternera
+- Costillar de cordero
+- costillas
+- Cuartos traseros de pollo
+- Cuello de cordero
+- Cuello de pollo
+- dorada
+- Dorada en filetes
+- Dorada en lomos
+- Dorada fresco
+- Entero de pavo
+- Entero de pollo
+- Entrecot de ternera
+- entrecot de vacuno
+- Falda de cordero
+- Falda de ternera
+- Filete de ternera
+- frankfurt
+- fuet
+- Fuet al corte
+- Fuet en lonchas
+- Fuet en taquitos
+- gambas
+- Gambas frescos
+- Grasa de pato
+- hamburguesa de carne
+- hígado de ave
+- Hígado de cerdo
+- Hígado de pollo
+- Hígado de ternera
+- jamón cocido
+- Jamón cocido al corte
+- Jamón cocido en lonchas
+- Jamón cocido en taquitos
+- jamón en taquitos
+- Jamón ibérico al corte
+- Jamón ibérico en lonchas
+- Jamón ibérico en taquitos
+- jamón serrano
+- Jamón serrano al corte
+- Jamón serrano en lonchas
+- Jamón serrano en taquitos
+- Jamoncitos de pollo
+- Langostinos frescos
+- Lengua de ternera
+- Lenguado en filetes
+- Lenguado en lomos
+- Lenguado fresco
+- Lomo de cerdo
+- lomo embuchado
+- Lomo embuchado al corte
+- Lomo embuchado en lonchas
+- Lomo embuchado en taquitos
+- Lomo en filetes de cerdo
+- longaniza
+- lubina
+- Lubina en filetes
+- Lubina en lomos
+- Lubina fresco
+- Magro para guisar de cerdo
+- Manitas de cerdo
+- Medio de pollo
+- mejillones
+- Mejillones frescos
+- merluza
+- Merluza en filetes
+- Merluza en lomos
+- Merluza fresco
+- Mollejas de cordero
+- Mollejas de pollo
+- Morcillo de ternera
+- Morro de cerdo
+- mortadela
+- Mortadela al corte
+- Mortadela en lonchas
+- Mortadela en taquitos
+- Muslo de pavo
+- Muslo de pollo
+- Oreja de cerdo
+- osobuco
+- Ossobuco de ternera
+- Paletilla de cordero
+- Panceta de cerdo
+- pavo
+- pavo en lonchas
+- pechuga
+- Pechuga de pavo
+- Pechuga de pavo en fiambre al corte
+- Pechuga de pavo en fiambre en lonchas
+- Pechuga de pavo en fiambre en taquitos
+- pechuga de pavo lonchas
+- Pechuga de pollo
+- Pechuga en dados de pollo
+- Pechuga en filetes de pavo
+- Pechuga en filetes de pollo
+- pescado
+- picantón
+- Pierna de cordero
+- Pluma de cerdo
+- pluma ibérica
+- pollo
+- pollo entero
+- Presa de cerdo
+- presa ibérica
+- pulpo
+- Pulpo frescos
+- Rabo de ternera
+- Rape en filetes
+- Rape en lomos
+- Rape fresco
+- Redondo de ternera
+- Riñones de cordero
+- salami
+- salchicha fresca
+- salchichón
+- Salchichón al corte
+- Salchichón en lonchas
+- Salchichón en taquitos
+- salmón
+- Salmón en filetes
+- Salmón en lomos
+- Salmón fresco
+- Sardina en filetes
+- Sardina en lomos
+- Sardina fresco
+- sardinas
+- Sazonador de pescado
+- Secreto de cerdo
+- sepia
+- Sepia frescos
+- sobrasada
+- Solomillo de cerdo
+- Solomillo de pavo
+- Solomillo de pollo
+- Solomillo de ternera
+- solomillo de vacuno
+- Tapa de ternera
+- trucha
+- Trucha en filetes
+- Trucha en lomos
+- Trucha fresco
 
-huevos, mozzarella rallada, mozzarella en bola, mozzarella, queso fresco, queso lonchas, queso rallado, queso curado, queso, yogur, kéfir, mantequilla, leche fresca, leche, burrata, provolone, raclette, queso manchego, queso cheddar, queso gouda, queso edam, queso emmental, queso havarti, queso brie, queso camembert, queso azul, queso de cabra, queso feta, parmesano, ricotta, mascarpone, queso crema, cottage, skyr, yogur griego, yogur natural, yogur bífidus, postre lácteo, leche sin lactosa
+## Lácteos (232)
 
-## Por clasificar (9)
+- burrata
+- cottage
+- Galletas de mantequilla
+- huevos
+- kéfir
+- Kéfir de frutos del bosque
+- Kéfir de vainilla
+- Kéfir sin azúcar
+- leche
+- Leche desnatada de cabra
+- Leche desnatada fresca
+- Leche desnatada sin lactosa
+- Leche desnatada UHT
+- Leche entera de cabra
+- Leche entera fresca
+- Leche entera sin lactosa
+- Leche entera UHT
+- leche fresca
+- Leche semidesnatada de cabra
+- Leche semidesnatada fresca
+- Leche semidesnatada sin lactosa
+- Leche semidesnatada UHT
+- leche sin lactosa
+- mantequilla
+- mascarpone
+- mozzarella
+- mozzarella en bola
+- mozzarella rallada
+- Nachos de queso
+- nata
+- parmesano
+- Patatas de bolsa sabor queso
+- postre lácteo
+- provolone
+- queso
+- Queso Arzúa-Ulloa
+- Queso azul
+- Queso Brie
+- Queso Burrata
+- Queso Cabrales
+- Queso Caciocavallo
+- Queso Camembert
+- Queso Cheddar
+- Queso Cheddar en cuña
+- Queso Cheddar en dados
+- Queso Cheddar en lonchas
+- Queso Cheddar rallado
+- Queso Comté
+- Queso Comté en cuña
+- Queso Comté en dados
+- Queso Comté en lonchas
+- Queso Comté rallado
+- Queso Cottage
+- Queso crema
+- queso curado
+- Queso Danablu
+- Queso de Burgos
+- Queso de cabra
+- Queso de cabra curado
+- Queso de cabra en cuña
+- Queso de cabra en dados
+- Queso de cabra en lonchas
+- Queso de cabra rallado
+- Queso de cabra semicurado
+- Queso de cabra tierno
+- Queso de cabra viejo
+- Queso de mezcla curado
+- Queso de mezcla semicurado
+- Queso de mezcla tierno
+- Queso de mezcla viejo
+- Queso de oveja
+- Queso de oveja curado
+- Queso de oveja en cuña
+- Queso de oveja en dados
+- Queso de oveja en lonchas
+- Queso de oveja rallado
+- Queso de oveja semicurado
+- Queso de oveja tierno
+- Queso de oveja viejo
+- Queso de vaca
+- Queso de vaca curado
+- Queso de vaca en cuña
+- Queso de vaca en dados
+- Queso de vaca en lonchas
+- Queso de vaca rallado
+- Queso de vaca semicurado
+- Queso de vaca tierno
+- Queso de vaca viejo
+- Queso Edam
+- Queso Edam en cuña
+- Queso Edam en dados
+- Queso Edam en lonchas
+- Queso Edam rallado
+- Queso Emmental
+- Queso Emmental en cuña
+- Queso Emmental en dados
+- Queso Emmental en lonchas
+- Queso Emmental rallado
+- Queso Feta
+- queso fresco
+- Queso Gorgonzola
+- Queso Gouda
+- Queso Gouda en cuña
+- Queso Gouda en dados
+- Queso Gouda en lonchas
+- Queso Gouda rallado
+- Queso Grana Padano
+- Queso Grana Padano en cuña
+- Queso Grana Padano en dados
+- Queso Grana Padano en lonchas
+- Queso Grana Padano rallado
+- Queso Gruyère
+- Queso Gruyère en cuña
+- Queso Gruyère en dados
+- Queso Gruyère en lonchas
+- Queso Gruyère rallado
+- Queso Halloumi
+- Queso Havarti
+- Queso Havarti en cuña
+- Queso Havarti en dados
+- Queso Havarti en lonchas
+- Queso Havarti rallado
+- Queso Idiazábal
+- Queso Idiazábal en cuña
+- Queso Idiazábal en dados
+- Queso Idiazábal en lonchas
+- Queso Idiazábal rallado
+- Queso La Serena
+- queso lonchas
+- Queso Maasdam
+- Queso Maasdam en cuña
+- Queso Maasdam en dados
+- Queso Maasdam en lonchas
+- Queso Maasdam rallado
+- Queso Mahón
+- Queso Mahón en cuña
+- Queso Mahón en dados
+- Queso Mahón en lonchas
+- Queso Mahón rallado
+- Queso Majorero
+- Queso Manchego
+- Queso Manchego en cuña
+- Queso Manchego en dados
+- Queso Manchego en lonchas
+- Queso Manchego rallado
+- Queso Mascarpone
+- Queso mezcla
+- Queso mezcla en cuña
+- Queso mezcla en dados
+- Queso mezcla en lonchas
+- Queso mezcla rallado
+- Queso Mozzarella
+- Queso Murcia al vino
+- Queso Oaxaca
+- Queso Palmero
+- Queso Parmesano
+- Queso Parmesano en cuña
+- Queso Parmesano en dados
+- Queso Parmesano en lonchas
+- Queso Parmesano rallado
+- Queso Pecorino
+- Queso Pecorino en cuña
+- Queso Pecorino en dados
+- Queso Pecorino en lonchas
+- Queso Pecorino rallado
+- Queso Provolone
+- Queso Quark
+- queso rallado
+- Queso Reblochon
+- Queso Ricotta
+- Queso Roncal
+- Queso Roncal en cuña
+- Queso Roncal en dados
+- Queso Roncal en lonchas
+- Queso Roncal rallado
+- Queso Roquefort
+- Queso San Simón
+- Queso Taleggio
+- Queso Tetilla
+- Queso Torta del Casar
+- Queso Zamorano
+- Queso Zamorano en cuña
+- Queso Zamorano en dados
+- Queso Zamorano en lonchas
+- Queso Zamorano rallado
+- raclette
+- Raviolis frescos de espinacas y ricotta
+- ricotta
+- Salsa de queso
+- Salsa de yogur
+- skyr
+- Skyr con melocotón
+- Skyr con piña
+- Skyr de coco
+- Skyr de fresa
+- Skyr de frutos del bosque
+- Skyr de limón
+- Skyr de mango
+- Skyr de plátano
+- Skyr de vainilla
+- Skyr sin azúcar
+- Tortellini frescos de espinacas y ricotta
+- yogur
+- yogur bífidus
+- Yogur desnatado de frutos del bosque
+- Yogur desnatado de vainilla
+- Yogur desnatado sin azúcar
+- yogur griego
+- Yogur griego con melocotón
+- Yogur griego con piña
+- Yogur griego de coco
+- Yogur griego de fresa
+- Yogur griego de frutos del bosque
+- Yogur griego de limón
+- Yogur griego de mango
+- Yogur griego de plátano
+- Yogur griego de vainilla
+- Yogur griego sin azúcar
+- yogur natural
+- Yogur natural con melocotón
+- Yogur natural con piña
+- Yogur natural de coco
+- Yogur natural de fresa
+- Yogur natural de frutos del bosque
+- Yogur natural de limón
+- Yogur natural de mango
+- Yogur natural de plátano
+- Yogur natural de vainilla
+- Yogur natural sin azúcar
+- Yogur sin lactosa de frutos del bosque
+- Yogur sin lactosa de vainilla
+- Yogur sin lactosa sin azúcar
 
-nata, proteína vegetal preparada, espárragos, hierbas frescas, caldo, especias, tostadas, esponjas, algodón
+## Congelados (77)
 
-## Preparados (22)
+- Alcachofas congelados
+- Almejas congelados
+- Atún congelado
+- Bacalao congelado
+- Berberechos congelados
+- Besugo congelado
+- Bonito congelado
+- Boquerón congelado
+- Brócoli congelados
+- Caballa congelado
+- Calamares congelados
+- calamares rebozados
+- Camarones congelados
+- Coliflor congelados
+- Corvina congelado
+- croquetas
+- Croquetas congeladas de bacalao
+- Croquetas congeladas de cocido
+- Croquetas congeladas de jamón
+- Croquetas congeladas de pollo
+- Croquetas congeladas de queso
+- Croquetas congeladas de setas
+- Dorada congelado
+- edamame
+- empanadillas congeladas
+- Espinacas congelados
+- Fresas congelados
+- fruta congelada
+- Frutos rojos congelados
+- Gallo congelado
+- Gambas congelados
+- Guisantes congelados
+- Habas congelados
+- helado
+- Helado de café
+- Helado de nata
+- Helado de vainilla
+- Judías verdes congelados
+- Langostinos congelados
+- lasaña
+- Lenguado congelado
+- Lubina congelado
+- Mango congelados
+- Mejillones congelados
+- Menestra congelados
+- Merluza congelado
+- nuggets
+- patatas fritas congeladas
+- Pescadilla congelado
+- pescado congelado
+- Piña congelados
+- pizza
+- Pizza congelada atún
+- Pizza congelada barbacoa
+- Pizza congelada cuatro quesos
+- Pizza congelada jamón y queso
+- Pizza congelada margarita
+- Pizza congelada pepperoni
+- Pizza congelada pollo
+- Pizza congelada vegetal
+- Placas de lasaña de trigo
+- Placas de lasaña integrales
+- Placas de lasaña sin gluten
+- pollo rebozado congelado
+- Pulpo congelados
+- Rape congelado
+- Rodaballo congelado
+- Salmón congelado
+- Sardina congelado
+- Sepia congelados
+- Trucha congelado
+- varitas de pescado
+- verdura congelada
+- Verduras para wok congelados
+- verduras salteadas congeladas
+- Vieiras congelados
+- Zanahoria congelados
 
-tofu, seitán, tempeh, hummus, guacamole, croquetas frescas, lasaña fresca, pizza fresca, tortilla preparada, ensalada preparada, sushi, sándwich, kimchi, hamburguesa vegetal, salchicha vegetal, pollo asado preparado, surimi, pasta fresca, gazpacho, crema de verduras preparada, canelones, ensaladilla rusa
+## Preparados (49)
 
-## Despensa (70)
+- Almejas cocidos
+- Arroz basmati cocido
+- Arroz integral cocido
+- Arroz largo cocido
+- Arroz redondo cocido
+- Berberechos cocidos
+- Calamares cocidos
+- Camarones cocidos
+- canelones
+- Canelones de trigo
+- Canelones integrales
+- Canelones sin gluten
+- crema de verduras preparada
+- croquetas frescas
+- ensalada preparada
+- ensaladilla rusa
+- Gambas cocidos
+- gazpacho
+- guacamole
+- hamburguesa vegetal
+- hummus
+- kimchi
+- Langostinos cocidos
+- lasaña fresca
+- Mejillones cocidos
+- Mezclum
+- pasta fresca
+- pizza fresca
+- pollo asado preparado
+- proteína vegetal preparada
+- Pulpo cocidos
+- Raviolis frescos de carne
+- Raviolis frescos de jamón
+- Raviolis frescos de queso
+- Raviolis frescos de setas
+- salchicha vegetal
+- sándwich
+- seitán
+- Sepia cocidos
+- surimi
+- sushi
+- tempeh
+- tofu
+- Tortellini frescos de carne
+- Tortellini frescos de jamón
+- Tortellini frescos de queso
+- Tortellini frescos de setas
+- tortilla preparada
+- Vieiras cocidos
 
-pan de hamburguesa, pan de molde, baguette, pan, croissant, avena, arroz, pasta, harina, azúcar, sal, aceite de oliva, aceite, lentejas, garbanzos, alubias, tomate frito, tomate triturado, atún en lata, conserva, cereales, frutos secos, café, tahini, semillas de chía, semillas de lino, soja texturizada, leche evaporada, leche condensada, focaccia, pan de pita, sriracha, cuscús, quinoa, bulgur, pan rallado, levadura, maicena, miel, mermelada, crema de cacahuete, ketchup, mayonesa, mostaza, salsa barbacoa, pesto, salsa de soja, vinagre, cubitos de caldo, muesli, granola, tortitas de arroz, cacao soluble, siropes, tortilla de trigo, té e infusiones, pipas de girasol, pipas de calabaza, pimienta negra, pimienta blanca, pimentón dulce, pimentón picante, vinagre de vino, vinagre de manzana, albahaca, orégano, aceite de girasol, romero, tomillo, laurel
+## Bebidas (41)
 
-## Snacks y dulces (8)
+- agua
+- agua con gas
+- Agua mineral con gas
+- Agua mineral sin gas
+- bebida de almendra
+- Bebida de almendra barista
+- Bebida de almendra con cacao
+- Bebida de almendra con calcio
+- Bebida de almendra sin azúcar
+- bebida de avena
+- Bebida de avena barista
+- Bebida de avena con cacao
+- Bebida de avena con calcio
+- Bebida de avena sin azúcar
+- bebida de soja
+- Bebida de soja barista
+- Bebida de soja con cacao
+- Bebida de soja con calcio
+- Bebida de soja sin azúcar
+- Bebida energética
+- Bebida isotónica
+- Cava brut
+- Cava semiseco
+- cerveza
+- Cerveza rubia
+- Cerveza sin alcohol
+- Cerveza sin gluten
+- Cerveza tostada
+- Cola
+- Gaseosa
+- kombucha
+- Mosto
+- refresco
+- Sidra
+- Tila
+- Tónica
+- vino
+- Vino blanco
+- Vino rosado
+- Vino tinto
+- zumo
 
-patatas de bolsa, barrita de chocolate, chocolate con almendras, chocolate con leche, chocolate negro, chocolate, galletas, gominolas
+## Snacks y dulces (48)
 
-## Congelados (15)
+- Aceitunas negras
+- Aceitunas rellenas de anchoa
+- Aceitunas verdes
+- Alcaparras
+- Banderillas
+- Barquillos
+- barrita de chocolate
+- Bizcocho de chocolate
+- Bizcochos de soletilla
+- Brownie
+- chocolate
+- Chocolate blanco
+- Chocolate con almendras
+- Chocolate con leche
+- chocolate negro
+- Chocolate negro 70%
+- Chocolate negro 85%
+- Chocolate negro 90%
+- Cookies con pepitas
+- Cortezas de cerdo
+- Crackers integrales
+- Crackers salados
+- Donuts
+- galletas
+- Galletas de chocolate
+- Galletas integrales
+- Galletas María
+- gominolas
+- Gusanitos de maíz
+- Helado de chocolate
+- Magdalenas
+- Mantecados
+- Mazapán
+- Nachos de maíz
+- Napolitanas de chocolate
+- Palomitas dulces
+- Palomitas saladas
+- patatas de bolsa
+- Patatas de bolsa lisas
+- Patatas de bolsa onduladas
+- Patatas de bolsa sabor barbacoa
+- Patatas de bolsa sabor jamón
+- Pepinillos
+- Polvorones
+- Pretzels
+- Tortitas de maíz
+- Turrón de Alicante
+- Turrón de Jijona
 
-patatas fritas congeladas, nuggets, verdura congelada, pescado congelado, pollo rebozado congelado, croquetas, lasaña, pizza, helado, edamame, calamares rebozados, empanadillas congeladas, varitas de pescado, verduras salteadas congeladas, fruta congelada
+## Higiene y cuidado (18)
+
+- acondicionador
+- algodón
+- cepillo de dientes
+- champú
+- crema corporal
+- crema facial
+- cuchillas de afeitar
+- desodorante
+- enjuague bucal
+- espuma de afeitar
+- gel de ducha
+- gel hidroalcohólico
+- hilo dental
+- jabón de manos
+- pasta de dientes
+- perfume
+- protector solar
+- toallitas húmedas
+
+## Limpieza y hogar (20)
+
+- bolsas congelación
+- bolsas de basura
+- cápsulas de lavadora
+- detergente en polvo
+- detergente lavadora
+- esponjas
+- film transparente
+- lavavajillas líquido
+- lejía
+- limpiacristales
+- limpiador de baño
+- limpiador de suelo
+- limpiador multiusos
+- papel aluminio
+- papel de cocina
+- papel higiénico
+- pastillas lavavajillas
+- quitamanchas
+- servilletas
+- suavizante
 
 ## Suplementos (6)
 
-barrita de proteína, proteína whey, creatina, colágeno, preentreno, vitaminas
+- barrita de proteína
+- colágeno
+- creatina
+- preentreno
+- proteína whey
+- vitaminas
 
-## Bebidas (11)
-
-agua, zumo, refresco, bebida energética, cerveza, vino, kombucha, bebida de avena, bebida de soja, bebida de almendra, agua con gas
-
-## Limpieza y hogar (19)
-
-detergente lavadora, suavizante, lejía, limpiador multiusos, lavavajillas líquido, pastillas lavavajillas, papel higiénico, papel de cocina, servilletas, bolsas de basura, detergente en polvo, cápsulas de lavadora, quitamanchas, limpiacristales, limpiador de baño, limpiador de suelo, film transparente, papel aluminio, bolsas congelación
-
-## Higiene y cuidado (17)
-
-champú, acondicionador, gel de ducha, jabón de manos, desodorante, pasta de dientes, perfume, crema corporal, crema facial, protector solar, gel hidroalcohólico, enjuague bucal, cepillo de dientes, hilo dental, toallitas húmedas, cuchillas de afeitar, espuma de afeitar

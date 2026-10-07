@@ -4,7 +4,10 @@ import { RECIPES } from "../lib/recipes";
 import { classifyProduct } from "../lib/product-engine";
 import { consumePlanIngredients, parsePlanQty, planProductMatches, recipeShortages } from "../lib/recipe-plan-engine";
 
-assert.equal(new Set(RECIPES.map(r=>r.image)).size,RECIPES.length,"Each recipe needs its own photo");
+assert(RECIPES.length>=500,"A broad recipe book is required");
+const originals=RECIPES.filter(r=>!r.photoCaption);
+assert.equal(new Set(originals.map(r=>r.image)).size,originals.length,"Original exact photos remain distinct");
+assert.equal(new Set(RECIPES.map(r=>r.title)).size,RECIPES.length,"Recipe titles must be distinct");
 for(const recipe of RECIPES){
  assert(recipe.image.startsWith("/recipe-images/"),recipe.title);
  const bytes=readFileSync(`public${recipe.image}`);
@@ -37,4 +40,4 @@ const protectedStock=consumePlanIngredients([expired],[{name:"Pollo",qty:"500 g"
 assert(!protectedStock.exact&&protectedStock.inventory[0].qty===1000);
 const converted=consumePlanIngredients([{...item("Leche","L"),qty:1}],[{name:"Leche",qty:"250 ml",key:"leche"}]);
 assert(converted.exact&&converted.inventory[0].qty===.75);
-console.log(`Recipe audit: ${RECIPES.length} unique local photos, full/partial/empty consumption, product distinctions, units and excluded stock.`);
+console.log(`Recipe audit: ${RECIPES.length} recipes with local exact or clearly labelled family photos, full/partial/empty consumption, product distinctions, units and excluded stock.`);

@@ -1991,3 +1991,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .inventory-grid.compact{grid-template-columns:minmax(0,1fr)!important}
  .inventory-card{padding:14px!important}
 }
+
+/* Weekly briefing stays readable at narrow widths and large text sizes. */
+.weekly-briefing-modal{width:min(680px,94vw);max-height:88dvh;overflow:auto;padding:24px}
+.weekly-briefing-modal h2{font-size:clamp(22px,3vw,29px);line-height:1.25;overflow-wrap:anywhere}
+.weekly-briefing-modal form>label,.week-form-grid label{display:flex;flex-direction:column;gap:8px;font-weight:600}
+.weekly-briefing-modal textarea{width:100%;min-height:112px;padding:12px;border:1px solid var(--line,#d9dedb);border-radius:12px;font:inherit;resize:vertical;margin-top:8px}
+.week-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.week-form-grid select,.week-form-grid input{width:100%;min-width:0;padding:10px;border:1px solid #d9dedb;border-radius:10px;font:inherit;background:white}
+.week-dialog-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.weekly-briefing-modal fieldset{border:1px solid #d9dedb;border-radius:12px;padding:12px;margin-top:16px}
+.week-favorite-choice{display:flex;gap:10px;align-items:flex-start;padding:8px 0;line-height:1.4}
+.week-favorite-choice input{width:20px;height:20px;flex-shrink:0;accent-color:#3b6853}
+.week-summary-chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}.week-summary-chips span{background:#eef4ef;color:#294c39;border-radius:8px;padding:7px 9px;font-size:14px;overflow-wrap:anywhere}
+.weekly-preference-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;font-size:15px;line-height:1.5}.weekly-preference-summary button{flex-shrink:0}
+.week-estimate-note,.recipe-photo-caption{display:block;color:#66716b;font-size:13px;line-height:1.5;margin:12px 0}.week-dictate{margin-top:12px}
+.weekly-warning{padding:12px;border-radius:10px;background:#fff4df;color:#76541e;line-height:1.5}
+@media(max-width:600px){.week-form-grid{grid-template-columns:1fr}.weekly-briefing-modal{padding:18px}.weekly-preference-summary{align-items:flex-start;flex-direction:column}.week-dialog-actions>*{width:100%;white-space:normal}}

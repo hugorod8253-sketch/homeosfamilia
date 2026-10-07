@@ -2,6 +2,7 @@ export type RecipeEntry={
  id:string; title:string; image:string; time:number; difficulty:"Fácil"|"Media";
  mode:("rapido"|"normal"|"cocinar"|"mealprep")[]; servings:number; calories:number; protein:number; carbs:number; fat:number;
  ingredients:{name:string;qty:string;key:string}[]; steps:string[]; description:string; tools?:string[];
+ family?:string; mealTypes?:("Desayuno"|"Comida"|"Cena"|"Merienda")[]; photoCaption?:string;
 };
 
 export const EXTRA_RECIPES:RecipeEntry[]=[
