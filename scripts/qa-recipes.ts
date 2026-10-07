@@ -41,3 +41,6 @@ assert(!protectedStock.exact&&protectedStock.inventory[0].qty===1000);
 const converted=consumePlanIngredients([{...item("Leche","L"),qty:1}],[{name:"Leche",qty:"250 ml",key:"leche"}]);
 assert(converted.exact&&converted.inventory[0].qty===.75);
 console.log(`Recipe audit: ${RECIPES.length} recipes with local exact or clearly labelled family photos, full/partial/empty consumption, product distinctions, units and excluded stock.`);
+for(const name of ["Chucrut","Gochujang","Semillas de sésamo","Jengibre","Comino"])assert.notEqual(classifyProduct(name).category,"Por clasificar",name);
+assert(!planProductMatches(item("Comino"),"curry","Curry"),"Comino must not satisfy curry");
+assert(!planProductMatches(item("Gochujang"),"salsa de soja","Salsa de soja"),"Different sauces must remain distinct");

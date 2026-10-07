@@ -62,3 +62,6 @@ console.log("Recipe discovery QA: retired weekly plans preserve stock/history/ma
 
 assert.equal(themeForPeriod("week",new Date(2026,9,5)).id,themeForPeriod("week",new Date(2026,9,11)).id);
 assert.notEqual(themeForPeriod("week",new Date(2026,9,5)).id,themeForPeriod("week",new Date(2026,9,12)).id);
+
+assert(themeRecipes("china",RECIPES).some(r=>r.title.includes("tofu")||r.title.includes("seitán")),"Country selection must include different proteins");
+assert(themeRecipes("india",RECIPES).every(r=>!r.title.includes("tailandés")),"Indian discovery must not include Thai curries");

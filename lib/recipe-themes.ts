@@ -6,7 +6,7 @@ export const RECIPE_THEMES=[
  {id:"thailand",icon:"🇹🇭",title:"Tailandia",description:"Curry de coco y sabores aromáticos para cocinar en casa.",pattern:/estilo tailandes/},
  {id:"germany",icon:"🇩🇪",title:"Alemania",description:"Frankfurt, patatas y mostaza en versiones sencillas.",pattern:/frankfurt/},
  {id:"mexico",icon:"🇲🇽",title:"México",description:"Tacos, quesadillas y fajitas de inspiración mexicana.",pattern:/taco|quesadilla|fajita/},
- {id:"india",icon:"🇮🇳",title:"India",description:"Currys suaves con verduras, legumbres y especias.",pattern:/curry/},
+ {id:"india",icon:"🇮🇳",title:"India",description:"Currys suaves con verduras, legumbres y especias.",pattern:/curry suave|pollo al curry con yogur/},
  {id:"spain",icon:"🇪🇸",title:"España",description:"Revueltos, tortillas y platos sencillos para compartir.",pattern:/revuelto|tortilla de|pisto/},
  {id:"pasta",icon:"🇮🇹",title:"Italia: pasta italiana",description:"Desde una carbonara sencilla hasta pasta con pesto.",pattern:/pasta|carbonara|espagueti|macarron/},
  {id:"pizza",icon:"🍕",title:"Noche de pizza",description:"Bases, verduras y rellenos para variar.",pattern:/pizza/},
@@ -23,5 +23,6 @@ export function themeRecipes<T extends Pick<RecipeEntry,"title">>(id:string,reci
  const theme=RECIPE_THEMES.find(t=>t.id===id);if(!theme)return [];
  const matches=recipes.filter(r=>theme.pattern.test(r.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")));
  const week=Math.floor((date.getDate()-1)/7),offset=matches.length?week*3%matches.length:0;
- return [...matches.slice(offset),...matches.slice(0,offset)].slice(0,6);
+ const count=Math.min(6,matches.length),stride=Math.max(1,Math.floor(matches.length/count));
+ return Array.from({length:count},(_,i)=>matches[(offset+i*stride)%matches.length]);
 }

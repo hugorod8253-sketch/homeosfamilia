@@ -248,6 +248,11 @@ const RULES:Rule[]=[
 /* Specific supermarket references checked before the broad family rules.
    Brand/flavour variants collapse into these household-level product types. */
 const EXTRA_RULES:Rule[]=[
+ P("chucrut",/\bchucrut\b/,"Despensa","Conservas vegetales","Despensa","baja","can","flex"),
+ P("gochujang",/\bgochujang\b/,"Despensa","Salsas","Despensa","baja","pantry","flex"),
+ P("semillas de sésamo",/\bsesamo\b/,"Despensa","Semillas","Despensa","baja","nuts","shelf"),
+ P("jengibre fresco",/\bjengibre\b(?!.*molido)/,"Fruta y verdura","Verdura","Nevera","media","vegetable","flex"),
+ P("comino",/\bcomino\b/,"Despensa","Especias","Despensa","baja","spices","shelf"),
  P("sandía negra",/sandia.*negra/,"Fruta y verdura","Fruta","Despensa","alta","watermelon","flex"),
  P("sandía rayada",/sandia.*rayada/,"Fruta y verdura","Fruta","Despensa","alta","watermelon","flex"),
  P("sandía mini",/sandia.*mini/,"Fruta y verdura","Fruta","Despensa","alta","watermelon","flex"),
