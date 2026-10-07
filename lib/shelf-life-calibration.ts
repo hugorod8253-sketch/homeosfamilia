@@ -97,7 +97,7 @@ export function shelfLifeSample(name:string){
  const alias=aliases.find(a=>a.test(n));
  const matches=LIDL_2026_SHELF_LIFE.filter(s=>{
   const k=norm(s.name);
-  return n===k||n.includes(k)||k.includes(n)||Boolean(alias?.keys.some(x=>k===x));
+  return n===k||n.includes(k)||Boolean(alias?.keys.some(x=>k===x));
  }).sort((a,b)=>norm(b.name).length-norm(a.name).length);
  return matches[0]||null;
 }

@@ -43,7 +43,9 @@ const RULES:Rule[]=[
  P("aguacate",/aguacate/,"Fruta y verdura","Fruta","Despensa","alta","avocado","flex"),
  P("champiñón",/champinon|seta/,"Fruta y verdura","Verdura","Nevera","alta","mushroom","flex"),
 
+ P("verduras variadas",/^verduras?(?:\s+variadas?)?$/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
  // Frutas
+ P("fruta",/^frutas?(?:\s+(?:variadas?|de\s+temporada))?$/,"Fruta y verdura","Fruta","Nevera","alta","apple","flex"),
  P("plátano",/platano|banana/,"Fruta y verdura","Fruta","Despensa","alta","banana","flex"),
  P("manzana",/manzana/,"Fruta y verdura","Fruta","Nevera","media","apple","flex"),
  P("pera",/\bpera\b|peras/,"Fruta y verdura","Fruta","Nevera","media","pear","flex"),
@@ -74,6 +76,7 @@ const RULES:Rule[]=[
  P("solomillo de pavo",/solomillo.*pavo/,"Carne","Pavo","Nevera","alta","turkey-tender","cold-required"),
  P("muslo de pollo",/muslo.*pollo|contramuslo|cuarto\s+trasero.*pollo/,"Carne","Pollo","Nevera","alta","chicken-leg","cold-required"),
  P("pollo entero",/pollo\s+entero/,"Carne","Pollo","Nevera","alta","chicken-whole","cold-required"),
+ P("pollo",/^pollo$/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
  P("entrecot de vacuno",/entrecot/,"Carne","Vacuno","Nevera","alta","steak","cold-required"),
  P("solomillo de vacuno",/solomillo.*(vacuno|ternera)|solomillo$|solomillo\s+de\s+ternera/,"Carne","Vacuno","Nevera","alta","tenderloin","cold-required"),
  P("filete de ternera",/filete.*ternera|ternera.*filete/,"Carne","Vacuno","Nevera","alta","steak-thin","cold-required"),
