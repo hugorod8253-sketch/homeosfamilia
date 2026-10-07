@@ -1973,3 +1973,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .home-final-summary-grid button{padding:10px!important;gap:5px!important}
  .home-final-action-grid button{padding:10px 8px!important}
 }
+
+/* Product cards share a footer; extra actions no longer change button widths. */
+.inventory-grid.compact{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))!important;align-items:stretch!important;gap:12px!important}
+.inventory-grid.detail{align-items:stretch!important}
+.inventory-card{display:flex!important;flex-direction:column!important;height:100%;box-sizing:border-box}
+.inventory-grid.compact .inventory-actions,.inventory-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;padding-top:14px;margin-top:auto!important}
+.inventory-actions button{min-height:42px!important;padding:10px 8px!important;font-size:13px!important;line-height:1.25!important;border-radius:10px;white-space:normal;word-break:normal;overflow-wrap:normal}
+.inventory-actions .action-out,.inventory-actions .action-low{white-space:nowrap!important;gap:6px!important}
+.inventory-actions .action-out span,.inventory-actions .action-low span{font-size:8px!important}
+.inventory-actions .action-freeze,.inventory-actions .action-confirm,.inventory-actions .action-buy,.inventory-actions .action-eat,.inventory-actions .discard-product{grid-column:1/-1!important}
+.inventory-grid.compact .inventory-actions .recipe-from-product,.inventory-actions .recipe-from-product{grid-column:1/-1!important}
+.inventory-actions:has(.action-freeze) .action-freeze{grid-column:1!important}
+.inventory-grid.compact .inventory-actions:has(.action-freeze) .recipe-from-product,.inventory-actions:has(.action-freeze) .recipe-from-product{grid-column:2!important}
+.inventory-actions .recipe-from-product{font-size:12px!important}
+@media(max-width:720px){
+ .inventory-grid.compact{grid-template-columns:minmax(0,1fr)!important}
+ .inventory-card{padding:14px!important}
+}
