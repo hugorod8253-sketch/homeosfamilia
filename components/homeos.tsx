@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, SyncConflictError, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
-import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freezerQualityGuide, recommendedLocation, storageWarning } from "../lib/product-engine";
+import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freezerQualityGuide, productSuggestions, recommendedLocation, storageWarning } from "../lib/product-engine";
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 import { RECIPES as BUILTIN_RECIPES } from "../lib/recipes";
@@ -27,7 +27,7 @@ type InventoryItem = {
   price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; mealPrepInitialServings?:number; mealPrepDays?:number; mealPrepStart?:string; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
 };
 type ShoppingItem = {
-  id:string; name:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
+  id:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string; sources?:ShoppingSource[]; boughtQty?:number;
 };
 type PurchaseRecord = {id:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
@@ -1742,6 +1742,7 @@ function Habitos({state}:{state:AppState}){
 }
 function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
  const [quick,setQuick]=useState("");
+ const [productChoice,setProductChoice]=useState<{raw:string;name:string;qty:number;unit:string;supermarket?:string;options:ReturnType<typeof productSuggestions>}|null>(null);
  const [storeFilter,setStoreFilter]=useState("Todos");
  const [newStoreName,setNewStoreName]=useState("");
  const [addingStore,setAddingStore]=useState(false);
@@ -1774,7 +1775,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const recipeShoppingItems=state.shopping.filter(i=>i.status==="pendiente"&&shoppingSources(i).some(src=>src.type==="recipe")).length;
 
 
- function addOne(rawInput:string){
+ function addOne(rawInput:string,forcedName?:string){
   let value=normalizeSpokenShoppingText(rawInput.trim());if(!value)return;
   let supermarket:string|undefined;
   const lower=norm(value);
@@ -1789,8 +1790,8 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   if(!Number.isFinite(qty)||qty<=0){setToast("La cantidad debe ser mayor que cero");return}
   if(!value)return;
   if(suspiciousRepeatedText(value)){setToast("Revisa el nombre del producto antes de añadirlo");return}
-  const productProfile=classifyProduct(value);
-  const name=value;
+  const productProfile=classifyProduct(forcedName||value);
+  const name=forcedName||value;
   setState(s=>{
    const duplicate=s.shopping.find(i=>norm(i.name)===norm(name)&&i.supermarket===supermarket&&i.status==="pendiente"&&planUnitFamily(i.unit)===planUnitFamily(unit));
    if(duplicate){
@@ -1804,12 +1805,20 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
    }
    const id=crypto.randomUUID();
    const source:ShoppingSource={id:"manual:"+id+":"+norm(requestedBy),type:"manual",label:requestedBy,qty,unit};
-   return {...s,shopping:[...s.shopping,{id,name:name.charAt(0).toUpperCase()+name.slice(1),qty,unit,category:productProfile.category,subcategory:productProfile.subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente",sources:[source]}]};
+   return {...s,shopping:[...s.shopping,{id,name:name.charAt(0).toUpperCase()+name.slice(1),requestedName:forcedName&&forcedName!==value?value:undefined,qty,unit,category:productProfile.category,subcategory:productProfile.subcategory,supermarket,requestedBy,reason:"persona",status:"pendiente",sources:[source]}]};
   });
  }
  function add(input=quick){
   const entries=splitShoppingEntries(input);
   if(!entries.length)return;
+  if(entries.length===1){
+   const parsed=parseShoppingQuantity(normalizeSpokenShoppingText(entries[0]));
+   const options=productSuggestions(parsed.name);
+   if(options.length>1||(/argentino|pavo/.test(norm(parsed.name))&&options.length>0)){
+    setProductChoice({raw:parsed.name,name:parsed.name,qty:parsed.qty,unit:parsed.unit,options});
+    return;
+   }
+  }
   entries.forEach(addOne);
   setQuick("");
   setToast(entries.length===1?entries[0]+" añadido":entries.length+" productos añadidos");
@@ -1896,13 +1905,15 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  function addSupermarket(selectNow=false){
   const name=newStoreName.trim().replace(/\s+/g," ");
   if(!name)return;
-  const exists=state.profile.supermarkets.find(x=>norm(x)===norm(name));
-  const finalName=exists||name;
+  const corrections:Record<string,string>={mercadonaa:"Mercadona",mercadona:"Mercadona",mercadonna:"Mercadona",lidll:"Lidl",carrefur:"Carrefour",carrefourr:"Carrefour",aldii:"Aldi",diaa:"Dia"};
+  const corrected=corrections[norm(name)]||name;
+  const exists=state.profile.supermarkets.find(x=>norm(x)===norm(corrected));
+  const finalName=exists||corrected;
   setState(s=>s.profile.supermarkets.some(x=>norm(x)===norm(finalName))?s:{...s,profile:{...s.profile,supermarkets:[...s.profile.supermarkets,finalName],mainSupermarket:s.profile.mainSupermarket||finalName}});
   setNewStoreName("");
   setAddingStore(false);
   if(selectNow)setActiveStore(finalName);else setStoreFilter(finalName);
-  setToast(exists?finalName+" ya estaba guardado":finalName+" añadido a supermercados");
+  setToast(corrected!==name?`He corregido “${name}” a ${finalName}`:exists?finalName+" ya estaba guardado":finalName+" añadido a supermercados");
  }
  function addRecommendedMissing(){
   if(!recommendedMissing.length){setToast("No hay faltas claras ahora mismo");return}
@@ -1968,13 +1979,14 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
 
   {pendingRecipePlans.length>0&&<article className="shopping-recipe-memory"><span>🍳</span><div><small>RECETAS GUARDADAS</small><strong>{pendingRecipePlans.length} receta{pendingRecipePlans.length===1?"":"s"} esperando ingredientes</strong><p>{recipeShoppingItems?recipeShoppingItems+" productos ya están vinculados a esas recetas.":"Puedes añadir los faltantes sin volver a buscar las recetas."}</p></div><button onClick={()=>pendingRecipePlans.forEach(p=>addFromRecipe(p.recipe,p.plannedFor))}>Añadir faltantes</button></article>}
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. leche, 2 yogures y 1 kg de pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":micIcon()}</button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
+  {productChoice&&<article className="product-choice-card"><div><small>REVISAR PRODUCTO</small><strong>¿Qué querías decir con “{productChoice.raw}”?</strong><p>He entendido la familia del producto, pero prefiero confirmarlo antes de ordenar la compra.</p></div><div className="product-choice-options">{productChoice.options.map(option=><button key={option.canonical} onClick={()=>{addOne(productChoice.raw,option.canonical);setProductChoice(null);setQuick("");setToast(option.canonical+" añadido · escrito como “"+productChoice.raw+"”")}}><span>{productIcon(option.canonical,option.category)}</span><b>{option.canonical}</b><small>{option.category} · {option.subcategory}</small></button>)}</div><button className="secondary" onClick={()=>{addOne(productChoice.raw);setProductChoice(null);setQuick("")}}>Usar exactamente “{productChoice.raw}”</button></article>}
 
   {!shoppingActive&&<div className="store-tabs"><button className={storeFilter==="Todos"?"active":""} onClick={()=>setStoreFilter("Todos")}>Todos</button>{state.profile.supermarkets.map(s=><button className={(storeFilter===s?"active ":"")+storeClass(s)} key={s} onClick={()=>setStoreFilter(s)}>{s}</button>)}<button className={(storeFilter==="Cualquiera"?"active ":"")+"store-any"} onClick={()=>setStoreFilter("Cualquiera")}>Cualquiera</button><button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Supermercado</button></div>}
   {hasPlanLines&&<div className="shopping-intent-tabs"><button className={shoppingIntentFilter==="todos"?"active":""} onClick={()=>setShoppingIntentFilter("todos")}>Todo</button><button className={shoppingIntentFilter==="habitual"?"active":""} onClick={()=>setShoppingIntentFilter("habitual")}>Compra habitual</button><button className={shoppingIntentFilter==="planes"?"active":""} onClick={()=>setShoppingIntentFilter("planes")}>Recetas y menú</button></div>}
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
   {addingStore&&<div className="inline-store-add"><div><strong>Añadir supermercado</strong><small>Se guardará para futuras compras.</small></div><input autoFocus value={newStoreName} onChange={e=>setNewStoreName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSupermarket(shoppingActive);if(e.key==="Escape"){setAddingStore(false);setNewStoreName("")}}} placeholder="Ej. BonÀrea, Ametller, tienda del barrio…"/><button className="primary" onClick={()=>addSupermarket(shoppingActive)} disabled={!newStoreName.trim()}>Guardar</button><button className="secondary" onClick={()=>{setAddingStore(false);setNewStoreName("")}}>Cancelar</button></div>}
 
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em className={"store-label "+storeClass(i.supermarket)}>{i.supermarket}</em>}<div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty}</b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{i.requestedName?"Escribiste: “"+i.requestedName+"”":shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em className={"store-label "+storeClass(i.supermarket)}>{i.supermarket}</em>}<div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty}</b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
 
    <aside className="purchase-tools">
     <div className="ticket-actions">
