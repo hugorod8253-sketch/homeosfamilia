@@ -1928,3 +1928,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   .home-final-habit-grid strong,.home-final-habit-grid em{font-size:13px!important}
   .home-final-action-grid strong{font-size:13px!important}
 }
+
+/* Contain labels inside every dashboard tile at normal zoom. */
+.home-final-summary-grid,.home-final-action-grid,.home-final-habit-grid{min-width:0!important}
+.home-final-summary-grid button,.home-final-action-grid button,.home-final-habit-grid button{min-width:0!important;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:normal}
+.home-final-summary-grid button>*,.home-final-action-grid button>*,.home-final-habit-grid button>*{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.home-final-summary-grid em,.home-final-action-grid strong,.home-final-habit-grid em{white-space:normal!important;overflow-wrap:anywhere!important}
+@media(min-width:721px){
+ .home-final-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .home-final-action-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+ .home-final-summary-grid button{padding:10px!important;gap:5px!important}
+ .home-final-action-grid button{padding:10px 8px!important}
+}
