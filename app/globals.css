@@ -1914,6 +1914,38 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 }
 .market-choice[aria-pressed="true"]::after{content:"  ×";font-weight:800;opacity:.8}
 
+/* Content-sized controls keep readable labels inside at every available width. */
+.inventory-toolbar{grid-template-columns:minmax(0,1fr) auto!important;gap:16px!important}
+.inventory-toolbar>.inventory-filter-block:first-child{grid-column:1!important}
+.inventory-toolbar>.inventory-filter-block:nth-child(2){grid-column:1/-1!important}
+.inventory-toolbar>.inventory-density{grid-column:2!important;grid-row:1!important}
+.inventory-toolbar .inventory-filter-block .visual-filter-row,
+.inventory-toolbar .inventory-filter-block .visual-filter-row.categories{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:8px!important;align-items:flex-start!important}
+.inventory-toolbar .visual-filter-row button{flex:0 1 auto!important;max-width:100%;min-width:0;min-height:44px!important;height:auto;box-sizing:border-box;padding:10px 12px!important;justify-content:flex-start!important;gap:8px;line-height:1.35;text-align:left;white-space:normal}
+.inventory-toolbar .visual-filter-row button>b{min-width:0;font-size:14px!important;line-height:1.35;overflow-wrap:anywhere}
+.inventory-toolbar .visual-filter-row button>span{flex:0 0 20px;width:20px;height:20px;font-size:18px!important;display:grid;place-items:center}
+.inventory-density button{min-height:44px;padding:10px 12px;font-size:13px;line-height:1.35}
+.inventory-grid{align-items:start!important}
+.inventory-name-row h3{display:block!important;overflow:visible!important;line-height:1.35!important;overflow-wrap:anywhere}
+.inventory-card{min-width:0;min-height:0!important}
+.inventory-actions button{min-width:0;min-height:44px;line-height:1.35!important;white-space:normal;overflow-wrap:anywhere}
+.stock-badge{max-width:100%;white-space:normal!important;line-height:1.35!important}
+.shop-visual-copy{min-width:0}
+.shop-visual-copy strong{display:block!important;white-space:normal!important;overflow:visible!important;line-height:1.35!important;overflow-wrap:anywhere}
+.shopping-card-grid{align-items:start!important}
+.shop-visual-card{min-height:0!important;padding:12px!important;grid-template-rows:auto auto auto!important}
+.location-mini{font-size:12px!important;line-height:1.4;color:#617066}
+.inventory-grid.compact .rotation-badge,.inventory-grid.compact .date-alert,.stock-badge{font-size:11px!important;line-height:1.4}
+.shop-inline-controls button{width:28px!important;height:28px!important;font-size:14px!important}
+.shop-inline-controls b{font-size:12px!important}
+@media(max-width:720px){
+ .inventory-toolbar{grid-template-columns:minmax(0,1fr)!important;padding:12px!important}
+ .inventory-toolbar>.inventory-filter-block,.inventory-toolbar>.inventory-density{grid-column:1!important;grid-row:auto!important}
+ .inventory-toolbar .visual-filter-row button{padding:10px!important}
+ .inventory-actions{grid-template-columns:minmax(0,1fr)!important}
+ .inventory-grid.compact .inventory-actions{grid-template-columns:minmax(0,1fr)!important}
+}
+
 /* Legibility: use the available card space for text, not oversized empty blocks. */
 @media (min-width:721px){
   .main{font-size:16px!important}
