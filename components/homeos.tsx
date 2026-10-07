@@ -33,7 +33,7 @@ type PurchaseSession = {id:string;date:string;total:number;supermarket?:string};
 type MealRecord = {id:string;date:string;recipeId:string;title:string;servings:number;ingredients:{name:string;key:string;category:string}[]};
 type ProductPreference = {location?:Location;category?:string};
 type Member = {id:string;name:string;relation:string;presence:"casa"|"fuera_dia"|"fines_semana"|"variable";appetite:"poco"|"normal"|"mucho";dislikes:string;notes:string;dailyCalories?:number};
-type EventItem = {id:string;title:string;date:string};
+type EventItem = {id:string;title:string;date:string;time?:string};
 type RecipeIngredient = {name:string;qty:string;key:string};
 type Recipe = {
   id:string; title:string; image:string; time:number; difficulty:"Fácil"|"Media";
@@ -129,6 +129,70 @@ function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
 function isoAfterDays(days:number){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 function weekendPlanIso(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay();if(day===6||day===0)return d.toISOString().slice(0,10);d.setDate(d.getDate()+(6-day));return d.toISOString().slice(0,10)}
+
+function demoState(withMenu:boolean):AppState{
+ const today=new Date();today.setHours(12,0,0,0);
+ const iso=(offset=0)=>{const d=new Date(today);d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10)};
+ const month=today.toISOString().slice(0,7);
+ const inventory:InventoryItem[]=[
+  {id:"demo-tomate",name:"Tomate cherry",qty:1,unit:"ud",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-3),expires:iso(1),dateType:"caducidad",supermarket:"Mercadona"},
+  {id:"demo-yogur",name:"Yogur natural",qty:3,unit:"uds",location:"Nevera",category:"Lácteos",stock:"hay",purchasedAt:iso(-4),expires:iso(2),dateType:"caducidad",supermarket:"Lidl"},
+  {id:"demo-espinaca",name:"Espinacas",qty:250,unit:"g",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-2),estimatedExpires:iso(3),estimatedDateType:"caducidad",estimateBasis:"Demo visual",supermarket:"Mercadona"},
+  {id:"demo-fruta",name:"Fruta variada",qty:5,unit:"uds",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-2),supermarket:"Mercadona"},
+  {id:"demo-avena",name:"Avena",qty:500,unit:"g",location:"Despensa",category:"Despensa",stock:"hay",purchasedAt:iso(-12),supermarket:"Lidl"},
+  {id:"demo-pollo",name:"Pollo",qty:900,unit:"g",location:"Nevera",category:"Carne",stock:"hay",purchasedAt:iso(-1),supermarket:"Mercadona"},
+  {id:"demo-arroz",name:"Arroz",qty:800,unit:"g",location:"Despensa",category:"Despensa",stock:"hay",purchasedAt:iso(-20),supermarket:"Mercadona"},
+  {id:"demo-verdura",name:"Verduras variadas",qty:500,unit:"g",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-1),supermarket:"Mercadona"},
+  {id:"demo-calabaza",name:"Calabaza",qty:900,unit:"g",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-1),supermarket:"Lidl"},
+  {id:"demo-preparado",name:"Pollo con arroz preparado",qty:4,unit:"raciones",location:"Nevera",category:"Preparados",stock:"hay",purchasedAt:iso(-1),preparedAt:iso(-1),servings:4,source:"mealprep",mealPrepInitialServings:4,mealPrepDays:4,mealPrepStart:iso(-1),preparedIngredients:[{name:"Pollo",key:"pollo",category:"Carne"},{name:"Arroz",key:"arroz",category:"Despensa"},{name:"Verduras",key:"verdura",category:"Fruta y verdura"}]}
+ ];
+ const shopping:ShoppingItem[]=[
+  {id:"demo-shop1",name:"Leche",qty:2,unit:"L",category:"Lácteos",supermarket:"Mercadona",requestedBy:"Fran",reason:"persona",status:"pendiente"},
+  {id:"demo-shop2",name:"Huevos",qty:12,unit:"uds",category:"Lácteos",supermarket:"Mercadona",requestedBy:"Casa",reason:"reposicion",status:"pendiente"},
+  {id:"demo-shop3",name:"Pan",qty:1,unit:"ud",category:"Despensa",supermarket:"Lidl",requestedBy:"Casa",reason:"reposicion",status:"pendiente"},
+  {id:"demo-shop4",name:"Plátanos",qty:6,unit:"uds",category:"Fruta y verdura",supermarket:"Mercadona",requestedBy:"Casa",reason:"reposicion",status:"pendiente"},
+  {id:"demo-shop5",name:"Queso",qty:1,unit:"ud",category:"Lácteos",supermarket:"Lidl",requestedBy:"Casa",reason:"reposicion",status:"pendiente"}
+ ];
+ const meal=(id:string,offset:number,title:string,ingredients:{name:string;key:string;category:string}[]):MealRecord=>({id,date:iso(offset),recipeId:id,title,servings:1,ingredients});
+ const mealHistory:MealRecord[]=[
+  meal("dm1",-1,"Pollo con arroz",[{name:"Pollo",key:"pollo",category:"Carne"},{name:"Arroz",key:"arroz",category:"Despensa"}]),
+  meal("dm2",-2,"Pasta con pollo",[{name:"Pollo",key:"pollo",category:"Carne"},{name:"Pasta",key:"pasta",category:"Despensa"}]),
+  meal("dm3",-3,"Arroz con huevo",[{name:"Huevo",key:"huevo",category:"Lácteos"},{name:"Arroz",key:"arroz",category:"Despensa"}]),
+  meal("dm4",-4,"Pollo y patata",[{name:"Pollo",key:"pollo",category:"Carne"},{name:"Patata",key:"patata",category:"Fruta y verdura"}]),
+  meal("dm5",-5,"Pescado con arroz",[{name:"Pescado",key:"pescado",category:"Carne"},{name:"Arroz",key:"arroz",category:"Despensa"}]),
+  meal("dm6",-6,"Tortilla",[{name:"Huevo",key:"huevo",category:"Lácteos"},{name:"Cebolla",key:"cebolla",category:"Fruta y verdura"}]),
+  meal("dm7",-7,"Chocolate",[{name:"Chocolate",key:"chocolate",category:"Snacks y dulces"}]),
+  meal("dm8",-8,"Galletas",[{name:"Galletas",key:"galleta",category:"Snacks y dulces"}]),
+  meal("dm9",-9,"Helado",[{name:"Helado",key:"helado",category:"Snacks y dulces"}]),
+  meal("dm10",-10,"Pollo",[{name:"Pollo",key:"pollo",category:"Carne"}])
+ ];
+ const weeklyMenu:WeeklyMenuPlan|null=withMenu?{
+  id:"demo-week",createdAt:iso(0),startDate:iso(0),shoppingLinked:false,
+  slots:[
+   {day:0,meal:"Desayuno",recipeId:"x15",why:"Desayuno rápido"},
+   {day:0,meal:"Comida",recipeId:"r3",why:"Completo y fácil"},
+   {day:0,meal:"Cena",recipeId:"x27",why:"Cena ligera"}
+  ]
+ }:null;
+ return {
+  ...DEFAULT,
+  inventory,
+  shopping,
+  purchaseHistory:[],
+  purchaseSessions:[{id:"demo-buy",date:month+"-01",total:124,supermarket:"Mercadona"}],
+  mealHistory,
+  weeklyMenu,
+  recipePlans:[],
+  members:[{id:"m1",name:"Fran",relation:"Yo",presence:"variable",appetite:"normal",dislikes:"",notes:"",dailyCalories:0}],
+  events:[
+   {id:"demo-event1",title:"Comida con invitados",date:iso(0),time:"14:00"},
+   {id:"demo-event2",title:"Entrenamiento",date:iso(0),time:"18:00"},
+   {id:"demo-event3",title:"Cena",date:iso(0),time:"20:00"}
+  ],
+  budget:500,spent:124,waste:0,wasteSaved:0,
+  profile:{...DEFAULT.profile,householdSize:1,supermarkets:["Mercadona","Lidl"],mainSupermarket:"Mercadona",goals:["organizar","desperdicio"],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:true,financeMode:"orientativo",kitchenTools:["Placa / inducción","Horno","Microondas"]}
+ };
+}
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function usableInventoryItem(i:InventoryItem){
  if(i.stock==="falta"||i.qty<=0)return false;
@@ -527,6 +591,7 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [tourOpen,setTourOpen]=useState(false);
  const [mobileMoreOpen,setMobileMoreOpen]=useState(false);
+ const [demoMode,setDemoMode]=useState<"menu"|"ideas"|null>(null);
  const [activeStore,setActiveStore]=useState("");
  const [shoppingActive,setShoppingActive]=useState(false);
  const [casaFocus,setCasaFocus]=useState<"all"|"expiring"|"prepared"|"reserve">("all");
@@ -563,13 +628,24 @@ export default function HomeOS(){
   if(newlyReady.length===1)setToast("Ya tienes todo para "+newlyReady[0].recipe.title);
   else if(newlyReady.length>1)setToast(newlyReady.length+" recetas guardadas ya están listas para cocinar");
  },[hydrated,state.inventory,state.recipePlans]);
- useEffect(()=>{if(!hydrated)return;const saved=localStorage.getItem("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
- useEffect(()=>{if(hydrated&&deviceMemberId)localStorage.setItem("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId]);
+ useEffect(()=>{if(!hydrated||demoMode)return;const saved=localStorage.getItem("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
+ useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)localStorage.setItem("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
 
  useEffect(()=>{
   let alive=true;
   (async()=>{
-   const fresh=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("fresh")==="1";
+   const params=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams();
+   const demoParam=params.get("demo");
+   const demo=demoParam==="menu"?"menu":demoParam==="ideas"||demoParam==="sin-menu"?"ideas":null;
+   if(demo){
+    setDemoMode(demo);
+    setState(demoState(demo==="menu"));
+    setSyncCreds(null);
+    setSyncStatus("local");
+    if(alive)setHydrated(true);
+    return;
+   }
+   const fresh=params.get("fresh")==="1";
    if(fresh){
     localStorage.removeItem("homeos:v5");
     localStorage.removeItem("homeos:device-member");
@@ -612,7 +688,7 @@ export default function HomeOS(){
  },[]);
 
  useEffect(()=>{
-  if(!hydrated||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
+  if(!hydrated||demoMode||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
   syncCreateRef.current=true;
   const snapshot=state;
   setSyncStatus("connecting");
@@ -622,10 +698,10 @@ export default function HomeOS(){
    lastSyncedJsonRef.current=JSON.stringify(snapshot);
    setSyncStatus("synced");
   }).catch(()=>setSyncStatus("error")).finally(()=>{syncCreateRef.current=false});
- },[hydrated,state.profile.onboardingDone,syncCreds]);
+ },[hydrated,state.profile.onboardingDone,syncCreds,demoMode]);
 
  useEffect(()=>{
-  if(!hydrated||typeof window==="undefined")return;
+  if(!hydrated||demoMode||typeof window==="undefined")return;
   const json=JSON.stringify(state);
   localStorage.setItem("homeos:v5",json);
   if(!syncCreds||!state.profile.onboardingDone||!syncConfigured()||json===lastSyncedJsonRef.current)return;
@@ -644,10 +720,10 @@ export default function HomeOS(){
    }
   },700);
   return()=>{if(syncTimerRef.current)clearTimeout(syncTimerRef.current)};
- },[state,hydrated,syncCreds]);
+ },[state,hydrated,syncCreds,demoMode]);
 
  useEffect(()=>{
-  if(!hydrated||!syncCreds||!syncConfigured())return;
+  if(!hydrated||demoMode||!syncCreds||!syncConfigured())return;
   let alive=true;
   const pull=async()=>{
    if(document.visibilityState==="hidden")return;
@@ -666,13 +742,13 @@ export default function HomeOS(){
   window.addEventListener("focus",pull);
   document.addEventListener("visibilitychange",pull);
   return()=>{alive=false;window.clearInterval(id);window.removeEventListener("focus",pull);document.removeEventListener("visibilitychange",pull)};
- },[hydrated,syncCreds]);
+ },[hydrated,syncCreds,demoMode]);
 
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{
-  if(!hydrated||!state.profile.onboardingDone||typeof window==="undefined")return;
+  if(!hydrated||demoMode||!state.profile.onboardingDone||typeof window==="undefined")return;
   if(localStorage.getItem("homeos:quick-guide-seen")!=="1")setTourOpen(true);
- },[hydrated,state.profile.onboardingDone]);
+ },[hydrated,state.profile.onboardingDone,demoMode]);
  function closeQuickGuide(){
   localStorage.setItem("homeos:quick-guide-seen","1");
   setTourOpen(false);
@@ -886,7 +962,7 @@ export default function HomeOS(){
  if(!hydrated)return <div className="app-loading"><div className="app-loading-mark">H</div><strong>HomeOS</strong></div>;
  if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus}/>;
 
- return <div className="app-shell">
+ return <div className={demoMode?"app-shell demo-mode":"app-shell"}>
   <aside className="sidebar">
    <div className="brand">{logo()}<div><strong>HomeOS</strong><span>Tu cocina, sin carga mental</span></div></div>
    <nav>
@@ -898,7 +974,7 @@ export default function HomeOS(){
 
   <main className="main">
    <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("ideas");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")}/>} 
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("ideas");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setComerFocus("habitos");setView("comer")}} openWeekly={()=>{setComerFocus("menu");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
    {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
@@ -970,14 +1046,14 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
      {Array.from({length:days},(_,i)=>i+1).map(d=><button key={d} className={(d===today.getDate()?"today ":"")+(eventDays.has(d)?"has-event":"")} onClick={e=>{e.stopPropagation();onOpen()}}>{d}</button>)}
     </div>
    </div>
-   <div className="home-mini-events">{events.length?events.map(ev=><button key={ev.id} onClick={onOpen}><time>{new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><span>{ev.title}</span><b>›</b></button>):<button className="empty" onClick={onOpen}>Sin eventos próximos · añadir uno</button>}
+   <div className="home-mini-events">{events.length?events.map(ev=><button key={ev.id} onClick={onOpen}><time>{ev.time||new Date(ev.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</time><span>{ev.title}</span><b>›</b></button>):<button className="empty" onClick={onOpen}>Sin eventos próximos · añadir uno</button>}
    </div>
   </div>
   <button className="home-mini-add" onClick={onOpen}>＋ Añadir evento</button>
  </article>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openWeekly,openProfile,notify}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openWeekly:()=>void;openProfile:()=>void;notify:()=>void}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openWeekly,openProfile,notify,demoMode}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string)=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openWeekly:()=>void;openProfile:()=>void;notify:()=>void;demoMode:"menu"|"ideas"|null}){
  const [now,setNow]=useState(()=>new Date());
  const [calendarOpen,setCalendarOpen]=useState(false);
  const [weather,setWeather]=useState<number|null>(null);
@@ -996,13 +1072,15 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const readyServings=state.inventory.filter(i=>i.category==="Preparados"&&i.stock!=="falta").reduce((n,i)=>n+(i.servings||i.qty||0),0);
  const homeInventory=planningInventory(state);
  const householdDislikes=state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>norm(x.trim())).filter(Boolean));
- const homeIdeas=RECIPES.map(r=>{
+ const computedHomeIdeas=RECIPES.map(r=>{
   const miss=missing(r,homeInventory);
   const text=norm([r.title,...r.ingredients.map(i=>i.name)].join(" "));
   const blocked=householdDislikes.some(d=>d&&text.includes(d));
   const urgentHits=expiring.filter(item=>r.ingredients.some(ing=>norm(ing.key).includes(norm(item.name))||norm(item.name).includes(norm(ing.key))||norm(ing.name).includes(norm(item.name)))).length;
   return {r,miss,blocked,urgentHits};
  }).filter(x=>!x.blocked).sort((a,b)=>a.miss.length-b.miss.length||b.urgentHits-a.urgentHits||a.r.time-b.r.time).filter((x,i,a)=>a.findIndex(y=>y.r.image===x.r.image)===i).slice(0,4);
+ const demoIdeaIds=["x28","x07","x21"];
+ const homeIdeas=demoMode==="ideas"?demoIdeaIds.map(id=>RECIPES.find(r=>r.id===id)).filter(Boolean).map(r=>({r:r as Recipe,miss:missing(r as Recipe,homeInventory),blocked:false,urgentHits:0})):computedHomeIdeas;
 
  const hour=now.getHours();
  const primaryName=(state.members[0]?.name||"").trim();
@@ -1029,7 +1107,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
   <div className="home-mobile-brand"><div className="home-mobile-brand-id">{logo()}<div><strong>HomeOS</strong><small>Tu cocina, sin carga mental</small></div></div><div className="home-mobile-brand-actions"><button className="notification-button" onClick={notify} aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button><button className="avatar" onClick={openProfile}>FR</button></div></div>
   <header className="home-final-head">
    <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
-   <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{weather!==null?"Sabadell":"Ahora"}</small></div></div>
+   <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{demoMode?18+"°C":weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{demoMode||weather!==null?"Sabadell":"Ahora"}</small></div></div>
   </header>
 
   <section className="home-final-top">
