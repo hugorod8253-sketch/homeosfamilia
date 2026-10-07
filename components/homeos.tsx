@@ -60,7 +60,7 @@ const CATEGORIES=["Todos","Fruta y verdura","Carne","Lácteos","Congelados","Pre
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa","Revisar"];
 const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":"Lácteos","Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Congelados":"Congelados","Despensa":"Despensa","Preparados":"Preparados","Bebidas":"Bebidas","Snacks y dulces":"Snacks y dulces","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar","Higiene y cuidado":"Higiene y cuidado","Por clasificar":"Revisar"};
 const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥛","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Por clasificar":"📦"};
-const LOCATION_ICONS:Record<string,string>={"Todo":"⌂","Nevera":"❄️","Congelador":"🧊","Despensa":"🥫","Revisar":"◌"};
+const LOCATION_ICONS:Record<string,string>={"Todo":"🏠","Nevera":"❄️","Congelador":"🧊","Despensa":"🥫","Revisar":"◌"};
 
 
 const DEFAULT:AppState={
@@ -1449,12 +1449,13 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,set
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
   const recognition=new W();
-  recognition.lang="es-ES";recognition.interimResults=false;recognition.maxAlternatives=1;
+  recognition.lang="es-ES";recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
+  let transcript="";
   setMealListening(true);
   recognition.onresult=(e:any)=>{
-   const text=e.results?.[0]?.[0]?.transcript||"";
-   setCraving(text);
-   const spoken=norm(text);
+   for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)transcript+=(transcript?" ":"")+e.results[i][0].transcript;
+   setCraving(transcript);
+   const spoken=norm(transcript);
    if(/menu|semana|semanal|planifica/.test(spoken)){setTab("menu");generateWeek();setToast("Te he preparado una propuesta semanal")}
    else if(/aprovecha|aprovechar|gastar|sobra|sobran|transform/.test(spoken)){setTab("aprovechar");setToast("He usado lo que acabas de decir como contexto")}
    else {setTab("ideas");setToast("He usado lo que acabas de decir como contexto")}
@@ -1819,21 +1820,22 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
     return;
    }
   }
-  entries.forEach(addOne);
+  entries.forEach(x=>addOne(x));
   setQuick("");
   setToast(entries.length===1?entries[0]+" añadido":entries.length+" productos añadidos");
  } function startShoppingVoice(){
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
   const recognition=new W();
-  recognition.lang="es-ES";recognition.interimResults=false;recognition.maxAlternatives=1;
+  recognition.lang="es-ES";recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
+  let transcript="";
   setShoppingListening(true);
   recognition.onresult=(e:any)=>{
-   const text=e.results?.[0]?.[0]?.transcript||"";
-   if(text)add(text);
+   for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)transcript+=(transcript?" ":"")+e.results[i][0].transcript;
+   if(transcript)setQuick(transcript);
   };
   recognition.onerror=()=>setToast("No he podido entender la voz");
-  recognition.onend=()=>setShoppingListening(false);
+  recognition.onend=()=>{setShoppingListening(false);if(transcript.trim())add(transcript);};
   recognition.start();
  }
  async function ticketSelected(file?:File,append=false){
@@ -2130,7 +2132,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  }
 
  return <section className="stack">
-  <div className="page-intro"><div><span className="eyebrow">CASA</span><h2>Encuentra rápido lo que tienes</h2><p>Primero eliges dónde está; después, si quieres, filtras por tipo de producto.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>🍱 Añadir preparado</button></div></div>
+  <div className="page-intro"><div><span className="eyebrow">CASA</span><h2>Encuentra rápido lo que tienes</h2><p>Primero eliges dónde está; después, si quieres, filtras por tipo de producto.</p></div><div className="photo-actions"><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>＋ Añadir preparado</button></div></div>
 
   {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":focus==="reserve"?"❄️":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que caducan pronto":focus==="reserve"?"Reservas del congelador":"Comida preparada"}</strong><p>{focus==="expiring"?"Solo mostramos productos con fecha próxima para que puedas decidir qué gastar primero.":focus==="reserve"?"Productos guardados a largo plazo. Los avisos son de revisión y calidad, no borrados automáticos.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
   <div className="inventory-toolbar">
@@ -2191,7 +2193,7 @@ function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setSta
   :"Si falta el total, HomeOS puede usar precios que ya conoce. Siempre se marca como aproximado.";
 
  return <section className="stack finance-page">
-  <div className="page-intro finance-intro"><div><span className="eyebrow">FINANZAS DE CASA</span><h2>Cuánto has gastado y cuánto te queda</h2><p>El presupuesto es lo que quieres gastar este mes en alimentación y hogar. No lo llamamos ahorro: simplemente es dinero que todavía queda disponible.</p></div><div className="finance-mode-switch"><small>MODO DE CÁLCULO</small><div><button className={state.profile.financeMode==="orientativo"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"orientativo"}}))}>≈ Orientativo</button><button className={state.profile.financeMode==="preciso"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"preciso"}}))}>= Preciso</button></div><p>{modeText}</p></div></div>
+  <div className="page-intro finance-intro"><div><span className="eyebrow">FINANZAS DE CASA</span><h2>Cuánto has gastado y cuánto te queda</h2><p>El presupuesto es lo que quieres gastar este mes en alimentación y hogar. No lo llamamos ahorro: simplemente es dinero que todavía queda disponible.</p></div><div className="finance-mode-switch"><small>MODO DE CÁLCULO · ¿CÓMO QUIERES REGISTRAR EL GASTO?</small><div><button className={state.profile.financeMode==="orientativo"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"orientativo"}}))}>≈ Orientativo</button><button className={state.profile.financeMode==="preciso"?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,financeMode:"preciso"}}))}>= Preciso</button></div><p>{modeText}</p></div></div>
 
   <article className="budget-overview">
    <div className="budget-head"><div><small>PRESUPUESTO DEL MES</small><strong>{state.budget.toFixed(0)} €</strong></div><label><span>Cambiar</span><div><input type="number" min="0" value={state.budget} onChange={e=>setState(s=>({...s,budget:Math.max(0,Number(e.target.value)||0)}))}/><b>€</b></div></label></div>
