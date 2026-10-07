@@ -1912,3 +1912,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   .home-final-top{margin-top:0!important}
 }
 .market-choice[aria-pressed="true"]::after{content:"  ×";font-weight:800;opacity:.8}
+
+/* Legibility: use the available card space for text, not oversized empty blocks. */
+@media (min-width:721px){
+  .main{font-size:16px!important}
+  .home-final{gap:12px!important}
+  .home-final-menu,.home-mini-agenda,.home-final-summary,.home-final-habits,.home-final-recommend,.home-final-actions{padding:14px!important}
+  .home-card-head strong{font-size:18px!important}
+  .home-card-head small,.home-card-head>button{font-size:12px!important}
+  .home-meal-copy>small,.home-meal-copy time,.home-meal-meta,.home-meal-cta{font-size:11px!important}
+  .home-meal-copy>strong{font-size:15px!important}
+  .home-final-summary-grid button{min-height:108px!important}
+  .home-final-summary-grid small,.home-final-summary-grid em{font-size:12px!important}
+  .home-final-summary-grid strong{font-size:26px!important}
+  .home-final-habit-grid strong,.home-final-habit-grid em{font-size:13px!important}
+  .home-final-action-grid strong{font-size:13px!important}
+}
