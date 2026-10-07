@@ -142,7 +142,7 @@ function custom(kind:string){
 export function ProductGlyph({name,category,className=""}:{name:string;category?:string;className?:string}){
  const p=classifyProduct(name,category);
  const raw=name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
- const explicit=/pavo/.test(raw)?"🍗":/pechuga/.test(raw)?"🍗":/verduras?|vegetales?|hortalizas?/.test(raw)?"🥦":/frutas?/.test(raw)?"🍎":/ensalada/.test(raw)?"🥗":/pollo/.test(raw)?"🍗":/pescado|merluza|salmon|atun/.test(raw)?"🐟":/carne/.test(raw)?"🥩":/arroz/.test(raw)?"🍚":/pasta/.test(raw)?"🍝":/pan/.test(raw)?"🍞":/queso/.test(raw)?"🧀":/huevo/.test(raw)?"🥚":"";
+ const explicit=/pavo/.test(raw)?"🦃":/pechuga/.test(raw)?"🍗":/entrecot|chuleton|chuleta|ternera|vacuno/.test(raw)?"🥩":/pollo/.test(raw)?"🐔":/verduras?|vegetales?|hortalizas?/.test(raw)?"🥦":/frutas?/.test(raw)?"🍎":/ensalada/.test(raw)?"🥗":/pescado|merluza|salmon|atun/.test(raw)?"🐟":/carne/.test(raw)?"🥩":/arroz/.test(raw)?"🍚":/pasta/.test(raw)?"🍝":/pan/.test(raw)?"🍞":/queso/.test(raw)?"🧀":/huevo/.test(raw)?"🥚":"";
  const icon=explicit?null:custom(p.icon);
  const categorySlug=p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
  const emoji=explicit||E[p.icon]||({Congelados:"🧊","Snacks y dulces":"🍪","Bebidas":"🥤","Higiene y cuidado":"🧴","Limpieza y hogar":"🧽",Suplementos:"💪",Preparados:"🍱",Carne:"🥩","Fruta y verdura":"🥬","Lácteos":"🥛",Despensa:"🥫","Por clasificar":"◌"} as Record<string,string>)[p.category]||"◌";
