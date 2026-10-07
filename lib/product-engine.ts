@@ -33,6 +33,67 @@ type Rule=ProductProfile&{match:RegExp};
 
 const P=(canonical:string,match:RegExp,category:string,subcategory:string,location:ProductLocation,rotation:ProductRotation,icon:string,safety:ProductSafety):Rule=>({canonical,match,category,subcategory,location,rotation,icon,safety});
 
+const CULTURAL_RULES:Rule[]=[
+ P("Placas de lasaña sin precocción",/placas\s+de\s+lasana\s+sin\s+precoccion/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Ternera cocida desmenuzada",/ternera\s+cocida\s+desmenuzada/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Pulpa de pimiento choricero",/pulpa\s+de\s+pimiento\s+choricero/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Fideos yakisoba cocidos",/fideos\s+yakisoba\s+cocidos/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Curry japonés en pastillas",/curry\s+japones\s+en\s+pastillas/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Harina de trigo sarraceno",/harina\s+de\s+trigo\s+sarraceno/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Guisantes secos partidos",/guisantes\s+secos\s+partidos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Masa de pizza fina",/masa\s+de\s+pizza\s+fina/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Alubias blancas cocidas",/alubias\s+blancas\s+cocidas/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Fideos de batata secos",/fideos\s+de\s+batata\s+secos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Fideos de trigo secos",/fideos\s+de\s+trigo\s+secos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Fideos de arroz secos",/fideos\s+de\s+arroz\s+secos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Hojas de lima makrut",/hojas\s+de\s+lima\s+makrut/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Alubias rojas cocidas",/alubias\s+rojas\s+cocidas/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Tteok para tteokbokki",/tteok\s+para\s+tteokbokki/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Obleas de wonton",/obleas\s+de\s+wonton/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Masa de hojaldre",/masa\s+de\s+hojaldre/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Lentejas rojas secas",/lentejas\s+rojas\s+secas/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Salsa Worcestershire",/salsa\s+worcestershire/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Pulpa de tamarindo",/pulpa\s+de\s+tamarindo/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Fideos finos secos",/fideos\s+finos\s+secos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Masa de pizza",/masa\s+de\s+pizza/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Limón en conserva",/limon\s+en\s+conserva/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Masa quebrada",/masa\s+quebrada/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Caldo de pescado",/caldo\s+de\s+pescado/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Arroz para sushi",/arroz\s+para\s+sushi/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Alga wakame seca",/alga\s+wakame\s+seca/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Aceite de sésamo",/aceite\s+de\s+sesamo/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Salsa de pescado",/salsa\s+de\s+pescado/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Caldo de ternera",/caldo\s+de\s+ternera/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Garbanzos cocidos",/garbanzos\s+cocidos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Salchicha ahumada cocida",/salchicha\s+ahumada\s+cocida/,"Carne","Carne","Nevera","media","meat","cold-required"),
+ P("Lentejas cocidas",/lentejas\s+cocidas/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Yemas de huevo",/yemas\s+de\s+huevo/,"Lácteos","Lácteos y huevos","Nevera","media","yogurt","cold-required"),
+ P("Leche de coco",/leche\s+de\s+coco/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Masa filo",/masa\s+filo/,"Preparados","Ingredientes preparados","Nevera","media","pantry","cold-required"),
+ P("Caldo vegetal",/caldo\s+vegetal/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Albahaca tailandesa",/albahaca\s+tailandesa/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Crème fraîche",/creme\s+fraiche/,"Lácteos","Lácteos y huevos","Nevera","media","yogurt","cold-required"),
+ P("Caldo dashi",/caldo\s+dashi/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Pasta miso",/pasta\s+miso/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Doubanjiang",/doubanjiang/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Alga nori",/alga\s+nori/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Pepinillos",/pepinillos/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Albahaca fresca",/albahaca\s+fresca/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Hierba limón",/hierba\s+limon/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Chile fresco",/chile\s+fresco/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Bonito fresco",/bonito\s+fresco/,"Carne","Pescado","Nevera","media","meat","cold-required"),
+ P("Canela",/canela/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Jamón ibérico",/jamon\s+iberico/,"Carne","Carne","Nevera","media","meat","cold-required"),
+ P("Paneer",/paneer/,"Lácteos","Lácteos y huevos","Nevera","media","yogurt","cold-required"),
+ P("Mirin",/mirin/,"Despensa","Ingredientes de cocina","Despensa","media","pantry","shelf"),
+ P("Guisantes",/guisantes/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Galanga",/galanga/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Pepperoni",/pepperoni/,"Carne","Carne","Nevera","media","meat","cold-required"),
+ P("Eneldo",/eneldo/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+ P("Ternera",/ternera/,"Carne","Carne","Nevera","media","meat","cold-required"),
+ P("Col",/col/,"Fruta y verdura","Verdura","Nevera","media","leafy","flex"),
+];
+
 const RULES:Rule[]=[
  // Verdura y hortaliza — específicos antes de genéricos
  P("lechuga iceberg",/lechuga\s+iceberg|iceberg/,"Fruta y verdura","Verdura","Nevera","alta","lettuce-iceberg","flex"),
@@ -482,7 +543,7 @@ function classifyProductUncached(name:string,currentCategory?:string):ProductPro
  const n=normalizeProductText(name);
  const variant=findProductVariety(name);
  const base=variant?normalizeProductText(variant.base):n;
- const found=EXTRA_RULES.find(r=>normalizeProductText(r.canonical)===n)||RULES.find(r=>normalizeProductText(r.canonical)===n)||EXTRA_RULES.find(r=>r.match.test(n))||RULES.find(r=>r.match.test(n))||EXTRA_RULES.find(r=>r.match.test(base))||RULES.find(r=>r.match.test(base));
+ const found=CULTURAL_RULES.find(r=>new RegExp("\\b(?:"+r.match.source+")\\b").test(n))||EXTRA_RULES.find(r=>normalizeProductText(r.canonical)===n)||RULES.find(r=>normalizeProductText(r.canonical)===n)||EXTRA_RULES.find(r=>r.match.test(n))||RULES.find(r=>r.match.test(n))||EXTRA_RULES.find(r=>r.match.test(base))||RULES.find(r=>r.match.test(base));
  if(variant){
   const defaults:Record<string,ProductProfile>={
    "setas":{canonical:variant.name,category:"Fruta y verdura",subcategory:"Verdura",location:"Nevera",rotation:"alta",icon:"mushroom",safety:"flex"},
@@ -540,7 +601,7 @@ export function storageWarning(name:string,category:string,location:string){
 }
 
 export function catalogStats(){
- const all=[...EXTRA_RULES,...RULES]; return {rules:all.length,categories:new Set(all.map(r=>r.category)).size,subcategories:new Set(all.map(r=>r.subcategory)).size};
+ const all=[...CULTURAL_RULES,...EXTRA_RULES,...RULES]; return {rules:all.length,categories:new Set(all.map(r=>r.category)).size,subcategories:new Set(all.map(r=>r.subcategory)).size};
 }
 
 
@@ -571,7 +632,7 @@ export function addMonthsIso(dateIso:string,months:number){
 
 export function detectProductsInText(text:string){
  const n=normalizeProductText(text);
- const all=[...EXTRA_RULES,...RULES];
+ const all=[...CULTURAL_RULES,...EXTRA_RULES,...RULES];
  const seen=new Set<string>();
  const out:ProductProfile[]=[];
  for(const rule of all){
@@ -585,4 +646,4 @@ export function detectProductsInText(text:string){
  return out.filter((p,idx,arr)=>!arr.some((q,j)=>j!==idx&&q.canonical!==p.canonical&&q.canonical.includes(p.canonical)&&q.canonical.length>p.canonical.length));
 }
 
-export function registeredProductNames(){return [...new Set([...EXTRA_RULES,...RULES].map(r=>r.canonical).concat(PRODUCT_VARIETIES.map(v=>v.name)))];}
+export function registeredProductNames(){return [...new Set([...CULTURAL_RULES,...EXTRA_RULES,...RULES].map(r=>r.canonical).concat(PRODUCT_VARIETIES.map(v=>v.name)))];}

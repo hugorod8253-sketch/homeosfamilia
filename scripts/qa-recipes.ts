@@ -4,8 +4,8 @@ import { RECIPES } from "../lib/recipes";
 import { classifyProduct } from "../lib/product-engine";
 import { consumePlanIngredients, parsePlanQty, planProductMatches, recipeShortages } from "../lib/recipe-plan-engine";
 
-assert(RECIPES.length>=500,"A broad recipe book is required");
-const originals=RECIPES.filter(r=>!r.photoCaption);
+assert(RECIPES.length>=120,"A broad recipe book is required");
+const originals=RECIPES;
 assert.equal(new Set(originals.map(r=>r.image)).size,originals.length,"Original exact photos remain distinct");
 assert.equal(new Set(RECIPES.map(r=>r.title)).size,RECIPES.length,"Recipe titles must be distinct");
 for(const recipe of RECIPES){
@@ -44,3 +44,6 @@ console.log(`Recipe audit: ${RECIPES.length} recipes with local exact or clearly
 for(const name of ["Chucrut","Gochujang","Semillas de sésamo","Jengibre","Comino"])assert.notEqual(classifyProduct(name).category,"Por clasificar",name);
 assert(!planProductMatches(item("Comino"),"curry","Curry"),"Comino must not satisfy curry");
 assert(!planProductMatches(item("Gochujang"),"salsa de soja","Salsa de soja"),"Different sauces must remain distinct");
+
+for(const [actual,requested] of [["Salsa de soja","Sal"],["Pasta corta","Pasta miso"],["Semillas de sésamo","Aceite de sésamo"],["Arroz","Fideos de arroz secos"],["Lentejas rojas secas","Lentejas cocidas"],["Pizza congelada","Masa de pizza"]])assert(!planProductMatches(item(actual),requested.toLowerCase(),requested),`${actual} cannot replace ${requested}`);
+for(const recipe of RECIPES)for(const i of recipe.ingredients)assert.notEqual(classifyProduct(i.name).category,"Por clasificar",i.name);

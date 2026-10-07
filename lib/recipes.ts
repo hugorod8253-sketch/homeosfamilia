@@ -1,5 +1,4 @@
-import { THEME_RECIPES } from "./theme-recipes";
-import { EXPANDED_RECIPES } from "./expanded-recipes";
+import { WORLD_RECIPES } from "./world-recipes";
 import { EXTRA_RECIPES, type RecipeEntry } from "./extra-recipes";
 
 const BASE_RECIPES:RecipeEntry[]=[
@@ -9,4 +8,4 @@ const BASE_RECIPES:RecipeEntry[]=[
  {id:"r4",title:"Batido de plátano y proteína",image:"/recipe-images/r4.webp",time:5,difficulty:"Fácil",mode:["rapido","mealprep"],servings:1,calories:390,protein:32,carbs:48,fat:8,description:"Batido rápido; los suplementos se integran como cualquier otro ingrediente.",tools:["Batidora","Thermomix / robot"],ingredients:[{name:"Leche",qty:"250 ml",key:"leche"},{name:"Plátano",qty:"1 ud",key:"platano"},{name:"Proteína whey",qty:"30 g",key:"proteina"}],steps:["Añade todos los ingredientes a la batidora.","Tritura 30–45 segundos.","Ajusta textura con leche o agua."]},
  {id:"r5",title:"Tortitas para aprovechar leche",image:"/recipe-images/r5.webp",time:22,difficulty:"Fácil",mode:["normal","cocinar"],servings:4,calories:430,protein:17,carbs:58,fat:14,description:"Buena opción cuando tienes leche de sobra.",tools:["Placa / inducción","Gas"],ingredients:[{name:"Leche",qty:"500 ml",key:"leche"},{name:"Huevos",qty:"3 uds",key:"huevo"},{name:"Harina",qty:"300 g",key:"harina"}],steps:["Mezcla huevos y leche.","Añade harina poco a poco.","Cocina porciones en sartén antiadherente.","Sirve y guarda las sobrantes."]}
 ];
-export const RECIPES:RecipeEntry[]=[...THEME_RECIPES,...BASE_RECIPES,...EXTRA_RECIPES,...EXPANDED_RECIPES.filter(r=>![...BASE_RECIPES,...EXTRA_RECIPES].some(b=>b.title===r.title))];
+export const RECIPES:RecipeEntry[]=[...WORLD_RECIPES,...BASE_RECIPES,...EXTRA_RECIPES];

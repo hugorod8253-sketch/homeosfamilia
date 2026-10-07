@@ -60,6 +60,7 @@ export function planProductMatches(item:PlanInventoryItem,key:string,ingredientN
  if(target.category==="Carne"&&p.subcategory!==target.subcategory)return false;
  const requested=norm(ingredientName), actual=norm(item.name);
  if(/garbanzo|lenteja|alubia/.test(requested)&&/cocid|conserva/.test(requested)&&!/cocid|conserva|bote|tarro/.test(actual))return false;
+ if(k===requested&&target.category!=="Por clasificar")return norm(p.canonical)===norm(target.canonical);
  const n=norm(item.name),canonical=norm(p.canonical);
  return n.includes(k)||canonical.includes(k)||k.includes(canonical);
 }

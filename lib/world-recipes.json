@@ -1,0 +1,7028 @@
+[
+  {
+    "id": "world-salmorejo",
+    "country": "spain",
+    "title": "Salmorejo cordobés",
+    "time": 20,
+    "ingredients": [
+      {
+        "name": "Tomate",
+        "qty": "600 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Pan",
+        "qty": "120 g",
+        "key": "pan"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "40 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Jamón ibérico",
+        "qty": "40 g",
+        "key": "jamón ibérico"
+      }
+    ],
+    "steps": [
+      "Cuece el huevo 10–12 minutos, enfríalo y pélalo. Lava los tomates y trocéalos.",
+      "Tritura tomate, ajo y sal. Añade el pan en trozos y deja que se empape 10 minutos.",
+      "Incorpora el aceite poco a poco mientras trituras hasta obtener una crema espesa y lisa.",
+      "Sirve frío, con el huevo picado y el jamón. Si los ingredientes no estaban fríos, refrigera antes de servir."
+    ],
+    "description": "Receta casera de salmorejo cordobés. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Batidora",
+      "Thermomix / robot",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-salmorejo.webp",
+    "family": "salmorejo",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Batidora",
+        "Thermomix / robot"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-croquetas-jamon",
+    "country": "spain",
+    "title": "Croquetas de jamón al horno",
+    "time": 285,
+    "ingredients": [
+      {
+        "name": "Jamón ibérico",
+        "qty": "100 g",
+        "key": "jamón ibérico"
+      },
+      {
+        "name": "Leche",
+        "qty": "500 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "90 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "40 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Pan rallado",
+        "qty": "80 g",
+        "key": "pan rallado"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Nuez moscada",
+        "qty": "1 g",
+        "key": "nuez moscada"
+      }
+    ],
+    "steps": [
+      "Derrite la mantequilla y cocina la harina a fuego suave 2 minutos. Añade la leche poco a poco, batiendo para evitar grumos.",
+      "Incorpora jamón picado y nuez moscada. Remueve 10–15 minutos hasta que la masa se despegue de la sartén.",
+      "Extiende en una fuente poco profunda, deja perder el calor y refrigera al menos 4 horas, cubierta. El tiempo de la receta incluye este reposo.",
+      "Forma croquetas con manos limpias. Pásalas por huevo batido y pan rallado, y pincela con el aceite.",
+      "Hornea a 210 °C durante 18–22 minutos, girándolas a mitad, hasta que estén doradas y muy calientes dentro."
+    ],
+    "description": "Receta casera de croquetas de jamón al horno. Adaptación al horno; incluye el tiempo de reposo.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-croquetas-jamon.webp",
+    "family": "croquetas-jamon",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Media",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-pan-tomaca",
+    "country": "spain",
+    "title": "Pan con tomate y jamón",
+    "time": 10,
+    "ingredients": [
+      {
+        "name": "Pan",
+        "qty": "160 g",
+        "key": "pan"
+      },
+      {
+        "name": "Tomate",
+        "qty": "200 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Jamón ibérico",
+        "qty": "60 g",
+        "key": "jamón ibérico"
+      },
+      {
+        "name": "Sal",
+        "qty": "1 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Tuesta el pan en una sartén seca o tostadora.",
+      "Corta el ajo y frota suavemente las tostadas. Parte los tomates maduros por la mitad.",
+      "Frota el tomate sobre el pan, dejando su pulpa; reparte el aceite y la sal.",
+      "Añade el jamón en lonchas y sirve al momento para conservar el crujiente."
+    ],
+    "description": "Receta casera de pan con tomate y jamón. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Tostadora",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pan-tomaca.webp",
+    "family": "pan-tomaca",
+    "mealTypes": [
+      "Desayuno",
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-gazpacho",
+    "country": "spain",
+    "title": "Gazpacho andaluz",
+    "time": 15,
+    "ingredients": [
+      {
+        "name": "Tomate",
+        "qty": "600 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Pepino",
+        "qty": "120 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Pimiento verde",
+        "qty": "80 g",
+        "key": "pimiento verde"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Pan",
+        "qty": "40 g",
+        "key": "pan"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Vinagre de vino",
+        "qty": "15 ml",
+        "key": "vinagre de vino"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava las verduras. Pela el pepino, retira las semillas del pimiento y trocea todo.",
+      "Tritura verduras, ajo y pan con 100–200 ml de agua fría, según la textura que quieras.",
+      "Añade aceite, vinagre y sal. Tritura de nuevo y pasa por un colador si lo prefieres fino.",
+      "Sirve bien frío; si las verduras estaban a temperatura ambiente, refrigera antes de servir."
+    ],
+    "description": "Receta casera de gazpacho andaluz. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Batidora",
+      "Thermomix / robot"
+    ],
+    "image": "/recipe-images/world-gazpacho.webp",
+    "family": "gazpacho",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pisto",
+    "country": "spain",
+    "title": "Pisto manchego con huevo",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Calabacín",
+        "qty": "250 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Berenjena",
+        "qty": "200 g",
+        "key": "berenjena"
+      },
+      {
+        "name": "Pimiento rojo",
+        "qty": "150 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "300 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava y corta las verduras en dados de aproximadamente un centímetro.",
+      "Sofríe cebolla y pimiento con 20 ml de aceite 8 minutos. Añade berenjena y calabacín y cocina 10 minutos.",
+      "Añade tomate triturado y sal; cocina destapado 15 minutos, removiendo, hasta que espese.",
+      "Cuaja los huevos por completo en otra sartén con el aceite restante y sirve sobre el pisto."
+    ],
+    "description": "Receta casera de pisto manchego con huevo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas",
+      "Batidora",
+      "Thermomix / robot"
+    ],
+    "image": "/recipe-images/world-pisto.webp",
+    "family": "pisto",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Placa / inducción",
+        "Gas"
+      ],
+      [
+        "Batidora",
+        "Thermomix / robot"
+      ]
+    ]
+  },
+  {
+    "id": "world-marmitako",
+    "country": "spain",
+    "title": "Marmitako de bonito",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Bonito fresco",
+        "qty": "300 g",
+        "key": "bonito fresco"
+      },
+      {
+        "name": "Patatas",
+        "qty": "350 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Pimiento verde",
+        "qty": "100 g",
+        "key": "pimiento verde"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "100 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Pulpa de pimiento choricero",
+        "qty": "20 g",
+        "key": "pulpa de pimiento choricero"
+      },
+      {
+        "name": "Caldo de pescado",
+        "qty": "500 ml",
+        "key": "caldo de pescado"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla y pimiento picados con el aceite durante 8 minutos.",
+      "Añade tomate y pulpa de pimiento choricero, y cocina 5 minutos. Incorpora las patatas peladas y cortadas en trozos.",
+      "Vierte el caldo, añade la sal y cuece suavemente 20 minutos, hasta que las patatas estén tiernas.",
+      "Añade el bonito en dados y cocina hasta que esté completamente hecho, evitando hervirlo más de lo necesario. Sirve caliente."
+    ],
+    "description": "Receta casera de marmitako de bonito. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-marmitako.webp",
+    "family": "marmitako",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-frankfurt",
+    "country": "germany",
+    "title": "Frankfurt con patatas y chucrut",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Salchichas Frankfurt",
+        "qty": "240 g",
+        "key": "salchichas frankfurt"
+      },
+      {
+        "name": "Patatas",
+        "qty": "360 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "150 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Chucrut",
+        "qty": "100 g",
+        "key": "chucrut"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "25 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece las patatas peladas y en dados 12–15 minutos, hasta que estén tiernas. Escurre.",
+      "Dora la cebolla en tiras con el aceite. Añade las patatas y saltéalas para dorar su superficie.",
+      "Calienta las salchichas siguiendo el envase y el chucrut aparte.",
+      "Sirve las salchichas con las patatas, la cebolla, el chucrut y la mostaza."
+    ],
+    "description": "Receta casera de frankfurt con patatas y chucrut. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/theme-frankfurt.webp",
+    "family": "frankfurt",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-kartoffelsalat",
+    "country": "germany",
+    "title": "Kartoffelsalat: ensalada alemana de patata",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Patatas",
+        "qty": "500 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Pepinillos",
+        "qty": "80 g",
+        "key": "pepinillos"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "60 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "80 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "15 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Vinagre de vino",
+        "qty": "20 ml",
+        "key": "vinagre de vino"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Cuece las patatas enteras con piel hasta que estén tiernas, unos 20–25 minutos según tamaño.",
+      "Templa lo justo para poder pelarlas y córtalas en rodajas. Pica la cebolla y los pepinillos.",
+      "Mezcla el caldo caliente con mostaza, vinagre, aceite y sal; vierte sobre las patatas aún templadas.",
+      "Añade cebolla y pepinillos, mezcla con cuidado y deja reposar 5 minutos antes de servir."
+    ],
+    "description": "Receta casera de kartoffelsalat: ensalada alemana de patata. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-kartoffelsalat.webp",
+    "family": "kartoffelsalat",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-kasespatzle",
+    "country": "germany",
+    "title": "Käsespätzle: pasta alemana con queso y cebolla",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Harina de trigo",
+        "qty": "200 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Leche",
+        "qty": "70 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Queso emmental",
+        "qty": "120 g",
+        "key": "queso emmental"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "180 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Bate harina, huevos, leche, sal y 30 ml de agua hasta obtener una masa espesa y pegajosa. Reposa 10 minutos.",
+      "Corta la cebolla en tiras y dórala lentamente con la mantequilla, unos 15 minutos.",
+      "Sobre una olla de agua hirviendo, pasa la masa por un utensilio de spätzle o por un colador de agujeros grandes. Cuece las pequeñas piezas hasta que floten y un minuto más; escurre.",
+      "Mezcla la pasta caliente con el queso rallado a fuego muy suave hasta que funda. Sirve con la cebolla dorada."
+    ],
+    "description": "Receta casera de käsespätzle: pasta alemana con queso y cebolla. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-kasespatzle.webp",
+    "family": "kasespatzle",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-schnitzel",
+    "country": "germany",
+    "title": "Schnitzel de cerdo con limón",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Lomo de cerdo",
+        "qty": "300 g",
+        "key": "lomo de cerdo"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "30 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Pan rallado",
+        "qty": "60 g",
+        "key": "pan rallado"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Limón",
+        "qty": "60 g",
+        "key": "limón"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Aplana los filetes de lomo entre dos hojas de papel alimentario hasta un grosor uniforme de medio centímetro.",
+      "Sazona y pasa por harina, huevo batido y pan rallado, sin apelmazar el empanado.",
+      "Calienta el aceite en una sartén. Dora por ambos lados a fuego medio, hasta que el cerdo esté completamente cocinado.",
+      "Deja escurrir sobre papel de cocina y sirve con gajos de limón."
+    ],
+    "description": "Receta casera de schnitzel de cerdo con limón. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-schnitzel.webp",
+    "family": "schnitzel",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-flammkuchen",
+    "country": "germany",
+    "title": "Flammkuchen de cebolla y bacon",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Masa de pizza fina",
+        "qty": "220 g",
+        "key": "masa de pizza fina"
+      },
+      {
+        "name": "Crème fraîche",
+        "qty": "120 g",
+        "key": "crème fraîche"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "150 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Bacon",
+        "qty": "100 g",
+        "key": "bacon"
+      },
+      {
+        "name": "Pimienta negra",
+        "qty": "1 g",
+        "key": "pimienta negra"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 230 °C, con la bandeja dentro. Corta la cebolla muy fina y el bacon en tiras.",
+      "Estira la masa lo más fina posible sobre papel de horno.",
+      "Extiende la crème fraîche, reparte cebolla y bacon y añade la pimienta.",
+      "Hornea sobre la bandeja caliente 12–16 minutos, hasta que la base esté crujiente y el bacon completamente cocinado."
+    ],
+    "description": "Receta casera de flammkuchen de cebolla y bacon. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-flammkuchen.webp",
+    "family": "flammkuchen",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-linseneintopf",
+    "country": "germany",
+    "title": "Linseneintopf: sopa alemana de lentejas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Lentejas cocidas",
+        "qty": "400 g",
+        "key": "lentejas cocidas"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "160 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Puerro",
+        "qty": "120 g",
+        "key": "puerro"
+      },
+      {
+        "name": "Patatas",
+        "qty": "200 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "600 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Salchichas Frankfurt",
+        "qty": "150 g",
+        "key": "salchichas frankfurt"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Vinagre de vino",
+        "qty": "10 ml",
+        "key": "vinagre de vino"
+      }
+    ],
+    "steps": [
+      "Lava el puerro y la zanahoria y corta en dados pequeños. Pela y corta las patatas.",
+      "Sofríe las verduras con el aceite 5 minutos. Añade patatas y caldo y cuece 15 minutos.",
+      "Incorpora las lentejas escurridas y las salchichas en rodajas. Cocina siguiendo el tiempo indicado para las salchichas y hasta que las patatas estén tiernas.",
+      "Termina con el vinagre y sirve como una sopa espesa."
+    ],
+    "description": "Receta casera de linseneintopf: sopa alemana de lentejas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-linseneintopf.webp",
+    "family": "linseneintopf",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-maki",
+    "country": "sushi",
+    "title": "Maki vegetal de aguacate y pepino",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Arroz para sushi",
+        "qty": "200 g",
+        "key": "arroz para sushi"
+      },
+      {
+        "name": "Alga nori",
+        "qty": "3 hojas",
+        "key": "alga nori"
+      },
+      {
+        "name": "Aguacate",
+        "qty": "120 g",
+        "key": "aguacate"
+      },
+      {
+        "name": "Pepino",
+        "qty": "120 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Vinagre de arroz",
+        "qty": "25 ml",
+        "key": "vinagre de arroz"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Sal",
+        "qty": "1 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava el arroz y cuécelo siguiendo las cantidades de agua y tiempo del envase. Déjalo reposar tapado.",
+      "Mezcla vinagre, azúcar y sal y añade suavemente al arroz. Extiende en una fuente limpia y deja templar.",
+      "Lava y corta pepino y aguacate en tiras. Cubre una esterilla con film alimentario, coloca el nori, extiende arroz y añade el relleno.",
+      "Enrolla dejando un borde de nori libre. Corta con un cuchillo limpio humedecido y sirve enseguida; refrigera si tienes que esperar."
+    ],
+    "description": "Receta casera de maki vegetal de aguacate y pepino. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/theme-sushi.webp",
+    "family": "maki",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-uramaki",
+    "country": "sushi",
+    "title": "Uramaki de langostino cocido y aguacate",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Arroz para sushi",
+        "qty": "200 g",
+        "key": "arroz para sushi"
+      },
+      {
+        "name": "Alga nori",
+        "qty": "2 hojas",
+        "key": "alga nori"
+      },
+      {
+        "name": "Langostinos cocidos",
+        "qty": "180 g",
+        "key": "langostinos cocidos"
+      },
+      {
+        "name": "Aguacate",
+        "qty": "120 g",
+        "key": "aguacate"
+      },
+      {
+        "name": "Pepino",
+        "qty": "80 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Semillas de sésamo",
+        "qty": "10 g",
+        "key": "semillas de sésamo"
+      },
+      {
+        "name": "Vinagre de arroz",
+        "qty": "25 ml",
+        "key": "vinagre de arroz"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Sal",
+        "qty": "1 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava y cuece el arroz según el envase. Aliña con vinagre, azúcar y sal y deja templar extendido en una fuente limpia.",
+      "Cubre la esterilla con film alimentario. Pon una media hoja de nori, cúbrela de arroz y espolvorea sésamo.",
+      "Da la vuelta al nori: el arroz queda contra la esterilla. Coloca langostinos ya cocidos, aguacate y pepino en tiras sobre el lado del nori.",
+      "Enrolla con cuidado, manteniendo el arroz por fuera. Corta y sirve al momento; conserva en frío si esperas."
+    ],
+    "description": "Receta casera de uramaki de langostino cocido y aguacate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-uramaki.webp",
+    "family": "uramaki",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-yakisoba",
+    "country": "sushi",
+    "title": "Yakisoba de pollo y verduras",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Fideos yakisoba cocidos",
+        "qty": "300 g",
+        "key": "fideos yakisoba cocidos"
+      },
+      {
+        "name": "Pechuga de pollo",
+        "qty": "250 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Col",
+        "qty": "150 g",
+        "key": "col"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "100 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "80 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Salsa Worcestershire",
+        "qty": "20 ml",
+        "key": "salsa worcestershire"
+      },
+      {
+        "name": "Ketchup",
+        "qty": "15 g",
+        "key": "ketchup"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Corta el pollo en tiras finas y las verduras en juliana. Mezcla soja, salsa Worcestershire y ketchup.",
+      "Calienta la mitad del aceite y cocina el pollo completamente. Reserva en un plato limpio.",
+      "Saltea cebolla, zanahoria y col con el aceite restante, 6–8 minutos.",
+      "Añade fideos cocidos, pollo y salsa. Separa los fideos con unas gotas de agua y saltea 2–3 minutos."
+    ],
+    "description": "Receta casera de yakisoba de pollo y verduras. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-yakisoba.webp",
+    "family": "yakisoba",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-miso",
+    "country": "sushi",
+    "title": "Sopa de miso con tofu y wakame",
+    "time": 15,
+    "ingredients": [
+      {
+        "name": "Caldo dashi",
+        "qty": "600 ml",
+        "key": "caldo dashi"
+      },
+      {
+        "name": "Pasta miso",
+        "qty": "35 g",
+        "key": "pasta miso"
+      },
+      {
+        "name": "Tofu",
+        "qty": "200 g",
+        "key": "tofu"
+      },
+      {
+        "name": "Alga wakame seca",
+        "qty": "4 g",
+        "key": "alga wakame seca"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "30 g",
+        "key": "cebolleta"
+      }
+    ],
+    "steps": [
+      "Hidrata el wakame en agua siguiendo el envase y escurre. Corta el tofu en dados y lava y pica la cebolleta.",
+      "Calienta el caldo dashi, añade tofu y wakame y cocina suavemente 3–4 minutos.",
+      "Retira una cucharada de caldo a un cuenco y disuelve allí la pasta miso para evitar grumos.",
+      "Apaga el fuego, incorpora el miso disuelto y la cebolleta. Sirve caliente sin volver a hervir."
+    ],
+    "description": "Receta casera de sopa de miso con tofu y wakame. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-miso.webp",
+    "family": "miso",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-oyakodon",
+    "country": "sushi",
+    "title": "Oyakodon: arroz con pollo y huevo",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Arroz",
+        "qty": "160 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Pechuga de pollo",
+        "qty": "250 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "3 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Caldo dashi",
+        "qty": "150 ml",
+        "key": "caldo dashi"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Mirin",
+        "qty": "20 ml",
+        "key": "mirin"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz siguiendo el envase. Corta el pollo en trozos pequeños y la cebolla en láminas.",
+      "Calienta caldo, soja y mirin en una sartén. Añade cebolla y cocina 5 minutos.",
+      "Añade el pollo y cocina tapado hasta que esté completamente hecho en el centro.",
+      "Vierte los huevos batidos, tapa y cocina a fuego suave hasta que estén cuajados. Sirve sobre el arroz."
+    ],
+    "description": "Receta casera de oyakodon: arroz con pollo y huevo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-oyakodon.webp",
+    "family": "oyakodon",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-katsu",
+    "country": "sushi",
+    "title": "Pollo katsu con curry japonés",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Arroz",
+        "qty": "150 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Patatas",
+        "qty": "180 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Curry japonés en pastillas",
+        "qty": "40 g",
+        "key": "curry japonés en pastillas"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "25 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Panko",
+        "qty": "60 g",
+        "key": "panko"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Sofríe la cebolla con 5 ml de aceite. Añade patata y zanahoria en dados y 450 ml de agua. Cuece 15–20 minutos hasta que estén tiernas.",
+      "Apaga el fuego, disuelve las pastillas de curry y vuelve a calentar suavemente hasta que espese. Cuece el arroz aparte.",
+      "Aplana el pollo y pásalo por harina, huevo batido y panko.",
+      "Dora con el aceite restante en sartén a fuego medio, por ambos lados, comprobando que el centro esté completamente cocinado. Corta en tiras y sirve con arroz y curry."
+    ],
+    "description": "Receta casera de pollo katsu con curry japonés. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-katsu.webp",
+    "family": "katsu",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-mapo-tofu",
+    "country": "china",
+    "title": "Mapo tofu casero",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Tofu",
+        "qty": "300 g",
+        "key": "tofu"
+      },
+      {
+        "name": "Carne picada de cerdo",
+        "qty": "160 g",
+        "key": "carne picada de cerdo"
+      },
+      {
+        "name": "Doubanjiang",
+        "qty": "20 g",
+        "key": "doubanjiang"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "15 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Almidón de maíz",
+        "qty": "8 g",
+        "key": "almidón de maíz"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Arroz",
+        "qty": "140 g",
+        "key": "arroz"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz. Escurre y corta el tofu en dados. Pica ajo, jengibre y cebolleta.",
+      "Dora la carne picada con el aceite hasta que esté completamente hecha. Añade ajo y jengibre y remueve un minuto.",
+      "Añade doubanjiang, soja y 180 ml de agua. Incorpora el tofu y cocina suavemente 5 minutos.",
+      "Disuelve el almidón en 20 ml de agua fría, añade y cocina hasta que la salsa ligue. Termina con cebolleta y sirve con arroz."
+    ],
+    "description": "Receta casera de mapo tofu casero. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-mapo-tofu.webp",
+    "family": "mapo-tofu",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-chow-mein",
+    "country": "china",
+    "title": "Chow mein de verduras",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Fideos de trigo secos",
+        "qty": "180 g",
+        "key": "fideos de trigo secos"
+      },
+      {
+        "name": "Col",
+        "qty": "180 g",
+        "key": "col"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Champiñones",
+        "qty": "150 g",
+        "key": "champiñones"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "25 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "10 ml",
+        "key": "aceite de sésamo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece los fideos siguiendo el envase y escurre. Lava y corta las verduras en tiras.",
+      "Saltea zanahoria, col y champiñones con aceite de oliva 6–8 minutos, hasta que estén tiernos.",
+      "Añade fideos y soja y saltea 2 minutos, mezclando desde el fondo para que no se peguen.",
+      "Termina fuera del fuego con el aceite de sésamo y la cebolleta picada."
+    ],
+    "description": "Receta casera de chow mein de verduras. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-chow-mein.webp",
+    "family": "chow-mein",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-kung-pao",
+    "country": "china",
+    "title": "Pollo kung pao casero",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Pimiento rojo",
+        "qty": "150 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Cacahuetes tostados",
+        "qty": "40 g",
+        "key": "cacahuetes tostados"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "25 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Vinagre de arroz",
+        "qty": "15 ml",
+        "key": "vinagre de arroz"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Almidón de maíz",
+        "qty": "8 g",
+        "key": "almidón de maíz"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Chile en copos",
+        "qty": "1 g",
+        "key": "chile en copos"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Arroz",
+        "qty": "140 g",
+        "key": "arroz"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz y corta el pollo y el pimiento en dados. Mezcla soja, vinagre, azúcar y almidón con 60 ml de agua.",
+      "Dora el pollo con el aceite hasta que esté completamente hecho. Retira a un plato limpio.",
+      "Saltea pimiento, ajo y jengibre picados 5 minutos. Añade el chile y remueve unos segundos.",
+      "Vuelve a añadir el pollo y vierte la salsa. Cocina hasta que espese y termina con cacahuetes. Sirve con el arroz."
+    ],
+    "description": "Receta casera de pollo kung pao casero. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-kung-pao.webp",
+    "family": "kung-pao",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-huevo-tomate-chino",
+    "country": "china",
+    "title": "Huevos con tomate al estilo chino",
+    "time": 20,
+    "ingredients": [
+      {
+        "name": "Huevos",
+        "qty": "4 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Tomate",
+        "qty": "350 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      },
+      {
+        "name": "Arroz",
+        "qty": "140 g",
+        "key": "arroz"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz. Lava y trocea el tomate y pica la cebolleta.",
+      "Bate los huevos con la mitad de la sal. Cuájalos en una sartén con la mitad del aceite, dividiéndolos en trozos grandes. Reserva.",
+      "Cocina el tomate con el resto del aceite y la sal 6–8 minutos, hasta que suelte jugo.",
+      "Incorpora los huevos, termina su cocción y añade cebolleta. Sirve con arroz."
+    ],
+    "description": "Receta casera de huevos con tomate al estilo chino. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-huevo-tomate-chino.webp",
+    "family": "huevo-tomate-chino",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-sopa-wonton",
+    "country": "china",
+    "title": "Sopa de wonton de cerdo",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Obleas de wonton",
+        "qty": "120 g",
+        "key": "obleas de wonton"
+      },
+      {
+        "name": "Carne picada de cerdo",
+        "qty": "180 g",
+        "key": "carne picada de cerdo"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "50 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Caldo de pollo",
+        "qty": "700 ml",
+        "key": "caldo de pollo"
+      },
+      {
+        "name": "Pak choi",
+        "qty": "150 g",
+        "key": "pak choi"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "5 ml",
+        "key": "aceite de sésamo"
+      }
+    ],
+    "steps": [
+      "Mezcla carne picada, la mitad de la cebolleta, jengibre rallado y 10 ml de soja.",
+      "Pon una cucharadita de relleno en cada oblea. Humedece los bordes, dobla y ciérralos sin dejar bolsas de aire.",
+      "Calienta el caldo con la soja restante. Añade los wonton y cocina con un hervor suave hasta que las obleas estén tiernas y el relleno completamente cocinado; abre uno para comprobarlo.",
+      "Añade pak choi troceado los últimos 3 minutos. Sirve con el aceite de sésamo y la cebolleta restante."
+    ],
+    "description": "Receta casera de sopa de wonton de cerdo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-sopa-wonton.webp",
+    "family": "sopa-wonton",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-bibimbap",
+    "country": "korea",
+    "title": "Bibimbap de ternera y verduras",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Arroz",
+        "qty": "160 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Ternera",
+        "qty": "220 g",
+        "key": "ternera"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Calabacín",
+        "qty": "120 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Espinacas",
+        "qty": "100 g",
+        "key": "espinacas"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Gochujang",
+        "qty": "20 g",
+        "key": "gochujang"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "10 ml",
+        "key": "aceite de sésamo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz. Corta carne y verduras en tiras y lava las espinacas.",
+      "Saltea cada verdura por separado con un poco de aceite de oliva; así conserva su textura. Cocina la ternera con la soja hasta que esté hecha.",
+      "Cuaja los huevos por completo con el aceite restante. Mezcla el gochujang con 20 ml de agua y el aceite de sésamo.",
+      "Sirve el arroz con las verduras y la ternera colocadas en grupos y el huevo encima. Añade la salsa al comer y mezcla."
+    ],
+    "description": "Receta casera de bibimbap de ternera y verduras. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-bibimbap.webp",
+    "family": "bibimbap",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-japchae",
+    "country": "korea",
+    "title": "Japchae de verduras y setas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Fideos de batata secos",
+        "qty": "180 g",
+        "key": "fideos de batata secos"
+      },
+      {
+        "name": "Champiñones",
+        "qty": "180 g",
+        "key": "champiñones"
+      },
+      {
+        "name": "Espinacas",
+        "qty": "100 g",
+        "key": "espinacas"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "25 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "15 ml",
+        "key": "aceite de sésamo"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Semillas de sésamo",
+        "qty": "10 g",
+        "key": "semillas de sésamo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece los fideos de batata según el envase. Escurre y corta si son demasiado largos.",
+      "Lava y corta las verduras. Saltea por separado zanahoria, cebolla y champiñones con el aceite de oliva; ablanda las espinacas al final.",
+      "Mezcla soja, azúcar, aceite de sésamo y 30 ml de agua. Calienta los fideos con esta salsa hasta que se absorba.",
+      "Incorpora las verduras y sirve con semillas de sésamo."
+    ],
+    "description": "Receta casera de japchae de verduras y setas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-japchae.webp",
+    "family": "japchae",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-tteokbokki",
+    "country": "korea",
+    "title": "Tteokbokki sencillo",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Tteok para tteokbokki",
+        "qty": "350 g",
+        "key": "tteok para tteokbokki"
+      },
+      {
+        "name": "Gochujang",
+        "qty": "25 g",
+        "key": "gochujang"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "15 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "12 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "50 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Col",
+        "qty": "120 g",
+        "key": "col"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "400 ml",
+        "key": "caldo vegetal"
+      }
+    ],
+    "steps": [
+      "Si los tteok están refrigerados y duros, remójalos según las instrucciones del envase.",
+      "Disuelve gochujang, soja y azúcar en el caldo y calienta en una sartén profunda.",
+      "Añade tteok y col cortada. Cocina suavemente el tiempo indicado en el paquete, removiendo hasta que los tteok estén tiernos y la salsa espesa.",
+      "Añade la cebolleta los últimos 2 minutos y sirve caliente."
+    ],
+    "description": "Receta casera de tteokbokki sencillo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-tteokbokki.webp",
+    "family": "tteokbokki",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pajeon",
+    "country": "korea",
+    "title": "Pajeon: tortita coreana de cebolleta",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Harina de trigo",
+        "qty": "120 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Almidón de maíz",
+        "qty": "30 g",
+        "key": "almidón de maíz"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "150 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "15 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Vinagre de arroz",
+        "qty": "10 ml",
+        "key": "vinagre de arroz"
+      },
+      {
+        "name": "Sal",
+        "qty": "1 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Mezcla harina, almidón, huevo, sal y 180 ml de agua fría. Lava y corta la cebolleta en trozos largos.",
+      "Calienta la mitad del aceite en una sartén antiadherente y distribuye la cebolleta.",
+      "Vierte la masa, cocina 5–7 minutos a fuego medio y gira con cuidado. Añade el aceite restante y cocina hasta que el interior esté cuajado.",
+      "Corta en cuadrados y sirve con soja mezclada con vinagre."
+    ],
+    "description": "Receta casera de pajeon: tortita coreana de cebolleta. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pajeon.webp",
+    "family": "pajeon",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-kimchi-arroz",
+    "country": "korea",
+    "title": "Arroz salteado con kimchi y huevo",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Arroz",
+        "qty": "160 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Kimchi",
+        "qty": "180 g",
+        "key": "kimchi"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Gochujang",
+        "qty": "15 g",
+        "key": "gochujang"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "10 ml",
+        "key": "aceite de sésamo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz según el envase y extiéndelo unos minutos para que se seque su superficie.",
+      "Pica el kimchi y saltéalo con el aceite de oliva 3 minutos. Añade gochujang y el arroz y remueve 3–4 minutos.",
+      "Cuaja los huevos por completo en otra sartén antiadherente.",
+      "Sirve el arroz con el huevo, la cebolleta y el aceite de sésamo añadido fuera del fuego."
+    ],
+    "description": "Receta casera de arroz salteado con kimchi y huevo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-kimchi-arroz.webp",
+    "family": "kimchi-arroz",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-bulgogi",
+    "country": "korea",
+    "title": "Bulgogi de ternera",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Ternera",
+        "qty": "300 g",
+        "key": "ternera"
+      },
+      {
+        "name": "Pera",
+        "qty": "100 g",
+        "key": "pera"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "30 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Aceite de sésamo",
+        "qty": "10 ml",
+        "key": "aceite de sésamo"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Arroz",
+        "qty": "140 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Semillas de sésamo",
+        "qty": "8 g",
+        "key": "semillas de sésamo"
+      }
+    ],
+    "steps": [
+      "Ralla la pera y mezcla con ajo picado, soja, azúcar y aceite de sésamo.",
+      "Corta la ternera en láminas muy finas, mezcla con el adobo y refrigera 20 minutos. Corta la cebolla en tiras.",
+      "Cuece el arroz. Saltea ternera y cebolla en una sartén caliente, en pequeñas tandas para que doren y la carne se cocine por completo.",
+      "Sirve sobre el arroz con el sésamo. El tiempo incluye el marinado corto."
+    ],
+    "description": "Receta casera de bulgogi de ternera. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-bulgogi.webp",
+    "family": "bulgogi",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pad-thai",
+    "country": "thailand",
+    "title": "Pad thai de langostinos",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Fideos de arroz secos",
+        "qty": "180 g",
+        "key": "fideos de arroz secos"
+      },
+      {
+        "name": "Langostinos crudos pelados",
+        "qty": "220 g",
+        "key": "langostinos crudos pelados"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Brotes de soja",
+        "qty": "120 g",
+        "key": "brotes de soja"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Pulpa de tamarindo",
+        "qty": "20 g",
+        "key": "pulpa de tamarindo"
+      },
+      {
+        "name": "Salsa de pescado",
+        "qty": "20 ml",
+        "key": "salsa de pescado"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "15 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Cacahuetes tostados",
+        "qty": "25 g",
+        "key": "cacahuetes tostados"
+      },
+      {
+        "name": "Lima",
+        "qty": "60 g",
+        "key": "lima"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Hidrata los fideos según el envase. Mezcla tamarindo, salsa de pescado y azúcar con 40 ml de agua.",
+      "Cocina los langostinos completamente con el aceite y reserva. En la misma sartén cuaja los huevos batidos.",
+      "Añade fideos y salsa y saltea hasta que los fideos estén tiernos; incorpora agua poco a poco si necesitan más.",
+      "Vuelve a añadir los langostinos, los brotes y la cebolleta. Calienta 2 minutos y sirve con cacahuetes picados y lima."
+    ],
+    "description": "Receta casera de pad thai de langostinos. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pad-thai.webp",
+    "family": "pad-thai",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-tom-kha",
+    "country": "thailand",
+    "title": "Tom kha gai: sopa de pollo y coco",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "250 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Leche de coco",
+        "qty": "300 ml",
+        "key": "leche de coco"
+      },
+      {
+        "name": "Caldo de pollo",
+        "qty": "400 ml",
+        "key": "caldo de pollo"
+      },
+      {
+        "name": "Champiñones",
+        "qty": "150 g",
+        "key": "champiñones"
+      },
+      {
+        "name": "Galanga",
+        "qty": "15 g",
+        "key": "galanga"
+      },
+      {
+        "name": "Hierba limón",
+        "qty": "20 g",
+        "key": "hierba limón"
+      },
+      {
+        "name": "Hojas de lima makrut",
+        "qty": "2 g",
+        "key": "hojas de lima makrut"
+      },
+      {
+        "name": "Salsa de pescado",
+        "qty": "15 ml",
+        "key": "salsa de pescado"
+      },
+      {
+        "name": "Lima",
+        "qty": "60 g",
+        "key": "lima"
+      }
+    ],
+    "steps": [
+      "Golpea ligeramente la hierba limón y corta la galanga en rodajas. Calienta caldo, coco, galanga, hierba limón y hojas de lima durante 8 minutos.",
+      "Añade el pollo en tiras y los champiñones. Cocina suavemente hasta que el pollo esté completamente hecho.",
+      "Incorpora salsa de pescado y zumo de lima fuera del fuego.",
+      "Retira hierba limón, galanga y hojas antes de servir: aromatizan el caldo, pero son fibrosas."
+    ],
+    "description": "Receta casera de tom kha gai: sopa de pollo y coco. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-tom-kha.webp",
+    "family": "tom-kha",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-som-tam",
+    "country": "thailand",
+    "title": "Som tam de papaya verde",
+    "time": 20,
+    "ingredients": [
+      {
+        "name": "Papaya verde",
+        "qty": "300 g",
+        "key": "papaya verde"
+      },
+      {
+        "name": "Tomate cherry",
+        "qty": "120 g",
+        "key": "tomate cherry"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "80 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Cacahuetes tostados",
+        "qty": "25 g",
+        "key": "cacahuetes tostados"
+      },
+      {
+        "name": "Salsa de pescado",
+        "qty": "15 ml",
+        "key": "salsa de pescado"
+      },
+      {
+        "name": "Lima",
+        "qty": "60 g",
+        "key": "lima"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "10 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Chile fresco",
+        "qty": "5 g",
+        "key": "chile fresco"
+      }
+    ],
+    "steps": [
+      "Pela la papaya verde, retira las semillas y ralla en tiras finas con la zanahoria.",
+      "Machaca ajo y chile; mezcla con zumo de lima, azúcar y salsa de pescado.",
+      "Incorpora papaya, zanahoria y tomates partidos y presiona suavemente con un mortero o una cuchara para que se impregnen del aliño.",
+      "Añade los cacahuetes y sirve al momento. Usa papaya verde firme, no papaya madura dulce."
+    ],
+    "description": "Receta casera de som tam de papaya verde. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [],
+    "image": "/recipe-images/world-som-tam.webp",
+    "family": "som-tam",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-satay",
+    "country": "thailand",
+    "title": "Brochetas satay de pollo",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Leche de coco",
+        "qty": "160 ml",
+        "key": "leche de coco"
+      },
+      {
+        "name": "Curry",
+        "qty": "5 g",
+        "key": "curry"
+      },
+      {
+        "name": "Crema de cacahuete",
+        "qty": "40 g",
+        "key": "crema de cacahuete"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "15 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Lima",
+        "qty": "60 g",
+        "key": "lima"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "8 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Corta el pollo en tiras y marina en la nevera 15 minutos con 60 ml de coco y el curry.",
+      "Calienta la crema de cacahuete con el coco restante, soja, azúcar y 30 ml de agua. Remueve hasta obtener una salsa lisa y añade zumo de lima.",
+      "Ensarta el pollo en brochetas y cocina con el aceite en sartén o plancha, girando hasta que esté completamente hecho en el centro.",
+      "Sirve con la salsa de cacahuete. Usa brochetas cortas que quepan en tu sartén."
+    ],
+    "description": "Receta casera de brochetas satay de pollo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-satay.webp",
+    "family": "satay",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pad-krapao",
+    "country": "thailand",
+    "title": "Pad krapao: pollo con albahaca",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Carne picada de pollo",
+        "qty": "300 g",
+        "key": "carne picada de pollo"
+      },
+      {
+        "name": "Albahaca tailandesa",
+        "qty": "20 g",
+        "key": "albahaca tailandesa"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Chile fresco",
+        "qty": "5 g",
+        "key": "chile fresco"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Salsa de ostras",
+        "qty": "15 ml",
+        "key": "salsa de ostras"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "5 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Arroz",
+        "qty": "140 g",
+        "key": "arroz"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz. Pica ajo y chile y lava las hojas de albahaca.",
+      "Calienta el aceite y saltea ajo y chile unos segundos. Añade el pollo y deshaz los grumos.",
+      "Cocina hasta que el pollo esté completamente hecho. Añade soja, salsa de ostras, azúcar y 30 ml de agua; calienta 2 minutos.",
+      "Incorpora la albahaca fuera del fuego y sirve sobre el arroz."
+    ],
+    "description": "Receta casera de pad krapao: pollo con albahaca. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pad-krapao.webp",
+    "family": "pad-krapao",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-arroz-pina",
+    "country": "thailand",
+    "title": "Arroz tailandés con piña y anacardos",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Arroz",
+        "qty": "160 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Piña",
+        "qty": "220 g",
+        "key": "piña"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Guisantes",
+        "qty": "100 g",
+        "key": "guisantes"
+      },
+      {
+        "name": "Cebolleta",
+        "qty": "40 g",
+        "key": "cebolleta"
+      },
+      {
+        "name": "Anacardos tostados",
+        "qty": "30 g",
+        "key": "anacardos tostados"
+      },
+      {
+        "name": "Salsa de soja",
+        "qty": "20 ml",
+        "key": "salsa de soja"
+      },
+      {
+        "name": "Curry",
+        "qty": "3 g",
+        "key": "curry"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz y extiéndelo para secar su superficie. Trocea la piña y la cebolleta.",
+      "Cuaja los huevos con la mitad del aceite y reserva. Cocina los guisantes según el envase.",
+      "Saltea piña y cebolleta con el aceite restante. Añade curry, arroz y soja y remueve 3 minutos.",
+      "Incorpora huevo, guisantes y anacardos. Calienta el conjunto y sirve enseguida."
+    ],
+    "description": "Receta casera de arroz tailandés con piña y anacardos. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-arroz-pina.webp",
+    "family": "arroz-pina",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-dal",
+    "country": "india",
+    "title": "Dal de lentejas rojas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Lentejas rojas secas",
+        "qty": "180 g",
+        "key": "lentejas rojas secas"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "150 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "3 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Garam masala",
+        "qty": "3 g",
+        "key": "garam masala"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Enjuaga las lentejas rojas. Sofríe cebolla, ajo y jengibre picados con el aceite 5 minutos.",
+      "Añade comino y cúrcuma y remueve 30 segundos. Incorpora el tomate y cocina 3 minutos.",
+      "Añade lentejas y 650 ml de agua. Cuece suavemente 20–25 minutos, removiendo y añadiendo agua si se espesa demasiado.",
+      "Cuando las lentejas estén blandas, añade sal y garam masala y cocina 2 minutos más."
+    ],
+    "description": "Receta casera de dal de lentejas rojas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-dal.webp",
+    "family": "dal",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-chana-masala",
+    "country": "india",
+    "title": "Chana masala: garbanzos especiados",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Garbanzos cocidos",
+        "qty": "400 g",
+        "key": "garbanzos cocidos"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "250 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Garam masala",
+        "qty": "4 g",
+        "key": "garam masala"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "2 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Limón",
+        "qty": "40 g",
+        "key": "limón"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla, ajo y jengibre picados con el aceite 7 minutos.",
+      "Añade comino y cúrcuma, remueve y vierte el tomate. Cocina 10 minutos.",
+      "Incorpora los garbanzos escurridos, sal, garam masala y 100 ml de agua; cocina 8 minutos.",
+      "Termina con zumo de limón y sirve caliente."
+    ],
+    "description": "Receta casera de chana masala: garbanzos especiados. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-chana-masala.webp",
+    "family": "chana-masala",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-palak-paneer",
+    "country": "india",
+    "title": "Palak paneer: espinacas con queso",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Espinacas",
+        "qty": "400 g",
+        "key": "espinacas"
+      },
+      {
+        "name": "Paneer",
+        "qty": "200 g",
+        "key": "paneer"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate",
+        "qty": "150 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Garam masala",
+        "qty": "4 g",
+        "key": "garam masala"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Cocina las espinacas con un poco de agua 3–4 minutos y tritura hasta obtener una crema.",
+      "Sofríe cebolla, ajo y jengibre con el aceite. Añade tomate picado y cocina 7 minutos.",
+      "Incorpora comino, garam masala y sal, después la crema de espinacas.",
+      "Añade paneer en dados y cocina suavemente 5 minutos. No sustituyas el paneer por queso fundente sin adaptar la receta."
+    ],
+    "description": "Receta casera de palak paneer: espinacas con queso. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas",
+      "Batidora",
+      "Thermomix / robot"
+    ],
+    "image": "/recipe-images/world-palak-paneer.webp",
+    "family": "palak-paneer",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Placa / inducción",
+        "Gas"
+      ],
+      [
+        "Batidora",
+        "Thermomix / robot"
+      ]
+    ]
+  },
+  {
+    "id": "world-aloo-gobi",
+    "country": "india",
+    "title": "Aloo gobi: coliflor y patata especiadas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Coliflor",
+        "qty": "350 g",
+        "key": "coliflor"
+      },
+      {
+        "name": "Patatas",
+        "qty": "300 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate",
+        "qty": "150 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Jengibre",
+        "qty": "8 g",
+        "key": "jengibre"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "3 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Garam masala",
+        "qty": "3 g",
+        "key": "garam masala"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta patata y coliflor en piezas pequeñas. Sofríe cebolla, ajo y jengibre con el aceite 5 minutos.",
+      "Añade comino, cúrcuma y tomate picado y cocina 5 minutos.",
+      "Incorpora patatas, sal y 120 ml de agua, tapa y cocina 10 minutos. Añade coliflor y cocina otros 10–12 minutos hasta que esté tierna.",
+      "Destapa, deja evaporar el exceso de líquido y termina con garam masala."
+    ],
+    "description": "Receta casera de aloo gobi: coliflor y patata especiadas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-aloo-gobi.webp",
+    "family": "aloo-gobi",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pakoras",
+    "country": "india",
+    "title": "Pakoras de verduras al horno",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Harina de garbanzo",
+        "qty": "120 g",
+        "key": "harina de garbanzo"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "150 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Espinacas",
+        "qty": "80 g",
+        "key": "espinacas"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "2 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 210 °C. Corta cebolla y zanahoria muy finas y pica las espinacas.",
+      "Mezcla harina de garbanzo, comino, cúrcuma, sal y unos 100 ml de agua para formar una masa espesa.",
+      "Incorpora las verduras y la mitad del aceite. Forma montoncitos planos sobre papel de horno y pincela con el aceite restante.",
+      "Hornea 20–25 minutos, girando a mitad, hasta que estén dorados y el centro cocinado."
+    ],
+    "description": "Receta casera de pakoras de verduras al horno. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pakoras.webp",
+    "family": "pakoras",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-tacos-pescado",
+    "country": "mexico",
+    "title": "Tacos de pescado con col y lima",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Merluza",
+        "qty": "300 g",
+        "key": "merluza"
+      },
+      {
+        "name": "Tortillas de maíz",
+        "qty": "160 g",
+        "key": "tortillas de maíz"
+      },
+      {
+        "name": "Col",
+        "qty": "150 g",
+        "key": "col"
+      },
+      {
+        "name": "Yogur natural",
+        "qty": "100 g",
+        "key": "yogur natural"
+      },
+      {
+        "name": "Lima",
+        "qty": "60 g",
+        "key": "lima"
+      },
+      {
+        "name": "Pimentón dulce",
+        "qty": "3 g",
+        "key": "pimentón dulce"
+      },
+      {
+        "name": "Comino",
+        "qty": "2 g",
+        "key": "comino"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta la col muy fina. Mezcla yogur con la mitad del zumo de lima y la sal.",
+      "Sazona el pescado con comino y pimentón. Cocina con el aceite hasta que esté completamente hecho y se separe en lascas.",
+      "Calienta las tortillas en sartén seca por ambos lados.",
+      "Rellena con pescado y col, añade salsa de yogur y termina con la lima restante."
+    ],
+    "description": "Receta casera de tacos de pescado con col y lima. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-tacos-pescado.webp",
+    "family": "tacos-pescado",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-enchiladas",
+    "country": "mexico",
+    "title": "Enchiladas de pollo al horno",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Tortillas de maíz",
+        "qty": "180 g",
+        "key": "tortillas de maíz"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "350 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Queso cheddar",
+        "qty": "80 g",
+        "key": "queso cheddar"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Chile en copos",
+        "qty": "1 g",
+        "key": "chile en copos"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 200 °C. Cocina completamente el pollo en una sartén y desmenúzalo.",
+      "Sofríe cebolla con el aceite. Añade tomate, comino, chile y sal y cocina 10 minutos.",
+      "Calienta brevemente las tortillas para que no se rompan. Rellena con pollo y unas cucharadas de salsa y enrolla.",
+      "Coloca en una fuente, cubre con la salsa restante y el queso. Hornea 15 minutos, hasta que esté caliente y gratinado."
+    ],
+    "description": "Receta casera de enchiladas de pollo al horno. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-enchiladas.webp",
+    "family": "enchiladas",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-chilaquiles",
+    "country": "mexico",
+    "title": "Chilaquiles rojos con huevo",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Tortillas de maíz",
+        "qty": "180 g",
+        "key": "tortillas de maíz"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "300 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Chile en copos",
+        "qty": "1 g",
+        "key": "chile en copos"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Queso fresco",
+        "qty": "80 g",
+        "key": "queso fresco"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta las tortillas en triángulos y dora en sartén con 10 ml de aceite. Reserva.",
+      "Sofríe cebolla y ajo con 5 ml de aceite. Añade tomate, chile, sal y 60 ml de agua y cocina 10 minutos.",
+      "Cuaja los huevos por completo con el aceite restante.",
+      "Mezcla las tortillas con la salsa solo al servir para que no se ablanden demasiado. Añade huevo y queso fresco desmenuzado."
+    ],
+    "description": "Receta casera de chilaquiles rojos con huevo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-chilaquiles.webp",
+    "family": "chilaquiles",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-burrito",
+    "country": "mexico",
+    "title": "Burrito de alubias y arroz",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Tortillas de trigo",
+        "qty": "180 g",
+        "key": "tortillas de trigo"
+      },
+      {
+        "name": "Alubias rojas cocidas",
+        "qty": "300 g",
+        "key": "alubias rojas cocidas"
+      },
+      {
+        "name": "Arroz",
+        "qty": "100 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Pimiento rojo",
+        "qty": "150 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "150 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Cuece el arroz. Sofríe cebolla y pimiento picados con el aceite 7 minutos.",
+      "Añade tomate, comino y sal y cocina 5 minutos. Incorpora alubias escurridas y arroz.",
+      "Calienta las tortillas para que sean flexibles. Reparte el relleno en el centro.",
+      "Dobla los lados, enrolla y dora el cierre en una sartén seca 1–2 minutos."
+    ],
+    "description": "Receta casera de burrito de alubias y arroz. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-burrito.webp",
+    "family": "burrito",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-sopa-tortilla",
+    "country": "mexico",
+    "title": "Sopa de tortilla y aguacate",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Tortillas de maíz",
+        "qty": "100 g",
+        "key": "tortillas de maíz"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "300 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Caldo de pollo",
+        "qty": "600 ml",
+        "key": "caldo de pollo"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Aguacate",
+        "qty": "120 g",
+        "key": "aguacate"
+      },
+      {
+        "name": "Queso fresco",
+        "qty": "60 g",
+        "key": "queso fresco"
+      },
+      {
+        "name": "Chile en copos",
+        "qty": "1 g",
+        "key": "chile en copos"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Lima",
+        "qty": "40 g",
+        "key": "lima"
+      }
+    ],
+    "steps": [
+      "Corta las tortillas en tiras y dóralas con 5 ml de aceite en sartén. Reserva.",
+      "Sofríe cebolla y ajo con el aceite restante. Añade tomate y chile y cocina 7 minutos.",
+      "Vierte el caldo y cocina 10 minutos. Tritura si deseas una sopa lisa.",
+      "Sirve con tiras de tortilla, aguacate, queso fresco y zumo de lima, añadidos al final."
+    ],
+    "description": "Receta casera de sopa de tortilla y aguacate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas",
+      "Batidora",
+      "Thermomix / robot"
+    ],
+    "image": "/recipe-images/world-sopa-tortilla.webp",
+    "family": "sopa-tortilla",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Placa / inducción",
+        "Gas"
+      ],
+      [
+        "Batidora",
+        "Thermomix / robot"
+      ]
+    ]
+  },
+  {
+    "id": "world-risotto",
+    "country": "pasta",
+    "title": "Risotto de setas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Arroz arborio",
+        "qty": "180 g",
+        "key": "arroz arborio"
+      },
+      {
+        "name": "Champiñones",
+        "qty": "250 g",
+        "key": "champiñones"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "700 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Queso parmesano",
+        "qty": "50 g",
+        "key": "queso parmesano"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Calienta el caldo en un cazo. Sofríe cebolla y setas troceadas con el aceite 7 minutos.",
+      "Añade el arroz arborio y remueve un minuto para nacararlo.",
+      "Añade caldo caliente poco a poco, removiendo y esperando a que se absorba antes de añadir más; cocina aproximadamente 18 minutos, según el arroz.",
+      "Apaga el fuego, añade mantequilla y parmesano rallado y remueve. Reposa 2 minutos y sirve cremoso."
+    ],
+    "description": "Receta casera de risotto de setas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-risotto.webp",
+    "family": "risotto",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-minestrone",
+    "country": "pasta",
+    "title": "Minestrone de verduras y alubias",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Alubias blancas cocidas",
+        "qty": "250 g",
+        "key": "alubias blancas cocidas"
+      },
+      {
+        "name": "Pasta corta",
+        "qty": "80 g",
+        "key": "pasta corta"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "120 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Calabacín",
+        "qty": "150 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Apio",
+        "qty": "80 g",
+        "key": "apio"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "200 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "700 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      }
+    ],
+    "steps": [
+      "Corta las verduras en dados. Sofríe cebolla, apio y zanahoria con el aceite 7 minutos.",
+      "Añade calabacín, tomate, orégano y caldo y cocina 10 minutos.",
+      "Incorpora pasta corta y cocina el tiempo que indique el envase. Añade las alubias escurridas los últimos 5 minutos.",
+      "Ajusta la textura con agua caliente si está muy espeso y sirve."
+    ],
+    "description": "Receta casera de minestrone de verduras y alubias. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-minestrone.webp",
+    "family": "minestrone",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-lasana",
+    "country": "pasta",
+    "title": "Lasaña boloñesa casera",
+    "time": 65,
+    "ingredients": [
+      {
+        "name": "Placas de lasaña sin precocción",
+        "qty": "120 g",
+        "key": "placas de lasaña sin precocción"
+      },
+      {
+        "name": "Carne picada de ternera",
+        "qty": "300 g",
+        "key": "carne picada de ternera"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "350 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "80 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Leche",
+        "qty": "350 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "30 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "25 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Queso parmesano",
+        "qty": "50 g",
+        "key": "queso parmesano"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla y zanahoria picadas con el aceite 7 minutos. Añade carne picada y cocina completamente. Incorpora tomate y la mitad de la sal y cocina 15 minutos.",
+      "Derrite mantequilla en otro cazo, cocina la harina 2 minutos y añade leche poco a poco. Remueve hasta obtener una bechamel lisa y añade la sal restante.",
+      "Precalienta el horno a 190 °C. Alterna en una fuente salsa de carne, placas aptas para cocer directamente al horno y bechamel.",
+      "Termina con bechamel y parmesano. Hornea el tiempo de las placas, normalmente 30–35 minutos, comprobando que estén tiernas. Reposa 5 minutos."
+    ],
+    "description": "Receta casera de lasaña boloñesa casera. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-lasana.webp",
+    "family": "lasana",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Media",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-bruschetta",
+    "country": "pasta",
+    "title": "Bruschetta de tomate y albahaca",
+    "time": 15,
+    "ingredients": [
+      {
+        "name": "Pan",
+        "qty": "180 g",
+        "key": "pan"
+      },
+      {
+        "name": "Tomate",
+        "qty": "300 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Albahaca fresca",
+        "qty": "12 g",
+        "key": "albahaca fresca"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava y corta el tomate en dados. Mezcla con albahaca picada, aceite y sal.",
+      "Tuesta el pan en sartén seca o tostadora hasta que esté crujiente.",
+      "Frota las tostadas ligeramente con el ajo cortado.",
+      "Reparte el tomate justo antes de servir para que el pan conserve su textura."
+    ],
+    "description": "Receta casera de bruschetta de tomate y albahaca. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Tostadora",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-bruschetta.webp",
+    "family": "bruschetta",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-mac-cheese",
+    "country": "burger",
+    "title": "Mac and cheese al horno",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Macarrones",
+        "qty": "180 g",
+        "key": "macarrones"
+      },
+      {
+        "name": "Queso cheddar",
+        "qty": "120 g",
+        "key": "queso cheddar"
+      },
+      {
+        "name": "Leche",
+        "qty": "300 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "20 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Pan rallado",
+        "qty": "25 g",
+        "key": "pan rallado"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Cuece los macarrones un minuto menos de lo indicado y escurre. Precalienta el horno a 200 °C.",
+      "Derrite mantequilla, cocina harina 2 minutos y añade leche poco a poco, removiendo. Incorpora sal y cheddar rallado a fuego suave.",
+      "Mezcla macarrones y salsa, coloca en una fuente y espolvorea pan rallado.",
+      "Hornea 12–15 minutos hasta que esté caliente y la superficie dorada."
+    ],
+    "description": "Receta casera de mac and cheese al horno. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-mac-cheese.webp",
+    "family": "mac-cheese",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-alitas-bbq",
+    "country": "burger",
+    "title": "Alitas de pollo con salsa barbacoa",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Alitas de pollo",
+        "qty": "600 g",
+        "key": "alitas de pollo"
+      },
+      {
+        "name": "Salsa barbacoa",
+        "qty": "80 g",
+        "key": "salsa barbacoa"
+      },
+      {
+        "name": "Pimentón ahumado",
+        "qty": "3 g",
+        "key": "pimentón ahumado"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 210 °C. Seca las alitas y mezcla con aceite, sal y pimentón.",
+      "Extiende en una bandeja sin amontonarlas y hornea 30 minutos, girando a mitad.",
+      "Pincela con la salsa barbacoa y hornea 10–15 minutos más.",
+      "Comprueba que el centro junto al hueso esté completamente cocinado. Sirve calientes."
+    ],
+    "description": "Receta casera de alitas de pollo con salsa barbacoa. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-alitas-bbq.webp",
+    "family": "alitas-bbq",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-sloppy-joe",
+    "country": "burger",
+    "title": "Sloppy joe: bocadillo de carne y tomate",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Carne picada de ternera",
+        "qty": "300 g",
+        "key": "carne picada de ternera"
+      },
+      {
+        "name": "Pan de hamburguesa",
+        "qty": "2 uds",
+        "key": "pan de hamburguesa"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "250 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Pimiento verde",
+        "qty": "100 g",
+        "key": "pimiento verde"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "15 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Salsa Worcestershire",
+        "qty": "15 ml",
+        "key": "salsa worcestershire"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla y pimiento picados con el aceite 7 minutos.",
+      "Añade la carne picada y cocina hasta que esté completamente hecha, deshaciendo los grumos.",
+      "Incorpora tomate, mostaza, Worcestershire y sal. Cocina 12 minutos hasta que el relleno espese.",
+      "Tuesta ligeramente los panes y rellena justo al servir."
+    ],
+    "description": "Receta casera de sloppy joe: bocadillo de carne y tomate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-sloppy-joe.webp",
+    "family": "sloppy-joe",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-hamburguesa-pollo",
+    "country": "burger",
+    "title": "Hamburguesa crujiente de pollo",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Pan de hamburguesa",
+        "qty": "2 uds",
+        "key": "pan de hamburguesa"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Panko",
+        "qty": "60 g",
+        "key": "panko"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "20 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Lechuga",
+        "qty": "60 g",
+        "key": "lechuga"
+      },
+      {
+        "name": "Tomate",
+        "qty": "100 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Mayonesa",
+        "qty": "25 g",
+        "key": "mayonesa"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Corta el pollo en dos filetes de grosor uniforme. Pasa por harina, huevo batido y panko.",
+      "Dora con el aceite en sartén a fuego medio por ambos lados, hasta que el centro esté completamente cocinado.",
+      "Lava la lechuga y el tomate y corta este último en rodajas. Tuesta ligeramente los panes.",
+      "Monta con pollo crujiente, verduras y mayonesa y sirve al momento."
+    ],
+    "description": "Receta casera de hamburguesa crujiente de pollo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-hamburguesa-pollo.webp",
+    "family": "hamburguesa-pollo",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pizza-cuatro-quesos",
+    "country": "pizza",
+    "title": "Pizza cuatro quesos",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Masa de pizza",
+        "qty": "250 g",
+        "key": "masa de pizza"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "120 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Mozzarella",
+        "qty": "120 g",
+        "key": "mozzarella"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Queso gorgonzola",
+        "qty": "50 g",
+        "key": "queso gorgonzola"
+      },
+      {
+        "name": "Queso emmental",
+        "qty": "50 g",
+        "key": "queso emmental"
+      },
+      {
+        "name": "Queso parmesano",
+        "qty": "30 g",
+        "key": "queso parmesano"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 220 °C y deja calentar también la bandeja.",
+      "Ralla emmental y parmesano y corta mozzarella y gorgonzola en trozos.",
+      "Estira la masa y extiende el tomate. Reparte mozzarella, el resto de ingredientes y orégano.",
+      "Hornea en la bandeja caliente 15–20 minutos, o el tiempo de la masa, hasta que la base esté completamente cocida y el queso dorado."
+    ],
+    "description": "Receta casera de pizza cuatro quesos. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-pizza-cuatro-quesos.webp",
+    "family": "pizza-cuatro-quesos",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pizza-pepperoni",
+    "country": "pizza",
+    "title": "Pizza pepperoni",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Masa de pizza",
+        "qty": "250 g",
+        "key": "masa de pizza"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "120 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Mozzarella",
+        "qty": "120 g",
+        "key": "mozzarella"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Pepperoni",
+        "qty": "90 g",
+        "key": "pepperoni"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 220 °C y deja calentar también la bandeja.",
+      "Corta mozzarella y pepperoni en rodajas finas.",
+      "Estira la masa y extiende el tomate. Reparte mozzarella, el resto de ingredientes y orégano.",
+      "Hornea en la bandeja caliente 15–20 minutos, o el tiempo de la masa, hasta que la base esté completamente cocida y el queso dorado."
+    ],
+    "description": "Receta casera de pizza pepperoni. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-pizza-pepperoni.webp",
+    "family": "pizza-pepperoni",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pizza-jamon-setas",
+    "country": "pizza",
+    "title": "Pizza de jamón y champiñones",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Masa de pizza",
+        "qty": "250 g",
+        "key": "masa de pizza"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "120 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Mozzarella",
+        "qty": "120 g",
+        "key": "mozzarella"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Jamón cocido",
+        "qty": "100 g",
+        "key": "jamón cocido"
+      },
+      {
+        "name": "Champiñones",
+        "qty": "150 g",
+        "key": "champiñones"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 220 °C y deja calentar también la bandeja.",
+      "Limpia y lamina finamente los champiñones y corta el jamón y la mozzarella.",
+      "Estira la masa y extiende el tomate. Reparte mozzarella, el resto de ingredientes y orégano.",
+      "Hornea en la bandeja caliente 15–20 minutos, o el tiempo de la masa, hasta que la base esté completamente cocida y el queso dorado."
+    ],
+    "description": "Receta casera de pizza de jamón y champiñones. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-pizza-jamon-setas.webp",
+    "family": "pizza-jamon-setas",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pizza-vegetal",
+    "country": "pizza",
+    "title": "Pizza de verduras asadas",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Masa de pizza",
+        "qty": "250 g",
+        "key": "masa de pizza"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "120 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Mozzarella",
+        "qty": "120 g",
+        "key": "mozzarella"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Calabacín",
+        "qty": "100 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Pimiento rojo",
+        "qty": "100 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "70 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 220 °C y deja calentar también la bandeja.",
+      "Corta calabacín, pimiento y cebolla en piezas finas y mezcla con el aceite.",
+      "Estira la masa y extiende el tomate. Reparte mozzarella, el resto de ingredientes y orégano.",
+      "Hornea en la bandeja caliente 15–20 minutos, o el tiempo de la masa, hasta que la base esté completamente cocida y el queso dorado."
+    ],
+    "description": "Receta casera de pizza de verduras asadas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pizza-vegetal.webp",
+    "family": "pizza-vegetal",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-pizza-atun",
+    "country": "pizza",
+    "title": "Pizza de atún y aceitunas",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Masa de pizza",
+        "qty": "250 g",
+        "key": "masa de pizza"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "120 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Mozzarella",
+        "qty": "120 g",
+        "key": "mozzarella"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Atún al natural",
+        "qty": "120 g",
+        "key": "atún al natural"
+      },
+      {
+        "name": "Aceitunas negras",
+        "qty": "50 g",
+        "key": "aceitunas negras"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 220 °C y deja calentar también la bandeja.",
+      "Escurre el atún, corta las aceitunas y trocea la mozzarella.",
+      "Estira la masa y extiende el tomate. Reparte mozzarella, el resto de ingredientes y orégano.",
+      "Hornea en la bandeja caliente 15–20 minutos, o el tiempo de la masa, hasta que la base esté completamente cocida y el queso dorado."
+    ],
+    "description": "Receta casera de pizza de atún y aceitunas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-pizza-atun.webp",
+    "family": "pizza-atun",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-ratatouille",
+    "country": "france",
+    "title": "Ratatouille provenzal",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Berenjena",
+        "qty": "220 g",
+        "key": "berenjena"
+      },
+      {
+        "name": "Calabacín",
+        "qty": "220 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Pimiento rojo",
+        "qty": "180 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Tomate",
+        "qty": "300 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Tomillo",
+        "qty": "2 g",
+        "key": "tomillo"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Lava y corta todas las verduras en dados. Sofríe cebolla y ajo con el aceite 5 minutos.",
+      "Añade pimiento y berenjena y cocina 10 minutos. Incorpora calabacín y cocina 5 minutos más.",
+      "Añade tomate, tomillo y sal; tapa y cocina a fuego suave 15 minutos.",
+      "Destapa y cocina 5–10 minutos para evaporar el líquido sobrante, conservando las verduras reconocibles."
+    ],
+    "description": "Receta casera de ratatouille provenzal. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-ratatouille.webp",
+    "family": "ratatouille",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-croque-monsieur",
+    "country": "france",
+    "title": "Croque monsieur gratinado",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Pan de molde",
+        "qty": "160 g",
+        "key": "pan de molde"
+      },
+      {
+        "name": "Jamón cocido",
+        "qty": "100 g",
+        "key": "jamón cocido"
+      },
+      {
+        "name": "Queso gruyère",
+        "qty": "100 g",
+        "key": "queso gruyère"
+      },
+      {
+        "name": "Leche",
+        "qty": "200 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "20 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Nuez moscada",
+        "qty": "1 g",
+        "key": "nuez moscada"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 210 °C. Derrite mantequilla, cocina harina 2 minutos y añade leche poco a poco, removiendo.",
+      "Cuando la bechamel espese, añade nuez moscada. Unta una pequeña cantidad en el pan.",
+      "Monta dos sándwiches con jamón y la mitad del queso. Cubre con bechamel y el queso restante.",
+      "Hornea 10–12 minutos, terminando con el gratinador si hace falta, hasta que el queso funda y dore."
+    ],
+    "description": "Receta casera de croque monsieur gratinado. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-croque-monsieur.webp",
+    "family": "croque-monsieur",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-quiche",
+    "country": "france",
+    "title": "Quiche Lorraine",
+    "time": 50,
+    "ingredients": [
+      {
+        "name": "Masa quebrada",
+        "qty": "230 g",
+        "key": "masa quebrada"
+      },
+      {
+        "name": "Bacon",
+        "qty": "150 g",
+        "key": "bacon"
+      },
+      {
+        "name": "Huevos",
+        "qty": "3 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Nata para cocinar",
+        "qty": "200 ml",
+        "key": "nata para cocinar"
+      },
+      {
+        "name": "Queso gruyère",
+        "qty": "70 g",
+        "key": "queso gruyère"
+      },
+      {
+        "name": "Pimienta negra",
+        "qty": "1 g",
+        "key": "pimienta negra"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 190 °C. Forra un molde con la masa, pincha la base y hornéala 10 minutos con peso de horneado.",
+      "Dora el bacon en sartén y escurre su grasa. Bate huevos, nata, queso rallado y pimienta.",
+      "Retira el peso de horneado, reparte el bacon y vierte la mezcla sobre la base.",
+      "Hornea 25–30 minutos, hasta que el relleno esté completamente cuajado. Reposa 5 minutos antes de cortar."
+    ],
+    "description": "Receta casera de quiche lorraine. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-quiche.webp",
+    "family": "quiche",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-sopa-cebolla",
+    "country": "france",
+    "title": "Sopa de cebolla gratinada",
+    "time": 55,
+    "ingredients": [
+      {
+        "name": "Cebolla",
+        "qty": "500 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "700 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Pan",
+        "qty": "100 g",
+        "key": "pan"
+      },
+      {
+        "name": "Queso gruyère",
+        "qty": "80 g",
+        "key": "queso gruyère"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "25 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Tomillo",
+        "qty": "2 g",
+        "key": "tomillo"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta la cebolla fina y cocínala lentamente con la mantequilla y la sal durante 25–30 minutos, removiendo, hasta que esté dorada.",
+      "Añade caldo y tomillo y cocina suavemente 15 minutos. Tuesta el pan.",
+      "Reparte la sopa en cuencos aptos para horno, coloca el pan y el queso rallado encima.",
+      "Gratina unos minutos hasta que funda el queso. Maneja los cuencos con protección y sirve con cuidado."
+    ],
+    "description": "Receta casera de sopa de cebolla gratinada. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-sopa-cebolla.webp",
+    "family": "sopa-cebolla",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-nizarda",
+    "country": "france",
+    "title": "Ensalada nizarda casera",
+    "time": 25,
+    "ingredients": [
+      {
+        "name": "Atún al natural",
+        "qty": "160 g",
+        "key": "atún al natural"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Judías verdes",
+        "qty": "180 g",
+        "key": "judías verdes"
+      },
+      {
+        "name": "Tomate",
+        "qty": "250 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Aceitunas negras",
+        "qty": "50 g",
+        "key": "aceitunas negras"
+      },
+      {
+        "name": "Lechuga",
+        "qty": "100 g",
+        "key": "lechuga"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Vinagre de vino",
+        "qty": "10 ml",
+        "key": "vinagre de vino"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "10 g",
+        "key": "mostaza"
+      }
+    ],
+    "steps": [
+      "Cuece los huevos 10–12 minutos, enfría y pela. Cuece las judías verdes hasta que estén tiernas y enfría.",
+      "Lava y corta tomate y lechuga. Escurre el atún y las aceitunas.",
+      "Mezcla aceite, vinagre y mostaza para el aliño.",
+      "Monta la ensalada con todos los ingredientes, añade el huevo cortado y aliña al servir."
+    ],
+    "description": "Receta casera de ensalada nizarda casera. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-nizarda.webp",
+    "family": "nizarda",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-crepes",
+    "country": "france",
+    "title": "Crêpes de manzana y canela",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Harina de trigo",
+        "qty": "120 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Leche",
+        "qty": "250 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Manzana",
+        "qty": "250 g",
+        "key": "manzana"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "20 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Canela",
+        "qty": "2 g",
+        "key": "canela"
+      }
+    ],
+    "steps": [
+      "Bate harina, huevo y leche hasta obtener una masa fina y sin grumos. Reposa 10 minutos.",
+      "Corta la manzana en dados y cocina con la mitad de la mantequilla, azúcar y canela hasta que esté tierna.",
+      "Engrasa ligeramente una sartén con la mantequilla restante. Vierte capas finas de masa y cocina por ambos lados hasta que estén hechas.",
+      "Rellena los crêpes con manzana, dobla y sirve."
+    ],
+    "description": "Receta casera de crêpes de manzana y canela. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-crepes.webp",
+    "family": "crepes",
+    "mealTypes": [
+      "Desayuno",
+      "Merienda"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-stamppot",
+    "country": "netherlands",
+    "title": "Stamppot de patata y kale",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Patatas",
+        "qty": "500 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Kale",
+        "qty": "250 g",
+        "key": "kale"
+      },
+      {
+        "name": "Leche",
+        "qty": "80 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Salchicha ahumada cocida",
+        "qty": "200 g",
+        "key": "salchicha ahumada cocida"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "20 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Pela y corta las patatas. Retira los tallos duros del kale y lava y trocea las hojas.",
+      "Cuece las patatas 15 minutos y añade el kale los últimos 7–8 minutos; escurre bien.",
+      "Machaca con leche caliente, mantequilla y sal para obtener un puré rústico.",
+      "Calienta la salchicha según el envase y sirve sobre el puré con mostaza."
+    ],
+    "description": "Receta casera de stamppot de patata y kale. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-stamppot.webp",
+    "family": "stamppot",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-hutspot",
+    "country": "netherlands",
+    "title": "Hutspot: puré de patata, zanahoria y cebolla",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Patatas",
+        "qty": "450 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "300 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "180 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Leche",
+        "qty": "70 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "25 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      },
+      {
+        "name": "Pimienta negra",
+        "qty": "1 g",
+        "key": "pimienta negra"
+      }
+    ],
+    "steps": [
+      "Pela patatas y zanahorias y corta en trozos. Trocea la cebolla.",
+      "Cuece las tres verduras en agua unos 20–25 minutos, hasta que estén tiernas.",
+      "Escurre bien y machaca con leche caliente y mantequilla, dejando textura rústica.",
+      "Añade sal y pimienta y sirve caliente."
+    ],
+    "description": "Receta casera de hutspot: puré de patata, zanahoria y cebolla. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-hutspot.webp",
+    "family": "hutspot",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-erwtensoep",
+    "country": "netherlands",
+    "title": "Erwtensoep: sopa neerlandesa de guisantes partidos",
+    "time": 75,
+    "ingredients": [
+      {
+        "name": "Guisantes secos partidos",
+        "qty": "220 g",
+        "key": "guisantes secos partidos"
+      },
+      {
+        "name": "Puerro",
+        "qty": "150 g",
+        "key": "puerro"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "150 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Apio",
+        "qty": "100 g",
+        "key": "apio"
+      },
+      {
+        "name": "Patatas",
+        "qty": "150 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Salchicha ahumada cocida",
+        "qty": "180 g",
+        "key": "salchicha ahumada cocida"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Enjuaga los guisantes partidos. Pon en una olla con 1 litro de agua y hierve suavemente 35 minutos, retirando la espuma.",
+      "Lava y corta puerro, zanahoria y apio; pela y corta la patata. Añade a la olla y cocina 25–30 minutos, removiendo.",
+      "Añade la salchicha en rodajas y la sal; calienta siguiendo el envase de la salchicha.",
+      "Sirve cuando los guisantes estén deshechos y la sopa espesa. Añade agua si se pega al fondo."
+    ],
+    "description": "Receta casera de erwtensoep: sopa neerlandesa de guisantes partidos. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-erwtensoep.webp",
+    "family": "erwtensoep",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Media",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pannenkoeken",
+    "country": "netherlands",
+    "title": "Pannenkoeken de manzana",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Harina de trigo",
+        "qty": "160 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Huevos",
+        "qty": "2 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Leche",
+        "qty": "300 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Manzana",
+        "qty": "200 g",
+        "key": "manzana"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "15 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Canela",
+        "qty": "2 g",
+        "key": "canela"
+      }
+    ],
+    "steps": [
+      "Mezcla harina, huevos y leche hasta obtener una masa lisa. Reposa 10 minutos.",
+      "Pela la manzana y corta en láminas muy finas. Mezcla azúcar y canela.",
+      "Engrasa una sartén con parte de la mantequilla, añade unas láminas de manzana y vierte masa por encima.",
+      "Cocina a fuego medio por ambos lados hasta que el centro esté cuajado. Repite con el resto y sirve con azúcar y canela."
+    ],
+    "description": "Receta casera de pannenkoeken de manzana. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pannenkoeken.webp",
+    "family": "pannenkoeken",
+    "mealTypes": [
+      "Desayuno",
+      "Merienda"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-poffertjes",
+    "country": "netherlands",
+    "title": "Poffertjes: mini tortitas neerlandesas",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Harina de trigo",
+        "qty": "100 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Harina de trigo sarraceno",
+        "qty": "80 g",
+        "key": "harina de trigo sarraceno"
+      },
+      {
+        "name": "Leche",
+        "qty": "250 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Levadura seca de panadería",
+        "qty": "4 g",
+        "key": "levadura seca de panadería"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "15 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "20 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Azúcar glas",
+        "qty": "15 g",
+        "key": "azúcar glas"
+      }
+    ],
+    "steps": [
+      "Mezcla las harinas y el azúcar. Añade levadura, leche templada y huevo y bate hasta obtener una masa espesa.",
+      "Cubre y deja fermentar unos 25 minutos en un lugar templado.",
+      "Engrasa una sartén de poffertjes con mantequilla. Vierte pequeñas porciones en sus huecos y cocina por ambos lados hasta que estén hechas.",
+      "Sirve con el azúcar glas y la mantequilla restante. Si no tienes la sartén específica, haz mini tortitas en una sartén plana; la forma será diferente."
+    ],
+    "description": "Receta casera de poffertjes: mini tortitas neerlandesas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-poffertjes.webp",
+    "family": "poffertjes",
+    "mealTypes": [
+      "Desayuno",
+      "Merienda"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-bitterballen",
+    "country": "netherlands",
+    "title": "Bitterballen de ternera al horno",
+    "time": 285,
+    "ingredients": [
+      {
+        "name": "Ternera cocida desmenuzada",
+        "qty": "180 g",
+        "key": "ternera cocida desmenuzada"
+      },
+      {
+        "name": "Caldo de ternera",
+        "qty": "300 ml",
+        "key": "caldo de ternera"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "60 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Mantequilla",
+        "qty": "35 g",
+        "key": "mantequilla"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Pan rallado",
+        "qty": "80 g",
+        "key": "pan rallado"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "20 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Nuez moscada",
+        "qty": "1 g",
+        "key": "nuez moscada"
+      }
+    ],
+    "steps": [
+      "Derrite la mantequilla, cocina la harina 2 minutos y añade caldo poco a poco. Remueve hasta obtener una masa muy espesa.",
+      "Incorpora ternera ya cocida y nuez moscada. Extiende en una fuente poco profunda y refrigera al menos 4 horas tras perder el calor inicial.",
+      "Forma bolitas, pasa por huevo batido y pan rallado y pincela con aceite.",
+      "Hornea a 210 °C 18–22 minutos, girando a mitad, hasta que estén doradas y muy calientes por dentro. Sirve con mostaza."
+    ],
+    "description": "Receta casera de bitterballen de ternera al horno. Adaptación al horno; incluye el tiempo de reposo.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-bitterballen.webp",
+    "family": "bitterballen",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Media",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-ensalada-griega",
+    "country": "greece",
+    "title": "Ensalada griega con feta",
+    "time": 15,
+    "ingredients": [
+      {
+        "name": "Tomate",
+        "qty": "300 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Pepino",
+        "qty": "200 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Pimiento verde",
+        "qty": "100 g",
+        "key": "pimiento verde"
+      },
+      {
+        "name": "Cebolla morada",
+        "qty": "70 g",
+        "key": "cebolla morada"
+      },
+      {
+        "name": "Queso feta",
+        "qty": "150 g",
+        "key": "queso feta"
+      },
+      {
+        "name": "Aceitunas negras",
+        "qty": "60 g",
+        "key": "aceitunas negras"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Orégano",
+        "qty": "2 g",
+        "key": "orégano"
+      }
+    ],
+    "steps": [
+      "Lava tomate, pepino y pimiento y corta en trozos grandes. Corta la cebolla en tiras finas.",
+      "Mezcla las verduras con las aceitunas escurridas.",
+      "Añade el feta en un bloque o en trozos grandes.",
+      "Reparte aceite y orégano y sirve al momento."
+    ],
+    "description": "Receta casera de ensalada griega con feta. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [],
+    "image": "/recipe-images/world-ensalada-griega.webp",
+    "family": "ensalada-griega",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-spanakopita",
+    "country": "greece",
+    "title": "Spanakopita de espinacas y feta",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Masa filo",
+        "qty": "140 g",
+        "key": "masa filo"
+      },
+      {
+        "name": "Espinacas",
+        "qty": "400 g",
+        "key": "espinacas"
+      },
+      {
+        "name": "Queso feta",
+        "qty": "180 g",
+        "key": "queso feta"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Huevos",
+        "qty": "1 ud",
+        "key": "huevos"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "30 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Eneldo",
+        "qty": "5 g",
+        "key": "eneldo"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 190 °C. Sofríe cebolla con 10 ml de aceite y añade espinacas. Cocina, escurre muy bien y deja templar.",
+      "Mezcla espinacas, feta desmenuzado, huevo y eneldo.",
+      "Pincela un molde con aceite, coloca varias capas de filo pinceladas ligeramente y reparte el relleno. Cubre con el resto del filo y aceite.",
+      "Hornea 25–30 minutos, hasta que esté dorada y el relleno cuajado."
+    ],
+    "description": "Receta casera de spanakopita de espinacas y feta. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-spanakopita.webp",
+    "family": "spanakopita",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-gyros",
+    "country": "greece",
+    "title": "Gyros caseros de pollo",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Pechuga de pollo",
+        "qty": "300 g",
+        "key": "pechuga de pollo"
+      },
+      {
+        "name": "Pan de pita",
+        "qty": "180 g",
+        "key": "pan de pita"
+      },
+      {
+        "name": "Yogur natural",
+        "qty": "150 g",
+        "key": "yogur natural"
+      },
+      {
+        "name": "Pepino",
+        "qty": "120 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Tomate",
+        "qty": "150 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Cebolla morada",
+        "qty": "60 g",
+        "key": "cebolla morada"
+      },
+      {
+        "name": "Limón",
+        "qty": "50 g",
+        "key": "limón"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Orégano",
+        "qty": "3 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Mezcla el pollo en tiras con aceite, orégano, la mitad del ajo y la mitad del zumo de limón. Refrigera 15 minutos.",
+      "Ralla y escurre bien el pepino; mezcla con yogur, el resto del ajo y del limón.",
+      "Cocina el pollo por completo en una sartén caliente. Lava y corta tomate y cebolla y calienta las pitas.",
+      "Rellena las pitas con pollo, verduras y salsa de yogur."
+    ],
+    "description": "Receta casera de gyros caseros de pollo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-gyros.webp",
+    "family": "gyros",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-tzatziki",
+    "country": "greece",
+    "title": "Tzatziki con pita tostada",
+    "time": 15,
+    "ingredients": [
+      {
+        "name": "Yogur griego natural",
+        "qty": "250 g",
+        "key": "yogur griego natural"
+      },
+      {
+        "name": "Pepino",
+        "qty": "180 g",
+        "key": "pepino"
+      },
+      {
+        "name": "Ajo",
+        "qty": "3 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Limón",
+        "qty": "40 g",
+        "key": "limón"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Eneldo",
+        "qty": "5 g",
+        "key": "eneldo"
+      },
+      {
+        "name": "Pan de pita",
+        "qty": "160 g",
+        "key": "pan de pita"
+      },
+      {
+        "name": "Sal",
+        "qty": "1 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Ralla el pepino, añade la sal y deja escurrir 5 minutos. Aprieta para retirar el exceso de agua.",
+      "Mezcla yogur, pepino, ajo muy picado, zumo de limón y eneldo.",
+      "Añade el aceite y mezcla. Mantén en frío mientras preparas el pan.",
+      "Tuesta las pitas en sartén seca y corta en triángulos. Sirve con la salsa."
+    ],
+    "description": "Receta casera de tzatziki con pita tostada. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-tzatziki.webp",
+    "family": "tzatziki",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar",
+      "rapido"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-fasolada",
+    "country": "greece",
+    "title": "Fasolada: sopa griega de alubias",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Alubias blancas cocidas",
+        "qty": "400 g",
+        "key": "alubias blancas cocidas"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "180 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Apio",
+        "qty": "100 g",
+        "key": "apio"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "120 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "250 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "600 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Laurel",
+        "qty": "1 g",
+        "key": "laurel"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla, zanahoria y apio picados con el aceite 7 minutos.",
+      "Añade tomate, caldo, laurel y sal y cocina suavemente 15 minutos.",
+      "Incorpora las alubias escurridas y cocina 8 minutos más.",
+      "Retira el laurel y sirve caliente. Usa alubias cocidas; las secas necesitan remojo y otra cocción."
+    ],
+    "description": "Receta casera de fasolada: sopa griega de alubias. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-fasolada.webp",
+    "family": "fasolada",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-patatas-griegas",
+    "country": "greece",
+    "title": "Patatas griegas al limón",
+    "time": 50,
+    "ingredients": [
+      {
+        "name": "Patatas",
+        "qty": "600 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Limón",
+        "qty": "80 g",
+        "key": "limón"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "30 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "180 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Orégano",
+        "qty": "3 g",
+        "key": "orégano"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 210 °C. Pela las patatas y corta en gajos medianos.",
+      "Mezcla caldo, zumo de limón, aceite, ajo picado, orégano y sal. Vierte sobre las patatas en una fuente.",
+      "Hornea 30 minutos, gira los gajos y continúa 15–20 minutos.",
+      "Sirve cuando las patatas estén tiernas y los bordes dorados; añade un poco de agua si se seca antes de que estén hechas."
+    ],
+    "description": "Receta casera de patatas griegas al limón. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-patatas-griegas.webp",
+    "family": "patatas-griegas",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-bacalhau-bras",
+    "country": "portugal",
+    "title": "Bacalhau à Brás",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Bacalao desalado",
+        "qty": "300 g",
+        "key": "bacalao desalado"
+      },
+      {
+        "name": "Patatas",
+        "qty": "300 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "150 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Huevos",
+        "qty": "3 uds",
+        "key": "huevos"
+      },
+      {
+        "name": "Aceitunas negras",
+        "qty": "40 g",
+        "key": "aceitunas negras"
+      },
+      {
+        "name": "Perejil",
+        "qty": "8 g",
+        "key": "perejil"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      }
+    ],
+    "steps": [
+      "Corta las patatas en tiras finas y cocínalas con la mitad del aceite en sartén, removiendo hasta que estén tiernas y doradas.",
+      "Sofríe la cebolla en tiras con el aceite restante. Añade el bacalao desalado en lascas y cocínalo por completo.",
+      "Incorpora las patatas y los huevos batidos. Remueve a fuego suave hasta que el huevo esté cuajado.",
+      "Sirve con aceitunas y perejil picado. Usa bacalao ya desalado; el salado necesita otro proceso previo."
+    ],
+    "description": "Receta casera de bacalhau à brás. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-bacalhau-bras.webp",
+    "family": "bacalhau-bras",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-caldo-verde",
+    "country": "portugal",
+    "title": "Caldo verde portugués",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Patatas",
+        "qty": "350 g",
+        "key": "patatas"
+      },
+      {
+        "name": "Col",
+        "qty": "200 g",
+        "key": "col"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Chorizo",
+        "qty": "70 g",
+        "key": "chorizo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Cuece patata, cebolla y ajo troceados en 800 ml de agua durante 20 minutos.",
+      "Tritura la sopa hasta obtener una crema. Lava y corta la col en tiras muy finas.",
+      "Incorpora col y chorizo en rodajas y cocina 8–10 minutos, hasta que la col esté tierna y el chorizo cocinado.",
+      "Añade aceite y sal y sirve caliente."
+    ],
+    "description": "Receta casera de caldo verde portugués. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas",
+      "Batidora",
+      "Thermomix / robot"
+    ],
+    "image": "/recipe-images/world-caldo-verde.webp",
+    "family": "caldo-verde",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Placa / inducción",
+        "Gas"
+      ],
+      [
+        "Batidora",
+        "Thermomix / robot"
+      ]
+    ]
+  },
+  {
+    "id": "world-bifana",
+    "country": "portugal",
+    "title": "Bifana: bocadillo portugués de cerdo",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Lomo de cerdo",
+        "qty": "300 g",
+        "key": "lomo de cerdo"
+      },
+      {
+        "name": "Pan",
+        "qty": "180 g",
+        "key": "pan"
+      },
+      {
+        "name": "Vino blanco para cocinar",
+        "qty": "80 ml",
+        "key": "vino blanco para cocinar"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Pimentón dulce",
+        "qty": "3 g",
+        "key": "pimentón dulce"
+      },
+      {
+        "name": "Laurel",
+        "qty": "1 g",
+        "key": "laurel"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Mostaza",
+        "qty": "20 g",
+        "key": "mostaza"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta el lomo en filetes finos y marina 15 minutos en la nevera con vino, ajo picado, pimentón, laurel y sal.",
+      "Calienta el aceite y cocina los filetes por ambos lados hasta que estén completamente hechos.",
+      "Añade el adobo a la sartén y deja hervir y reducir unos minutos. Retira el laurel.",
+      "Abre el pan y rellena con cerdo, unas cucharadas de salsa y mostaza."
+    ],
+    "description": "Receta casera de bifana: bocadillo portugués de cerdo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-bifana.webp",
+    "family": "bifana",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-arroz-tomate-portugal",
+    "country": "portugal",
+    "title": "Arroz de tomate portugués",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Arroz",
+        "qty": "160 g",
+        "key": "arroz"
+      },
+      {
+        "name": "Tomate",
+        "qty": "350 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "600 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Perejil",
+        "qty": "8 g",
+        "key": "perejil"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla y ajo picados con el aceite 5 minutos.",
+      "Añade tomate troceado y sal y cocina 7 minutos, hasta que se deshaga.",
+      "Incorpora arroz y caldo caliente y cocina siguiendo el tiempo del arroz, removiendo ocasionalmente.",
+      "Sirve ligeramente caldoso con perejil picado. Añade agua caliente si se seca antes de que el arroz esté hecho."
+    ],
+    "description": "Receta casera de arroz de tomate portugués. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-arroz-tomate-portugal.webp",
+    "family": "arroz-tomate-portugal",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-pastel-nata",
+    "country": "portugal",
+    "title": "Pastéis de nata caseros",
+    "time": 45,
+    "ingredients": [
+      {
+        "name": "Masa de hojaldre",
+        "qty": "230 g",
+        "key": "masa de hojaldre"
+      },
+      {
+        "name": "Yemas de huevo",
+        "qty": "4 uds",
+        "key": "yemas de huevo"
+      },
+      {
+        "name": "Leche",
+        "qty": "250 ml",
+        "key": "leche"
+      },
+      {
+        "name": "Azúcar",
+        "qty": "100 g",
+        "key": "azúcar"
+      },
+      {
+        "name": "Harina de trigo",
+        "qty": "20 g",
+        "key": "harina de trigo"
+      },
+      {
+        "name": "Canela",
+        "qty": "2 g",
+        "key": "canela"
+      },
+      {
+        "name": "Piel de limón",
+        "qty": "3 g",
+        "key": "piel de limón"
+      }
+    ],
+    "steps": [
+      "Precalienta el horno a 240 °C. Enrolla el hojaldre, corta 6 piezas y presiónalas en los huecos de un molde de magdalenas para formar cestitas.",
+      "Calienta leche con la piel de limón. Mezcla harina y azúcar con 50 ml de agua, añade a la leche y remueve hasta que espese. Retira la piel y deja templar.",
+      "Añade las yemas batiendo fuera del fuego. Reparte la crema sin llenar los moldes hasta el borde.",
+      "Hornea 15–20 minutos, hasta que el hojaldre esté cocido y la crema cuajada con manchas doradas. Sirve con canela."
+    ],
+    "description": "Receta casera de pastéis de nata caseros. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno",
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-pastel-nata.webp",
+    "family": "pastel-nata",
+    "mealTypes": [
+      "Merienda"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato",
+    "toolGroups": [
+      [
+        "Horno"
+      ],
+      [
+        "Placa / inducción",
+        "Gas"
+      ]
+    ]
+  },
+  {
+    "id": "world-francesinha",
+    "country": "portugal",
+    "title": "Francesinha casera",
+    "time": 40,
+    "ingredients": [
+      {
+        "name": "Pan de molde",
+        "qty": "160 g",
+        "key": "pan de molde"
+      },
+      {
+        "name": "Lomo de cerdo",
+        "qty": "180 g",
+        "key": "lomo de cerdo"
+      },
+      {
+        "name": "Jamón cocido",
+        "qty": "80 g",
+        "key": "jamón cocido"
+      },
+      {
+        "name": "Salchichas Frankfurt",
+        "qty": "120 g",
+        "key": "salchichas frankfurt"
+      },
+      {
+        "name": "Queso en lonchas",
+        "qty": "120 g",
+        "key": "queso en lonchas"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "250 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Caldo de ternera",
+        "qty": "200 ml",
+        "key": "caldo de ternera"
+      },
+      {
+        "name": "Cerveza",
+        "qty": "100 ml",
+        "key": "cerveza"
+      },
+      {
+        "name": "Almidón de maíz",
+        "qty": "10 g",
+        "key": "almidón de maíz"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "10 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Chile en copos",
+        "qty": "1 g",
+        "key": "chile en copos"
+      }
+    ],
+    "steps": [
+      "Cocina el tomate con caldo, cerveza y chile 15 minutos. Disuelve el almidón en 20 ml de agua fría y añade para espesar; hierve 2 minutos.",
+      "Cocina el lomo completamente con el aceite y calienta las salchichas siguiendo el envase.",
+      "Monta dos sándwiches con pan tostado, lomo, jamón y salchichas. Cubre con queso y gratina hasta que funda.",
+      "Vierte la salsa caliente al servir. Necesitas una placa y un gratinador; la salsa cocinada puede conservar parte del alcohol."
+    ],
+    "description": "Receta casera de francesinha casera. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Horno"
+    ],
+    "image": "/recipe-images/world-francesinha.webp",
+    "family": "francesinha",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-cuscus",
+    "country": "morocco",
+    "title": "Cuscús de verduras y garbanzos",
+    "time": 30,
+    "ingredients": [
+      {
+        "name": "Cuscús",
+        "qty": "160 g",
+        "key": "cuscús"
+      },
+      {
+        "name": "Garbanzos cocidos",
+        "qty": "250 g",
+        "key": "garbanzos cocidos"
+      },
+      {
+        "name": "Zanahoria",
+        "qty": "160 g",
+        "key": "zanahoria"
+      },
+      {
+        "name": "Calabacín",
+        "qty": "180 g",
+        "key": "calabacín"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "450 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Ras el hanout",
+        "qty": "5 g",
+        "key": "ras el hanout"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla con el aceite. Añade zanahoria y calabacín en trozos, especias, sal y 250 ml de caldo; cuece 15 minutos.",
+      "Incorpora los garbanzos escurridos y calienta 5 minutos.",
+      "Hidrata el cuscús con el caldo restante caliente, ajustando la proporción y reposo a su envase. Separa los granos con un tenedor.",
+      "Sirve el cuscús con verduras, garbanzos y su caldo."
+    ],
+    "description": "Receta casera de cuscús de verduras y garbanzos. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-cuscus.webp",
+    "family": "cuscus",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-tajin-pollo",
+    "country": "morocco",
+    "title": "Tajín de pollo con limón y aceitunas",
+    "time": 50,
+    "ingredients": [
+      {
+        "name": "Contramuslo de pollo deshuesado",
+        "qty": "400 g",
+        "key": "contramuslo de pollo deshuesado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "180 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Limón en conserva",
+        "qty": "50 g",
+        "key": "limón en conserva"
+      },
+      {
+        "name": "Aceitunas verdes",
+        "qty": "80 g",
+        "key": "aceitunas verdes"
+      },
+      {
+        "name": "Jengibre molido",
+        "qty": "3 g",
+        "key": "jengibre molido"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "3 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Caldo de pollo",
+        "qty": "250 ml",
+        "key": "caldo de pollo"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Perejil",
+        "qty": "8 g",
+        "key": "perejil"
+      }
+    ],
+    "steps": [
+      "Dora el pollo con el aceite y retira a un plato limpio. Sofríe la cebolla en la misma cazuela.",
+      "Añade jengibre y cúrcuma, incorpora el pollo y el caldo y tapa.",
+      "Cocina suavemente 25–30 minutos, hasta que el pollo esté completamente hecho. Añade limón en conserva en tiras y aceitunas y cocina 5 minutos.",
+      "Termina con perejil. Puede hacerse en una cazuela con tapa sin tener un recipiente de tajín."
+    ],
+    "description": "Receta casera de tajín de pollo con limón y aceitunas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-tajin-pollo.webp",
+    "family": "tajin-pollo",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-harira",
+    "country": "morocco",
+    "title": "Harira de garbanzos y lentejas",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Garbanzos cocidos",
+        "qty": "220 g",
+        "key": "garbanzos cocidos"
+      },
+      {
+        "name": "Lentejas cocidas",
+        "qty": "220 g",
+        "key": "lentejas cocidas"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "300 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Apio",
+        "qty": "80 g",
+        "key": "apio"
+      },
+      {
+        "name": "Fideos finos secos",
+        "qty": "50 g",
+        "key": "fideos finos secos"
+      },
+      {
+        "name": "Caldo vegetal",
+        "qty": "700 ml",
+        "key": "caldo vegetal"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Cúrcuma",
+        "qty": "2 g",
+        "key": "cúrcuma"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Cilantro",
+        "qty": "8 g",
+        "key": "cilantro"
+      }
+    ],
+    "steps": [
+      "Sofríe cebolla y apio picados con el aceite 6 minutos. Añade comino y cúrcuma.",
+      "Vierte tomate y caldo y cocina 15 minutos.",
+      "Añade garbanzos y lentejas cocidos y escurridos. Incorpora los fideos y cocina el tiempo del envase.",
+      "Termina con cilantro picado y sirve caliente. Es una versión rápida con legumbres previamente cocidas."
+    ],
+    "description": "Receta casera de harira de garbanzos y lentejas. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-harira.webp",
+    "family": "harira",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-zaalouk",
+    "country": "morocco",
+    "title": "Zaalouk de berenjena y tomate",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Berenjena",
+        "qty": "400 g",
+        "key": "berenjena"
+      },
+      {
+        "name": "Tomate",
+        "qty": "300 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Pimentón dulce",
+        "qty": "3 g",
+        "key": "pimentón dulce"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "25 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Limón",
+        "qty": "40 g",
+        "key": "limón"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta la berenjena en dados pequeños y el tomate en trozos. Pon en una cazuela con ajo picado, aceite, comino, pimentón, sal y 80 ml de agua.",
+      "Tapa y cocina a fuego suave 20 minutos, removiendo, hasta que la berenjena esté muy tierna.",
+      "Destapa y aplasta las verduras con un tenedor. Cocina 5–10 minutos para que espese.",
+      "Termina con zumo de limón y sirve como acompañamiento o para untar."
+    ],
+    "description": "Receta casera de zaalouk de berenjena y tomate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-zaalouk.webp",
+    "family": "zaalouk",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-kefta",
+    "country": "morocco",
+    "title": "Kefta en salsa de tomate",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Carne picada de ternera",
+        "qty": "300 g",
+        "key": "carne picada de ternera"
+      },
+      {
+        "name": "Tomate triturado",
+        "qty": "350 g",
+        "key": "tomate triturado"
+      },
+      {
+        "name": "Cebolla",
+        "qty": "100 g",
+        "key": "cebolla"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Pimentón dulce",
+        "qty": "3 g",
+        "key": "pimentón dulce"
+      },
+      {
+        "name": "Perejil",
+        "qty": "8 g",
+        "key": "perejil"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "15 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Mezcla carne, la mitad de la cebolla muy picada, la mitad del comino y el pimentón, perejil y la mitad de la sal. Forma pequeñas albóndigas.",
+      "Sofríe la cebolla restante y el ajo con el aceite. Añade tomate, especias restantes, sal y 80 ml de agua y cocina 10 minutos.",
+      "Añade las albóndigas y cocina tapado a fuego suave 15 minutos, girándolas con cuidado.",
+      "Comprueba que una albóndiga esté completamente cocinada en el centro y sirve con su salsa."
+    ],
+    "description": "Receta casera de kefta en salsa de tomate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-kefta.webp",
+    "family": "kefta",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  },
+  {
+    "id": "world-taktouka",
+    "country": "morocco",
+    "title": "Taktouka de pimientos y tomate",
+    "time": 35,
+    "ingredients": [
+      {
+        "name": "Pimiento rojo",
+        "qty": "250 g",
+        "key": "pimiento rojo"
+      },
+      {
+        "name": "Pimiento verde",
+        "qty": "200 g",
+        "key": "pimiento verde"
+      },
+      {
+        "name": "Tomate",
+        "qty": "300 g",
+        "key": "tomate"
+      },
+      {
+        "name": "Ajo",
+        "qty": "6 g",
+        "key": "ajo"
+      },
+      {
+        "name": "Comino",
+        "qty": "3 g",
+        "key": "comino"
+      },
+      {
+        "name": "Pimentón dulce",
+        "qty": "3 g",
+        "key": "pimentón dulce"
+      },
+      {
+        "name": "Aceite de oliva",
+        "qty": "20 ml",
+        "key": "aceite de oliva"
+      },
+      {
+        "name": "Sal",
+        "qty": "2 g",
+        "key": "sal"
+      }
+    ],
+    "steps": [
+      "Corta los pimientos en tiras finas y cocínalos con aceite en una sartén tapada 12 minutos, removiendo para que no se quemen.",
+      "Añade tomate troceado, ajo picado, comino, pimentón y sal.",
+      "Cocina destapado 15 minutos hasta que las verduras estén tiernas y el líquido reducido.",
+      "Pica o aplasta ligeramente y sirve templado. Esta adaptación cocina los pimientos en sartén en vez de asarlos previamente."
+    ],
+    "description": "Receta casera de taktouka de pimientos y tomate. Cantidades para dos personas; revisa los pasos antes de cocinar.",
+    "tools": [
+      "Placa / inducción",
+      "Gas"
+    ],
+    "image": "/recipe-images/world-taktouka.webp",
+    "family": "taktouka",
+    "mealTypes": [
+      "Comida",
+      "Cena"
+    ],
+    "difficulty": "Fácil",
+    "servings": 2,
+    "mode": [
+      "normal",
+      "cocinar"
+    ],
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0,
+    "nutritionUnavailable": true,
+    "photoCaption": "Imagen generada de este plato"
+  }
+]

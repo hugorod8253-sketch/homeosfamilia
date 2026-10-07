@@ -5,15 +5,15 @@ import { planProductMatches } from "./recipe-plan-engine";
 export type WeeklyMenuRecipe={
  id:string;title:string;time:number;servings:number;
  ingredients:{name:string;qty:string;key:string}[];
- tools?:string[];
+ tools?:string[]; toolGroups?:string[][];
  mode:string[];
  calories?:number;
  protein?:number;family?:string;mealTypes?:WeeklyMeal[]|("Desayuno"|"Comida"|"Cena"|"Merienda")[];
 };
 
 export type WeeklyMeal="Desayuno"|"Comida"|"Cena";
-export type WeeklyMenuSlot={day:number;meal:WeeklyMeal;recipeId:string;why:string;portionFactor?:number};
-export type WeeklyMenuPlan={id:string;createdAt:string;startDate:string;slots:WeeklyMenuSlot[];shoppingLinked?:boolean;seed?:number;preferences?:MenuPreferences;warnings?:string[]};
+export type WeeklyMenuSlot={day:number;meal:WeeklyMeal;recipeId:string;why:string;portionFactor?:number;skipped?:boolean;cooked?:boolean};
+export type WeeklyMenuPlan={id:string;createdAt:string;startDate:string;slots:WeeklyMenuSlot[];shoppingLinked?:boolean;seed?:number;preferences?:MenuPreferences;warnings?:string[];kind?:"weekly"|"mealprep"};
 
 export type CalorieReferenceSource="off"|"general"|"custom"|"mixed";
 export type CalorieReference={enabled:boolean;dailyCalories?:number;source:CalorieReferenceSource;configuredCount:number;people:number};
@@ -55,7 +55,9 @@ function dislikeHits(r:WeeklyMenuRecipe,dislikes:string[]){
  return dislikes.filter(Boolean).filter(d=>t.includes(norm(d))).length;
 }
 function toolOk(r:WeeklyMenuRecipe,tools:string[]){
- if(!r.tools?.length||!tools.length)return true;
+ if(!tools.length)return true;
+ if(r.toolGroups?.length)return r.toolGroups.every(group=>group.some(tool=>tools.includes(tool)));
+ if(!r.tools?.length)return true;
  return r.tools.some(t=>tools.includes(t));
 }
 
