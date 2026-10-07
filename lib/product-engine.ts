@@ -11,6 +11,18 @@ export type ProductProfile={
  safety:ProductSafety;
 };
 
+/** Suggestions for short or ambiguous names typed by the shopper. */
+export function productSuggestions(name:string):ProductProfile[]{
+ const n=normalizeProductText(name);
+ const out:ProductProfile[]=[];
+ const add=(x:string)=>{const p=classifyProduct(x);if(!out.some(y=>y.canonical===p.canonical))out.push(p)};
+ if(/\bpavo\b/.test(n)){add("pechuga de pavo");add("solomillo de pavo");add("pavo en lonchas");}
+ if(/\bpollo\b/.test(n)&&!/(caldo|sopa|croqueta|nugget|asado)/.test(n)){add("pechuga de pollo");add("solomillo de pollo");add("pollo entero");}
+ if(/entrecot|argentino/.test(n)){add("entrecot de vacuno");}
+ if(/\bcarne\b/.test(n)){add("carne picada");add("filete de ternera");add("entrecot de vacuno");}
+ return out;
+}
+
 export function normalizeProductText(value:string){
  return (value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9ñ\s]/g," ").replace(/\s+/g," ").trim();
 }
@@ -74,6 +86,7 @@ const RULES:Rule[]=[
  P("pechuga de pavo",/(?!.*(?:rebozad|empanad|congelad))(?:pechuga.*pavo|filete.*pavo)/,"Carne","Pavo","Nevera","alta","turkey-breast","cold-required"),
  P("solomillo de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))solomillo.*pollo/,"Carne","Pollo","Nevera","alta","chicken-tender","cold-required"),
  P("solomillo de pavo",/solomillo.*pavo/,"Carne","Pavo","Nevera","alta","turkey-tender","cold-required"),
+ P("pavo en lonchas",/pavo.*loncha|loncha.*pavo/,"Carne","Embutido","Nevera","media","ham-cooked","cold-required"),
  P("muslo de pollo",/muslo.*pollo|contramuslo|cuarto\s+trasero.*pollo/,"Carne","Pollo","Nevera","alta","chicken-leg","cold-required"),
  P("pollo entero",/pollo\s+entero/,"Carne","Pollo","Nevera","alta","chicken-whole","cold-required"),
  P("pollo",/^pollo$/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
