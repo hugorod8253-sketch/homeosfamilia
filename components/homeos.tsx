@@ -1751,6 +1751,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const [purchaseTotal,setPurchaseTotal]=useState("");
  const [receiptName,setReceiptName]=useState("");
  const [shoppingListening,setShoppingListening]=useState(false);
+ const shoppingRecognitionRef=useRef<any>(null);
+ const shoppingTranscriptRef=useRef("");
+ const shoppingListeningRef=useRef(false);
  const [ocrStatus,setOcrStatus]=useState<"idle"|"reading"|"ready"|"error">("idle");
  const [ocrProgress,setOcrProgress]=useState(0);
  const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
@@ -1824,18 +1827,25 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   setQuick("");
   setToast(entries.length===1?entries[0]+" añadido":entries.length+" productos añadidos");
  } function startShoppingVoice(){
+  if(shoppingListening){
+   shoppingRecognitionRef.current?.stop();
+   setShoppingListening(false);shoppingListeningRef.current=false;
+   const finalText=shoppingTranscriptRef.current.trim();
+   shoppingTranscriptRef.current="";
+   if(finalText)add(finalText);
+   return;
+  }
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
-  const recognition=new W();
+  const recognition=new W(); shoppingRecognitionRef.current=recognition;
   recognition.lang="es-ES";recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
-  let transcript="";
-  setShoppingListening(true);
+  shoppingTranscriptRef.current="";shoppingListeningRef.current=true;setShoppingListening(true);
   recognition.onresult=(e:any)=>{
-   for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)transcript+=(transcript?" ":"")+e.results[i][0].transcript;
-   if(transcript)setQuick(transcript);
+   for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)shoppingTranscriptRef.current+=(shoppingTranscriptRef.current?" ":"")+e.results[i][0].transcript;
+   if(shoppingTranscriptRef.current)setQuick(shoppingTranscriptRef.current);
   };
   recognition.onerror=()=>setToast("No he podido entender la voz");
-  recognition.onend=()=>{setShoppingListening(false);if(transcript.trim())add(transcript);};
+  recognition.onend=()=>{if(shoppingListeningRef.current){try{recognition.start()}catch{}}};
   recognition.start();
  }
  async function ticketSelected(file?:File,append=false){
@@ -2265,7 +2275,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
     <label><span>Hábitos de alimentación</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="basica">Mostrar tendencias</option><option value="off">Ocultar</option></select><small>Analiza compras y recetas como señales; no sustituye una valoración nutricional.</small></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Grande + compras rápidas</option><option value="diaria">Frecuente</option></select></label>
 
-    <div className="profile-market-section"><span>Supermercados habituales</span><p>Toca una tienda seleccionada para quitarla de habituales. Las compras registradas se conservan.</p><div className="profile-market-grid">{[...new Set([...SUPERMARKETS,...draft.profile.supermarkets])].map(m=><button type="button" key={m} aria-pressed={draft.profile.supermarkets.includes(m)} className={draft.profile.supermarkets.includes(m)?"active":""} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];const mainSupermarket=supermarkets.includes(s.profile.mainSupermarket)?s.profile.mainSupermarket:(supermarkets[0]||"");return {...s,profile:{...s.profile,supermarkets,mainSupermarket}}})}>{m}</button>)}</div></div>
+    <div className="profile-market-section"><span>Supermercados habituales</span><p>Toca una tienda seleccionada para quitarla de habituales. Las compras registradas se conservan.</p><div className="profile-market-grid">{[...new Set([...SUPERMARKETS,...draft.profile.supermarkets])].map(m=><button type="button" key={m} aria-pressed={draft.profile.supermarkets.includes(m)} className={(draft.profile.supermarkets.includes(m)?"active ":"")+"market-choice"} onClick={()=>setDraft(s=>{const supermarkets=s.profile.supermarkets.includes(m)?s.profile.supermarkets.filter(x=>x!==m):[...s.profile.supermarkets,m];const mainSupermarket=supermarkets.includes(s.profile.mainSupermarket)?s.profile.mainSupermarket:(supermarkets[0]||"");return {...s,profile:{...s.profile,supermarkets,mainSupermarket}}})}>{m}</button>)}</div></div>
 
     <div className="profile-market-section kitchen-tools-setting"><span>Qué tienes para cocinar</span><p>HomeOS muestra las formas de preparación compatibles cuando la receta las tiene disponibles.</p><div className="profile-market-grid">{KITCHEN_TOOLS.map(t=><button type="button" key={t} className={draft.profile.kitchenTools.includes(t)?"active":""} onClick={()=>toggleTool(t)}>{t}</button>)}</div></div>
    </div>}

@@ -2,6 +2,8 @@ export function normalizeSpokenShoppingText(value: string) {
   const words: Record<string,string> = {un:"1",una:"1",uno:"1",dos:"2",tres:"3",cuatro:"4",cinco:"5",seis:"6",siete:"7",ocho:"8",nueve:"9",diez:"10",once:"11",doce:"12"};
   let out = value;
   for (const [word, number] of Object.entries(words)) out = out.replace(new RegExp("\\b" + word + "\\b", "gi"), number);
+  out=out.replace(/^\s*(?:(?:necesito|necesitamos|quiero|queremos|hay que|apunta|añade|añadir|agrega|agregar|comprar)\s+)+/i, "");
+  out=out.replace(/\bpasta\s+para\s+(macarrones|espaguetis|espaguetti)\b/gi, "$1");
   return out.replace(/\bmedio\s+(kilo|kg|litro|l)\b/gi,(_,unit)=>"0,5 " + unit).replace(/\bmedia\s+docena\b/gi,"6 uds");
 }
 
