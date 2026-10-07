@@ -1,4 +1,4 @@
-const CACHE="homeos-shell-v8-simple-recipes";
+const CACHE="homeos-shell-v9-world-recipes";
 const SHELL=["/","/manifest.webmanifest","/icon.svg?v=3"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}));

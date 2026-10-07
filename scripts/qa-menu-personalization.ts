@@ -1,5 +1,5 @@
 import {retireWeeklyMenu} from "../lib/retire-weekly-menu";
-import {RECIPE_THEMES,themeRecipes,themeForMonth} from "../lib/recipe-themes";
+import {RECIPE_THEMES,themeRecipes,themeForMonth,themeForPeriod} from "../lib/recipe-themes";
 import {sumSources} from "../lib/recipe-plan-engine";
 import assert from "node:assert/strict";
 import { RECIPES } from "../lib/recipes";
@@ -58,4 +58,7 @@ assert.equal(retireWeeklyMenu(cleaned,()=>null),cleaned,"Migration is idempotent
 for(const theme of RECIPE_THEMES)assert(themeRecipes(theme.id,RECIPES).length>=4,theme.title);
 assert.notEqual(themeForMonth(new Date(2026,9,1)).id,themeForMonth(new Date(2026,10,1)).id);
 assert.notDeepEqual(themeRecipes("pasta",RECIPES,new Date(2026,9,1)).map(r=>r.id),themeRecipes("pasta",RECIPES,new Date(2026,9,8)).map(r=>r.id));
-console.log("Recipe discovery QA: retired weekly plans preserve stock/history/manual shopping, idempotent migration, 4 populated themes and weekly rotation.");
+console.log("Recipe discovery QA: retired weekly plans preserve stock/history/manual shopping, idempotent migration, populated country themes and weekly rotation.");
+
+assert.equal(themeForPeriod("week",new Date(2026,9,5)).id,themeForPeriod("week",new Date(2026,9,11)).id);
+assert.notEqual(themeForPeriod("week",new Date(2026,9,5)).id,themeForPeriod("week",new Date(2026,9,12)).id);
