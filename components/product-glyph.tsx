@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { classifyProduct } from "../lib/product-engine";
+import { productIllustration } from "../lib/illustrated-products";
 
 const E:Record<string,string>={
  "tomato":"🍅","tomato-cherry":"🍅","carrot":"🥕","onion":"🧅","garlic":"🧄","potato":"🥔","sweet-potato":"🍠","avocado":"🥑",
@@ -141,6 +142,10 @@ function custom(kind:string){
 
 export function ProductGlyph({name,category,className=""}:{name:string;category?:string;className?:string}){
  const p=classifyProduct(name,category);
+ const illustration=productIllustration(name,p.canonical);
+ if(illustration) return <span className={"product-glyph "+className} title={illustration.name} role="img" aria-label={illustration.name}>
+  <span className="product-illustration" style={{backgroundImage:`url(/food-illustrations/atlas-${illustration.sheet}.webp)`,backgroundPosition:`${illustration.column*100/3}% ${illustration.row*100/3}%`}} />
+ </span>;
  const raw=name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
  const explicit=/pavo/.test(raw)?"🦃":/pechuga/.test(raw)?"🍗":/entrecot|chuleton|chuleta|ternera|vacuno/.test(raw)?"🥩":/pollo/.test(raw)?"🐔":/verduras?|vegetales?|hortalizas?/.test(raw)?"🥦":/frutas?/.test(raw)?"🍎":/ensalada/.test(raw)?"🥗":/pescado|merluza|salmon|atun/.test(raw)?"🐟":/carne/.test(raw)?"🥩":/arroz/.test(raw)?"🍚":/pasta/.test(raw)?"🍝":/pan/.test(raw)?"🍞":/queso/.test(raw)?"🧀":/huevo/.test(raw)?"🥚":"";
  const icon=explicit?null:custom(p.icon);

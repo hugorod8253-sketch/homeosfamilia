@@ -548,6 +548,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* Product intelligence + custom pictograms */
 .product-glyph{width:100%;height:100%;min-width:0;min-height:0;display:grid;place-items:center;font-size:1.05em;line-height:1;color:#516159}
 .product-svg{width:78%;height:78%;display:block}
+.product-illustration{display:block;width:100%;aspect-ratio:1;max-height:100%;background-size:400% 400%;background-repeat:no-repeat;mix-blend-mode:multiply;pointer-events:none}
 .product-pictogram .product-glyph{font-size:23px}
 .inventory-product-icon .product-glyph{font-size:22px}
 .meal-request-results .product-glyph{width:26px;height:26px;font-size:21px}

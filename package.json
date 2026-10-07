@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "npm run qa && next build",
     "start": "next start",
-    "qa": "node --import tsx scripts/qa.ts"
+    "qa": "node --import tsx scripts/qa.ts && node --import tsx scripts/qa-illustrations.ts"
   },
   "dependencies": {
     "next": "16.3.8",
