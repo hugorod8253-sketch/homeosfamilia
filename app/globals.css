@@ -1783,3 +1783,116 @@ button{color:inherit}
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+/* HomeOS: sober navy identity; traffic-light colours describe states only. */
+:root{--bg:#f5f6f8;--ink:#172a42;--muted:#647183;--line:#e3e7ec;--green:#21744e;--green2:#348563;--shadow:0 10px 30px rgba(23,42,66,.05)}
+.sidebar{background:#fff!important;border-color:var(--line)}
+.logo-h{fill:#172a42!important}.logo-spoon{fill:#b49448!important}
+.nav{color:#576478}.nav.active{background:#edf1f7!important;color:#172a42!important;box-shadow:none!important}
+.nav.active .nav-icon,.bottom-nav button.active,.bottom-nav button.active .nav-icon{color:#172a42!important}
+.profile>span,.avatar{background:#edf1f7!important;color:#172a42!important}
+.primary,.quick-add button,.recipe-total+button{background:#172a42}
+.view-tabs,.mode-row,.profile-tabs,.store-picker{background:#eef1f5}
+.view-tabs button.active,.mode-row button.active,.profile-tabs button.active{color:#172a42}
+.home-final-head p,.home-card-head small,.home-meal-meta,.home-meal-copy time{color:#647183!important}
+.home-final-head:before{background:#edf1f7!important}
+.home-weather{background:#eef2f7!important;color:#172a42!important}
+.home-weather small{color:#647183!important}
+.home-final-menu,.home-mini-agenda,.home-final-summary,.home-final-habits,.home-final-recommend,.home-final-actions{background:#fff!important;border-color:#e3e7ec!important;box-shadow:0 3px 12px #172a4203!important;border-radius:16px!important}
+.home-card-head>button{color:#314e73!important}
+.home-menu-badge{background:#edf2f8!important;color:#3e5676!important}
+.home-final-meals>button,.home-final-ideas>button{background:#fff!important;border-color:#e3e7ec!important}
+.home-final-meals>button.active{background:#faf8ef!important;border-color:#dbca8f!important}
+.home-meal-copy>small,.home-meal-copy>strong{color:#172a42!important}
+.home-meal-cta{background:#edf1f7!important;color:#314e73!important}
+.home-no-menu-actions button:first-child,.home-final-recommend button{background:#172a42!important;color:#fff!important}
+.home-mini-calendar{background:#fbfcfd!important;border-color:#e3e7ec!important}
+.home-mini-days button.today{background:#172a42!important}
+.home-mini-events button{background:#f7f9fc!important;box-shadow:inset 3px 0 0 #54759e!important}
+.home-mini-events button:nth-child(2){box-shadow:inset 3px 0 0 #8c7da9!important}
+.home-mini-events button:nth-child(3){box-shadow:inset 3px 0 0 #bc9a43!important}
+.home-mini-add{background:#fff!important;color:#314e73!important;border-color:#d9e0e8!important}
+.home-final-summary-grid button{background:#f8fafc!important;border:1px solid #edf0f4!important}
+.home-final-summary-grid button>span{background:#e9eef6!important;color:#314e73!important}
+.home-final-summary-grid button:nth-child(1)>span{background:#fff2d7!important;color:#8a6515!important}
+.home-final-summary-grid button:nth-child(2)>span{background:#fff2d7!important;color:#8a6515!important}
+.home-final-summary-grid button:nth-child(3)>span{background:#e7f2ec!important;color:#21744e!important}
+.home-final-summary-grid button.urgent>span{background:#fdebed!important;color:#a83d44!important}
+.home-final-action-grid button{background:#fff!important;border-color:#e7ebf0!important}
+.home-final-action-grid button>span{background:#eef2f7!important;color:#314e73!important}
+.home-final-action-grid button:first-child>span{background:#f6edcf!important;color:#80641f!important}
+.home-final-action-grid strong{color:#172a42!important}
+.home-final-actions>.home-card-head:after{color:#314e73!important}
+.habit-symbol{background:#edf1f7!important;color:#54759e!important}
+.home-final-habit-grid button>div:before{display:none!important}
+.habit-meter{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden;display:block;min-width:0}
+.habit-meter i{display:block;height:100%;background:#95a1b2;border-radius:inherit}
+.tone-good .habit-meter i{background:#348563}.tone-low .habit-meter i{background:#c99c35}.tone-high .habit-meter i{background:#ce5a63}
+.home-final-habit-grid button.tone-good em{background:#e7f3eb!important;color:#21744e!important}
+.home-final-habit-grid button.tone-low em{background:#fff2d7!important;color:#8a6515!important}
+.home-final-habit-grid button.tone-high em{background:#fdebed!important;color:#a83d44!important}
+.home-final-habit-grid button.tone-learning em{background:#edf1f7!important;color:#647183!important}
+.home-final-summary-grid strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.profile-market-section>p{color:var(--muted);font-size:12px;line-height:1.5;margin:6px 0 12px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #54759e;outline-offset:3px}
+/* A card's text must remain readable at 100% zoom. */
+.home-final{gap:16px!important}
+.home-card-head strong{font-size:17px!important;line-height:1.3}
+.home-card-head small{font-size:11px!important}.home-card-head>button{font-size:11px!important}
+.home-final-meals,.home-final-ideas{gap:9px!important}
+.home-final-ideas strong{font-size:12px!important;line-height:1.4}
+.home-final-ideas span{font-size:10px!important}
+.home-meal-copy>small{font-size:11px!important}.home-meal-copy time,.home-meal-meta,.home-meal-cta{font-size:10px!important}
+.home-meal-copy>strong{font-size:13px!important;line-height:1.4!important}
+.home-mini-weekdays span,.home-mini-days button,.home-mini-days>span{font-size:10px!important}
+.home-mini-events time,.home-mini-events span{font-size:10px!important}
+.home-final-summary-grid button{min-height:125px!important;grid-template-columns:1fr!important;gap:4px;padding:12px!important}
+.home-final-summary-grid button>span{grid-row:auto!important}
+.home-final-summary-grid small{font-size:10px!important}.home-final-summary-grid strong{font-size:24px!important}.home-final-summary-grid em{font-size:10px!important;line-height:1.4!important}
+.home-final-habit-grid strong,.home-final-habit-grid em{font-size:11px!important}
+.home-final-habit-grid button>div{grid-template-columns:92px minmax(35px,1fr) 62px!important;gap:8px!important}
+.home-final-recommend strong{font-size:16px!important}.home-final-recommend p,.home-final-recommend span,.home-final-recommend button{font-size:11px!important}
+.home-final-action-grid strong{font-size:11px!important}
+@media(min-width:721px){
+ .home-final-menu,.home-mini-agenda,.home-final-summary,.home-final-habits,.home-final-recommend,.home-final-actions{padding:18px!important}
+ .home-final-top,.home-final-mid,.home-final-bottom{gap:16px!important}
+ .home-final-head p{font-size:12px!important}
+ .home-no-menu-actions button,.home-mini-add{font-size:12px!important;min-height:42px!important}
+}
+@media(min-width:821px) and (max-width:1499px){
+ .home-final-meals>button{grid-template-columns:1fr!important;grid-template-rows:100px auto!important;align-content:start!important}
+ .home-final-meals img{width:100%!important;height:100px!important}
+ .home-final-meals>button>b,.home-meal-cta{display:none!important}
+ .home-final-recommend{grid-template-columns:110px minmax(0,1fr)!important}
+ .home-final-recommend>img{width:110px!important}
+ .home-final-ideas>button:not(.home-no-menu-actions button){grid-template-columns:1fr!important;align-content:start!important}
+ .home-final-ideas img{width:100%!important;height:85px!important}
+ .home-final-ideas>button>b{display:none!important}
+}
+@media(max-width:720px){
+ .home-final-menu,.home-mini-agenda,.home-final-summary,.home-final-actions{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+ .home-final{gap:20px!important}
+ .home-card-head strong{font-size:19px!important}.home-card-head small{font-size:10px!important}.home-card-head>button{font-size:10px!important}
+ .home-title-line{flex-wrap:wrap}.home-menu-badge{font-size:9px}
+ .home-final-summary-grid{gap:6px!important}
+ .home-final-summary-grid button{padding:10px 5px!important;min-height:132px!important}
+ .home-final-summary-grid small{font-size:8px!important}.home-final-summary-grid strong{font-size:22px!important}.home-final-summary-grid em{font-size:9px!important}
+ .home-final-ideas strong,.home-meal-copy>strong{font-size:12px!important}
+ .home-final-action-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+ .home-final-action-grid button{border:1px solid #e7ebf0!important;min-height:105px!important}
+ .home-final-action-grid strong{font-size:11px!important}
+ .home-mini-agenda-body{grid-template-columns:minmax(130px,.9fr) minmax(0,1.1fr)!important}
+ .home-mini-events button{grid-template-columns:36px minmax(0,1fr) auto!important}
+}
+@media(max-width:359px){
+ .home-final-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .home-mini-agenda-body{grid-template-columns:1fr!important}
+ .home-final-meals img{height:85px!important}.home-final-meals>button{grid-template-rows:auto auto 85px minmax(30px,auto) auto!important}
+}
+
+/* Keep the calendar's seven columns independent of generic mobile buttons. */
+.home-mini-weekdays,.home-mini-days{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+.home-mini-days button,.home-mini-days>span{min-width:0!important;width:100%!important;min-height:0!important;height:auto!important;padding:0!important;aspect-ratio:1}
+.home-mini-events .empty{font-size:11px!important;line-height:1.4!important;overflow-wrap:anywhere}
+
+.home-mini-events .empty{display:block!important;width:100%;padding:10px!important;text-align:left}

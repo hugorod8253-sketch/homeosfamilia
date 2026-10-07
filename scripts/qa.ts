@@ -1,3 +1,6 @@
+import { RECIPES } from "../lib/recipes";
+import { habitBalanceSignals } from "../lib/habit-balance";
+import { parseShoppingQuantity, splitShoppingEntries } from "../lib/shopping-input";
 import { readFileSync } from "node:fs";
 import { classifyProduct, detectProductsInText, freezerQualityGuide } from "../lib/product-engine";
 import { mergeReceiptCandidates, parseReceiptText } from "../lib/receipt-local";
@@ -9,7 +12,7 @@ import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOC
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
-import { freeInventoryAfterReservations, planFromBase, planToBase, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
+import { parsePlanQty, freeInventoryAfterReservations, planFromBase, planToBase, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
@@ -104,6 +107,8 @@ assert((shelfLifeReferenceDays("bebida de avena barista")||0)>150,"barista oat d
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="batido proteínas"&&x.label==="02/2028"),"protein drink must preserve the observed 02/2028 label");
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="queso"&&x.exactDate==="2026-11-19"),"cheese must preserve the corrected 19/11/2026 label");
 assert(LIDL_2026_SHELF_LIFE.some(x=>x.name==="almendras"&&x.confidence==="media"&&!x.exactDate),"almonds 29/03 must remain incomplete instead of inventing a year");
+assert(estimateShelfLifeFromReference("pollo","2026-10-07")===null,"fresh chicken must not inherit a broth date");
+assert(estimateShelfLifeFromReference("caldo de pollo","2026-10-07")?.kind==="preferente","broth retains its own reference");
 const oatEstimate=estimateShelfLifeFromReference("bebida de avena barista","2026-10-06");
 assert(oatEstimate?.date==="2027-05-02","estimated oat drink date should reproduce the observed reference on the observation date");
 assert(oatEstimate?.kind==="preferente","estimated oat drink must remain a best-before estimate, not an expiry guarantee");
@@ -205,3 +210,46 @@ assert(!mostlyBought.some(x=>x.id==="recipe")&&mostlyBought.find(x=>x.id==="manu
 
 
 console.log("HomeOS QA passed:",cases.length,"product classifications,",EXTRA_RECIPES.length,"extra recipes,",REUSE_IDEAS.length,"reuse ideas,",LIDL_2026_SHELF_LIFE.length,"shelf-life samples, weekly menu 21/21");
+
+// Real family shorthand must keep quantities and decimal commas.
+const quickInputs = [
+ ["2 yogures", "yogures", 2, "uds"],
+ ["dos yogures", "yogures", 2, "uds"],
+ ["1 kg de pollo", "pollo", 1, "kg"],
+ ["0,5 kg de pollo", "pollo", .5, "kg"],
+ ["medio kilo de pollo", "pollo", .5, "kg"],
+ ["500 ml de leche", "leche", 500, "ml"],
+ ["media docena de huevos", "huevos", 6, "uds"]
+] as const;
+for(const [input,name,qty,unit] of quickInputs){const p=parseShoppingQuantity(input);assert(p.name===name&&p.qty===qty&&p.unit===unit,"shopping shorthand: "+input)}
+assert(splitShoppingEntries("leche, 2 yogures y 0,5 kg de pollo").length===3,"decimal comma must not split a product");
+assert(splitShoppingEntries("leche\nyogur\npollo").length===3,"newline-separated products must stay separate");
+product("pollo","Carne","Nevera");
+product("caldo de pollo","Despensa","Despensa");
+const habitNow=new Date(2026,9,7,10);
+const record=(date:string,name:string)=>({date,ingredients:[{name}]});
+const oldMeals=Array.from({length:8},()=>record("2026-09-25","chocolate"));
+assert(habitBalanceSignals({mealHistory:oldMeals},habitNow).every(x=>x.tone==="learning"),"7-day overview must exclude older meals");
+const habitMeals=[record("2026-10-01","pollo"),record("2026-10-07","huevo"),record("2026-10-06","tomate"),record("2026-10-05","chocolate")];
+const balance=habitBalanceSignals({mealHistory:[...oldMeals,...habitMeals,record("2026-10-08","chocolate")]},habitNow);
+assert(balance.find(x=>x.key==="protein")?.ratio===.5,"habits must include today and six prior calendar days, but exclude future dates");
+assert(balance.find(x=>x.key==="sweets")?.ratio===.25,"habits bar must reflect recorded meals, not a fixed decoration");
+console.log("Family-flow regression checks passed: shorthand quantities, decimals, product routing, real 7-day habits");
+
+// Check every built-in recipe, not just a representative sample.
+assert(new Set(RECIPES.map(r=>r.id)).size===RECIPES.length,"recipe IDs must be unique");
+for(const recipe of RECIPES){
+ assert(recipe.title.trim().length>0&&recipe.steps.length>=2,"recipe content: "+recipe.id);
+ assert(recipe.time>0&&recipe.servings>0&&recipe.mode.length>0,"recipe metadata: "+recipe.id);
+ const ingredients=recipe.ingredients.map(i=>{const q=parsePlanQty(i.qty);assert(q&&q.amount>0,"ingredient quantity: "+recipe.id+" "+i.name);return {name:i.name,qty:q!.amount,unit:q!.unit,category:classifyProduct(i.name).category,stock:"hay"}});
+ assert(recipeShortages(recipe.ingredients,[]).length===recipe.ingredients.length,"empty inventory must show every shortage: "+recipe.id);
+ assert(recipeShortages(recipe.ingredients,ingredients).length===0,"full inventory must make recipe possible: "+recipe.id);
+ const half=ingredients.map(i=>({...i,qty:i.qty/2}));
+ const halfMissing=recipeShortages(recipe.ingredients,half);
+ assert(halfMissing.every(i=>Number.isFinite(i.missing)&&i.missing>0),"partial inventory must have positive finite deficits: "+recipe.id);
+}
+for(const people of [1,2,4,6]){
+ const plan=buildWeeklyMenu(RECIPES,{inventory:[],dislikes:[],tools:["Placa / inducción","Horno","Microondas","Batidora"],people});
+ assert(plan.slots.length===21&&plan.slots.every(slot=>RECIPES.some(r=>r.id===slot.recipeId)),"weekly plan must reference real recipes for household "+people);
+}
+console.log("All",RECIPES.length,"recipes verified against empty, full and partial inventory; weekly menus for 1/2/4/6 people");
