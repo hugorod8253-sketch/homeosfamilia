@@ -376,9 +376,7 @@
     "description": "Receta casera de pisto manchego con huevo. Cantidades para dos personas; revisa los pasos antes de cocinar.",
     "tools": [
       "Placa / inducción",
-      "Gas",
-      "Batidora",
-      "Thermomix / robot"
+      "Gas"
     ],
     "image": "/recipe-images/world-pisto.webp",
     "family": "pisto",
@@ -397,17 +395,7 @@
     "carbs": 0,
     "fat": 0,
     "nutritionUnavailable": true,
-    "photoCaption": "Imagen generada de este plato",
-    "toolGroups": [
-      [
-        "Placa / inducción",
-        "Gas"
-      ],
-      [
-        "Batidora",
-        "Thermomix / robot"
-      ]
-    ]
+    "photoCaption": "Imagen generada de este plato"
   },
   {
     "id": "world-marmitako",

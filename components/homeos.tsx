@@ -1162,7 +1162,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
   setTab("ideas");clearMealSeed();
  }},[mealSeed]);
  useEffect(()=>{if(focusTab){setTab(focusTab);clearFocusTab()}},[focusTab]);
- const discoveryRecipes=useMemo(()=>RECIPES.filter(r=>recipeAllowed(r,{inventory:[],dislikes:state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean)),tools:state.profile.kitchenTools,people:state.profile.householdSize})),[state.members,state.profile.householdSize,state.profile.kitchenTools]);
+ const discoveryRecipes=useMemo(()=>RECIPES.filter(r=>recipeAllowed(r,{inventory:[],dislikes:state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean)),tools:[],people:state.profile.householdSize})),[state.members,state.profile.householdSize ]);
  const allRecipes=useMemo(()=>[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i),[state.recipePlans,aiRecipes]);
  const recipeVisual=(r:Recipe,kind:"thumb"|"hero"="thumb")=>{
   const fallback="/recipe-placeholder.svg";

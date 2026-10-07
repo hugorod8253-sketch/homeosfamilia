@@ -2068,3 +2068,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .theme-recipe-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
 @media(max-width:1000px){.theme-recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:580px){.theme-recipe-grid{grid-template-columns:1fr!important}}
+
+.home-final-top .home-final-ideas>button span{font-size:14px!important;line-height:1.35!important}
+.home-final-action-grid strong{font-size:16px!important}
+.home-theme-card>button{font-size:16px!important;background:#edf5ef!important;color:#285c43!important;border:1px solid #d3e5d8!important;border-radius:12px!important;font-weight:650!important}
