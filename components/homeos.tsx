@@ -108,7 +108,8 @@ function normalizeState(x:any):AppState{
   return {...i,category,subcategory:i.subcategory||p.subcategory,location};
  }):baseInventory;
  const inventory=migratedInventory.map(i=>{
-  if(i.expires||i.location==="Congelador"||!i.purchasedAt||i.purchaseDateUnknown)return i;
+  if(i.category==="Preparados")return {...i,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined};
+  if(i.expires||i.category==="Preparados"||i.location==="Congelador"||!i.purchasedAt||i.purchaseDateUnknown)return i;
   if(i.estimatedExpires){
    if(i.estimateBasis?.includes("referencia real observada en tienda")&&!estimateShelfLifeFromReference(i.name,i.purchasedAt))return {...i,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined};
    return i;
@@ -341,6 +342,7 @@ function storeClass(name:string){
 function productIcon(name:string,cat:string){return <ProductGlyph name={name} category={cat}/>}
 function rotationBand(name:string,cat:string,location?:string){
  if(location==="Congelador") return {key:"baja",label:"Larga duración"};
+ if(cat==="Preparados")return {key:"alta",label:"Conservación de preparado"};
  const ref=shelfLifeBandFromReference(name);
  if(ref==="corta")return {key:"alta",label:"Vida útil corta"};
  if(ref==="media")return {key:"media",label:"Vida útil media"};
@@ -374,6 +376,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
   return {prob:.96,label:"Probablemente hay",tone:reviewDue?"review":"hay",basis:reviewDue?"Reserva registrada · conviene revisar calidad":"Reserva registrada · no se descuenta por rotación normal"};
  }
  if(item.stock==="incierto")return {prob:.5,label:"Revisar",tone:"incierto",basis:"Cantidad o estado pendiente de confirmar"};
+ if(item.category==="Preparados")return {prob:item.stock==="poco"?.42:.9,label:"Raciones registradas",tone:item.stock==="poco"?"incierto":"hay",basis:"Cantidad de comida preparada registrada; el paso de los días no confirma que se haya comido"};
  const canonical=norm(classifyProduct(item.name,item.category).canonical);
  const purchases=state.purchaseHistory.filter(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical).map(p=>new Date(p.date+"T12:00:00").getTime()).sort((a,b)=>a-b);
  const intervals:number[]=[];

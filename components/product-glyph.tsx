@@ -142,6 +142,7 @@ function custom(kind:string){
 }
 
 export function ProductGlyph({name,category,className=""}:{name:string;category?:string;className?:string}){
+ if(category==="Preparados"&&!/pizza|sushi|maki|ensalada|tortilla|hummus|guacamole/i.test(name))return <span className={"product-glyph "+className} role="img" aria-label={name} title="Comida preparada en táper"><svg className="product-svg" viewBox="0 0 64 64" aria-hidden="true"><rect x="9" y="20" width="46" height="32" rx="12" fill="#e3eee6" stroke="#4f7761" strokeWidth="2.5"/><rect x="6" y="15" width="52" height="10" rx="5" fill="#a8c6b1" stroke="#4f7761" strokeWidth="2.5"/><path d="M17 42c1-8 12-13 20-6 6 5 6 11-1 12H22c-4 0-6-2-5-6Z" fill="#f5dca0"/><circle cx="44" cy="35" r="5" fill="#83b16c"/><circle cx="43" cy="44" r="4" fill="#d59159"/><path d="M23 39l3-2m3 6 4-2" stroke="#fffaf0" strokeWidth="3" strokeLinecap="round"/></svg></span>;
  const p=classifyProduct(name,category);
  const variety=findProductVariety(name);
  const illustration=productIllustration(name,p.canonical)||(variety?productIllustration(variety.base,classifyProduct(variety.base).canonical):null);
