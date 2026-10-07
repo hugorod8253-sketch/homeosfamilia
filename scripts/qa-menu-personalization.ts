@@ -1,3 +1,6 @@
+import {retireWeeklyMenu} from "../lib/retire-weekly-menu";
+import {RECIPE_THEMES,themeRecipes,themeForMonth} from "../lib/recipe-themes";
+import {sumSources} from "../lib/recipe-plan-engine";
 import assert from "node:assert/strict";
 import { RECIPES } from "../lib/recipes";
 import { DEFAULT_MENU_PREFERENCES, parseMenuBriefing } from "../lib/menu-preferences";
@@ -41,5 +44,18 @@ const none=buildWeeklyMenu(RECIPES,{...opts,preferences:{...DEFAULT_MENU_PREFERE
 assert(none.warnings?.length,"Impossible requests must be disclosed");
 const parsed=parseMenuBriefing("Me gustan las ensaladas, el pollo y el arroz. Quiero arroz con pollo tres días. No me gusta el pescado. 2100 calorías y máximo 30 minutos.",RECIPES);
 assert(parsed.likes.includes("pollo")&&parsed.likes.includes("arroz")&&parsed.excludes.includes("pescado"));
-assert.equal(parsed.dailyCalories,2100);assert.equal(parsed.maxMinutes,30);assert.equal(parsed.favoriteFrequency,3);assert(parsed.favoriteCandidates.length);
+assert.equal(parsed.dailyCalories,2100);assert.equal(parsed.maxMinutes,30);assert.equal(parsed.favoriteFrequency,3);assert(parsed.favoriteCandidates.length);assert.equal(parsed.favoriteCandidates[0].id,"r3","A specific dish takes priority over general likes");
 console.log(`Personalized-menu QA: ${RECIPES.length} recipes, ${PRODUCT_VARIETIES.length} distinct varieties; 20 diverse weeks, repeated favorites, exclusions, vegan restrictions, seed rotation and calorie portions.`);
+
+const legacy={weeklyMenu:{id:"old-week"},shopping:[{id:"mixed",qty:5,unit:"ud",sources:[{id:"manual",type:"manual" as const,label:"Casa",qty:2,unit:"ud"},{id:"weekly",type:"weekly" as const,label:"Semana",qty:3,unit:"ud"}]},{id:"weekly-only",qty:3,unit:"ud",sources:[{id:"weekly-2",type:"weekly" as const,label:"Semana",qty:3,unit:"ud"}]}],inventory:[{name:"Leche",qty:6,planReservations:[{id:"reserve-week",type:"weekly" as const,label:"Semana",qty:2,unit:"ud"},{id:"reserve-recipe",type:"recipe" as const,label:"Receta",qty:1,unit:"ud"}]}],purchaseHistory:[{name:"Leche",qty:2}],mealHistory:[]};
+const cleaned:any=retireWeeklyMenu(legacy,(item,sources)=>sources.length?{...item,qty:sumSources(sources as any,item.unit),sources:sources as any}:null);
+assert.equal(cleaned.weeklyMenu,null);assert.deepEqual(cleaned.retiredWeeklyMenu,legacy.weeklyMenu);
+assert.equal(cleaned.shopping.length,1);assert.equal(cleaned.shopping[0].qty,2,"Keep ordinary shopping and remove only menu demand");
+assert.equal(cleaned.inventory[0].qty,6);assert.equal(cleaned.inventory[0].planReservations?.length,1);
+assert.deepEqual(cleaned.purchaseHistory,legacy.purchaseHistory);assert.deepEqual(cleaned.mealHistory,[]);
+assert.equal(legacy.inventory[0].planReservations.length,2,"Migration is immutable");
+assert.equal(retireWeeklyMenu(cleaned,()=>null),cleaned,"Migration is idempotent");
+for(const theme of RECIPE_THEMES)assert(themeRecipes(theme.id,RECIPES).length>=4,theme.title);
+assert.notEqual(themeForMonth(new Date(2026,9,1)).id,themeForMonth(new Date(2026,10,1)).id);
+assert.notDeepEqual(themeRecipes("pasta",RECIPES,new Date(2026,9,1)).map(r=>r.id),themeRecipes("pasta",RECIPES,new Date(2026,9,8)).map(r=>r.id));
+console.log("Recipe discovery QA: retired weekly plans preserve stock/history/manual shopping, idempotent migration, 4 populated themes and weekly rotation.");

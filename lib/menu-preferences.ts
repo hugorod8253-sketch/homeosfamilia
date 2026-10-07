@@ -19,7 +19,8 @@ export function parseMenuBriefing(text:string,recipes:WeeklyMenuRecipe[]){
  }
  excludes.forEach(x=>likes.delete(x));
  const stop=new Set(["me","gusta","gustan","mucho","quiero","comer","con","y","el","la","los","las","un","una","de","del","semanal","semana","menu","gustaria","tener","todos","dias","fitness","preferencia"]);
- const tokens=input.split(" ").filter(t=>t.length>2&&!stop.has(t)&&!excludes.has(t));
+ const requested=text.split(/[.;]/).map(menuNorm).find(clause=>/\b(quiero|gustaria|prefiero)\b/.test(clause)&&/\b(arroz|pollo|pizza|revuelto|ensalada|pasta)\b/.test(clause));
+ const tokens=(requested||input).split(" ").filter(t=>t.length>2&&!stop.has(t)&&!excludes.has(t));
  const favoriteCandidates=recipes.map(r=>{const title=menuNorm(r.title),words=title.split(" ").filter(t=>!stop.has(t)&&t.length>2);const hits=words.filter(w=>tokens.some(t=>w===t||w.startsWith(t)||t.startsWith(w))).length;const titleWords=words.length;return {r,score:hits===titleWords&&hits>=2?100-hits*.1:hits>=2?hits*4-titleWords:0}}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.r);
  const calorieMatch=input.match(/\b(1[2-9]\d{2}|[2-4]\d{3}|5000)\s*(?:kcal|calorias)\b/);
  const time=input.match(/\b(\d{1,3})\s*(?:minutos|min)\b/);
