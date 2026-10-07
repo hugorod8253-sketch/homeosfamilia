@@ -1902,3 +1902,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .main{font-size:15px}.page-intro p,.shopping-top p,.home-final-head p{font-size:14px!important;line-height:1.5!important}.page-intro h2,.shopping-top h2{font-size:clamp(25px,2.3vw,34px)!important}.eyebrow{font-size:11px!important}.inventory-filter-block>small,.finance-mode-switch>small{font-size:11px!important}.visual-filter-row b,.visual-filter-row span{font-size:13px!important}.visual-filter-row button{min-height:44px!important;padding:9px 12px!important}.inventory-name-row h3{font-size:16px!important}.inventory-qty{font-size:14px!important}.inventory-actions button{font-size:12px!important;padding:9px 10px!important}.list-title h3{font-size:16px!important}.shop-visual-copy strong{font-size:15px!important}.shop-visual-copy span,.shop-visual-copy small{font-size:12px!important;line-height:1.35}.home-card-head strong{font-size:19px!important}.home-card-head small,.home-card-head>button{font-size:12px!important}.home-final-summary-grid em,.home-final-summary-grid small{font-size:11px!important}.finance-mode-switch p{font-size:12px!important;line-height:1.4!important}
 .product-choice-card{font-size:14px!important}
 @media(max-width:720px){.main{font-size:15px!important;padding:18px 14px 90px!important}.page-intro p,.shopping-top p{font-size:13px!important}.page-intro h2,.shopping-top h2{font-size:25px!important}.visual-filter-row{gap:7px!important}.visual-filter-row button{min-height:46px!important}.inventory-card{padding:14px!important}.inventory-name-row h3{font-size:16px!important}.shop-visual-copy strong{font-size:15px!important}}
+
+/* Final readability and first-screen balance pass */
+@media (min-width: 721px){
+  .main{padding-top:10px!important;padding-bottom:48px!important}
+  .topbar{margin-bottom:4px!important}
+  .home-final{gap:10px!important}
+  .home-final-head{min-height:58px!important;padding-top:0!important;padding-bottom:0!important}
+  .home-final-top{margin-top:0!important}
+}
+.market-choice[aria-pressed="true"]::after{content:"  ×";font-weight:800;opacity:.8}
