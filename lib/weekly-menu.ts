@@ -1,3 +1,5 @@
+import { classifyProduct } from "./product-engine";
+import { planProductMatches } from "./recipe-plan-engine";
 export type WeeklyMenuRecipe={
  id:string;title:string;time:number;servings:number;
  ingredients:{name:string;qty:string;key:string}[];
@@ -41,10 +43,9 @@ function group(r:WeeklyMenuRecipe){
 }
 function hasVeg(r:WeeklyMenuRecipe){return /verdura|tomate|lechuga|brocoli|zanahoria|cebolla|pepino|espinaca|calabaza|aguacate/.test(recipeText(r))}
 function hasInventory(r:WeeklyMenuRecipe,inventory:string[]){
- const inv=inventory.map(norm);
+ const inv=inventory.map(name=>({name,qty:1,unit:"ud",category:classifyProduct(name).category}));
  return r.ingredients.reduce((n,i)=>{
-  const k=norm(i.key||i.name);
-  return n+(inv.some(x=>x.includes(k)||k.includes(x.split(" ")[0]))?1:0);
+  return n+(inv.some(x=>planProductMatches(x,i.key||i.name,i.name))?1:0);
  },0);
 }
 function dislikeHits(r:WeeklyMenuRecipe,dislikes:string[]){

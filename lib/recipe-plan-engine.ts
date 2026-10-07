@@ -1,7 +1,7 @@
 import { classifyProduct } from "./product-engine";
 
 export type PlanIngredient={name:string;qty:string;key:string};
-export type PlanInventoryItem={name:string;qty:number;unit:string;category:string;stock?:string};
+export type PlanInventoryItem={name:string;qty:number;unit:string;category:string;stock?:string;expires?:string};
 export type RecipeShortage={name:string;key:string;unit:string;required:number;available:number;missing:number};
 export type ShoppingSource={
  id:string;
@@ -49,12 +49,17 @@ export function parsePlanQty(qty:string){
  return {amount:Number(m[1].replace(",","."))||0,unit:normalizePlanUnit(m[2]||"ud")};
 }
 function norm(s:string){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-export function planProductMatches(item:PlanInventoryItem,key:string){
+export function planProductMatches(item:PlanInventoryItem,key:string,ingredientName=key){
  if(item.stock==="falta"||item.qty<=0)return false;
  const k=norm(key);
  const p=classifyProduct(item.name,item.category);
  if(k==="verdura")return item.category==="Fruta y verdura"&&p.subcategory!=="Fruta";
  if(k==="fruta")return item.category==="Fruta y verdura"&&p.subcategory==="Fruta";
+ const target=classifyProduct(ingredientName);
+ if(target.category!=="Por clasificar"&&p.category!==target.category)return false;
+ if(target.category==="Carne"&&p.subcategory!==target.subcategory)return false;
+ const requested=norm(ingredientName), actual=norm(item.name);
+ if(/garbanzo|lenteja|alubia/.test(requested)&&/cocid|conserva/.test(requested)&&!/cocid|conserva|bote|tarro/.test(actual))return false;
  const n=norm(item.name),canonical=norm(p.canonical);
  return n.includes(k)||canonical.includes(k)||k.includes(canonical);
 }
@@ -67,9 +72,9 @@ export function recipeShortages(ingredients:PlanIngredient[],inventory:PlanInven
   const requiredBase=planToBase(parsed.amount,parsed.unit);
   let availableBase=0;
   for(const item of inventory){
-   if(!planProductMatches(item,ing.key))continue;
+   if(!planProductMatches(item,ing.key,ing.name))continue;
    if(planUnitFamily(item.unit)!==family)continue;
-   if(family==="count"&&normalizePlanUnit(parsed.unit)!=="ud"&&normalizePlanUnit(item.unit)!==normalizePlanUnit(parsed.unit))continue;
+   if(family==="count"&&normalizePlanUnit(item.unit)!==normalizePlanUnit(parsed.unit))continue;
    availableBase+=planToBase(Math.max(0,item.qty),item.unit);
   }
   const missingBase=Math.max(0,requiredBase-availableBase);
@@ -82,6 +87,32 @@ export function recipeShortages(ingredients:PlanIngredient[],inventory:PlanInven
   });
  }
  return out;
+}
+
+/** Allocate real ingredients once; preserve unrelated inventory and incompatible units. */
+export function consumePlanIngredients<T extends PlanInventoryItem>(items:T[],ingredients:PlanIngredient[],eligible:(item:T)=>boolean=()=>true){
+ const inventory=items.map(item=>({...item}));
+ let exact=true;
+ for(const ingredient of ingredients){
+  const parsed=parsePlanQty(ingredient.qty);
+  if(!parsed||parsed.amount<=0){exact=false;continue}
+  let remaining=planToBase(parsed.amount,parsed.unit);
+  const indexes=inventory.map((item,index)=>({index,expires:item.expires||"9999"})).sort((a,b)=>a.expires.localeCompare(b.expires)).map(x=>x.index);
+  for(const index of indexes){
+   if(remaining<=0)break;
+   const item=inventory[index];
+   if(!eligible(item)||!planProductMatches(item,ingredient.key,ingredient.name))continue;
+   if(planUnitFamily(item.unit)!==planUnitFamily(parsed.unit)||
+      (planUnitFamily(parsed.unit)==="count"&&normalizePlanUnit(item.unit)!==parsed.unit))continue;
+   const available=planToBase(item.qty,item.unit);
+   const used=Math.min(available,remaining);
+   const qty=Math.max(0,Math.round(planFromBase(available-used,item.unit)*100)/100);
+   inventory[index]={...item,qty,stock:qty===0?"falta":used>=available*.75?"poco":item.stock};
+   remaining-=used;
+  }
+  if(remaining>0.000001)exact=false;
+ }
+ return {inventory,exact};
 }
 export function sumSources(sources:ShoppingSource[],unit:string){
  const family=planUnitFamily(unit);
