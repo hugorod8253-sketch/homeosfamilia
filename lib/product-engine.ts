@@ -84,6 +84,8 @@ const RULES:Rule[]=[
  // Carne y aves
  P("pechuga de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))(?:pechuga.*pollo|filete.*pollo)/,"Carne","Pollo","Nevera","alta","chicken-breast","cold-required"),
  P("pechuga de pavo",/(?!.*(?:rebozad|empanad|congelad))(?:pechuga.*pavo|filete.*pavo)/,"Carne","Pavo","Nevera","alta","turkey-breast","cold-required"),
+ P("pavo",/^pavo$/,"Carne","Pavo","Nevera","alta","turkey-breast","cold-required"),
+ P("pechuga",/^pechuga$/,"Carne","Aves · por concretar","Nevera","alta","chicken-breast","cold-required"),
  P("solomillo de pollo",/(?!.*(?:rebozad|empanad|kentucky|congelad))solomillo.*pollo/,"Carne","Pollo","Nevera","alta","chicken-tender","cold-required"),
  P("solomillo de pavo",/solomillo.*pavo/,"Carne","Pavo","Nevera","alta","turkey-tender","cold-required"),
  P("pavo en lonchas",/pavo.*loncha|loncha.*pavo/,"Carne","Embutido","Nevera","media","ham-cooked","cold-required"),
