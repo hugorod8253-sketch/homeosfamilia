@@ -1,7 +1,7 @@
 import { classifyProduct } from "./product-engine";
 
 export type PlanIngredient={name:string;qty:string;key:string};
-export type PlanInventoryItem={name:string;qty:number;unit:string;category:string;stock?:string;expires?:string};
+export type PlanInventoryItem={name:string;qty:number;unit:string;category:string;stock?:string;expires?:string;estimatedExpires?:string;purchasedAt?:string};
 export type RecipeShortage={name:string;key:string;unit:string;required:number;available:number;missing:number};
 export type ShoppingSource={
  id:string;
@@ -98,7 +98,7 @@ export function consumePlanIngredients<T extends PlanInventoryItem>(items:T[],in
   const parsed=parsePlanQty(ingredient.qty);
   if(!parsed||parsed.amount<=0){exact=false;continue}
   let remaining=planToBase(parsed.amount,parsed.unit);
-  const indexes=inventory.map((item,index)=>({index,expires:item.expires||"9999"})).sort((a,b)=>a.expires.localeCompare(b.expires)).map(x=>x.index);
+  const indexes=inventory.map((item,index)=>({index,expires:item.expires||item.estimatedExpires||"9999",purchasedAt:item.purchasedAt||"9999"})).sort((a,b)=>a.expires.localeCompare(b.expires)||a.purchasedAt.localeCompare(b.purchasedAt)).map(x=>x.index);
   for(const index of indexes){
    if(remaining<=0)break;
    const item=inventory[index];

@@ -34,3 +34,8 @@ export function parseShoppingQuantity(input: string) {
   name = name.replace(/^\s*de\s+/i,"").replace(/[ \t]+/g," ").trim();
   return { name, qty, unit };
 }
+
+/** Do not turn conversation or correction commentary into groceries. */
+export function shoppingInputNeedsReview(value:string){
+ return /\b(?:escrito mal|hemos puesto|te equivocas|no se tiene que|no se vaya|como analizar|como funciona|lo otro|no lo borres|quita|borrar|elimina|cancelar|sustituye|cambia)\b/i.test(value)||value.trim().split(/\s+/).length>18;
+}

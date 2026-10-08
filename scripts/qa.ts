@@ -1,3 +1,4 @@
+import "./qa-consumption";
 import { RECIPES } from "../lib/recipes";
 import { habitBalanceSignals } from "../lib/habit-balance";
 import { parseShoppingQuantity, splitShoppingEntries } from "../lib/shopping-input";

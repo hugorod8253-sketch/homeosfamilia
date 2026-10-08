@@ -17,6 +17,8 @@ export function productSuggestions(name:string):ProductProfile[]{
  const n=normalizeProductText(name);
  const out:ProductProfile[]=[];
  const add=(x:string)=>{const p=classifyProduct(x);if(!out.some(y=>y.canonical===p.canonical))out.push(p)};
+ if(/^(pescado|peix|fish|pesacado)$/.test(n)){["merluza","lubina","dorada","salmón","bacalao","atún fresco","sardina"].forEach(add);}
+ if(/^pechuga$/.test(n)){add("pechuga de pollo");add("pechuga de pavo");}
  if(/\bpavo\b/.test(n)){add("pechuga de pavo");add("solomillo de pavo");add("pavo en lonchas");}
  if(/\bpollo\b/.test(n)&&!/(caldo|sopa|croqueta|nugget|asado)/.test(n)){add("pechuga de pollo");add("solomillo de pollo");add("pollo entero");}
  if(/entrecot|argentino/.test(n)){add("entrecot de vacuno");}
