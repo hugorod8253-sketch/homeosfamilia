@@ -22,8 +22,8 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
  const confirmedRates:number[]=[];
  for(let i=1;i<snapshots.length;i++){const a=snapshots[i-1],b=snapshots[i],days=calendarDaysUntil(b.date,new Date(a.date+'T12:00:00'));if(days<2)continue;const incoming=buys.filter(p=>p.date>a.date&&p.date<=b.date).reduce((sum,p)=>sum+planToBase(p.qty,p.unit),0);const used=planToBase(a.qty,a.unit)+incoming-planToBase(b.qty,b.unit);if(used>=0)confirmedRates.push(used/days)}
  const habit=habits.find(h=>matches(h)&&Number.isFinite(h.qty)&&Number.isFinite(h.days)&&h.qty>0&&h.days>0);
- const source=confirmedRates.length?'confirmed':rates.length>=1?'purchases':habit?'habit':'unknown';
- const rate=confirmedRates.length?median(confirmedRates.slice(-6)):rates.length>=1?median(rates.slice(-6)):habit?planToBase(habit.qty,habit.unit)/habit.days:0;
+ const source=confirmedRates.length?'confirmed':habit?'habit':rates.length>=1?'purchases':'unknown';
+ const rate=confirmedRates.length?median(confirmedRates.slice(-6)):habit?planToBase(habit.qty,habit.unit)/habit.days:rates.length>=1?median(rates.slice(-6)):0;
  const anchor=item.estimateAnchorDate||item.lastConfirmedAt||item.purchasedAt;
  const age=anchor&&validDate(anchor)?Math.max(0,-calendarDaysUntil(anchor,new Date(today+'T12:00:00'))):0;
  const base=planToBase(item.qty<=0?0:Math.max(0,item.estimateAnchorQty??item.qty),item.unit);
