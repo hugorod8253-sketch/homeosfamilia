@@ -1466,7 +1466,7 @@ function RecipeNutrition({recipe,total=false}:{recipe:Recipe;total?:boolean}){
  const calculated=estimateRecipeNutrition(recipe);
  const data=calculated.complete?(total?calculated.total:calculated.perServing):(!recipe.adapted&&!recipe.nutritionUnavailable&&recipe.source!=="local-ai"?{calories:recipe.calories*(total?recipe.servings:1),protein:recipe.protein*(total?recipe.servings:1),carbs:recipe.carbs*(total?recipe.servings:1),fat:recipe.fat*(total?recipe.servings:1)}:null);
  if(!data)return <div className="ai-recipe-note"><b>Estimación pendiente</b><span>Faltan datos nutricionales o cantidades compatibles: {calculated.missing.join(", ")}. No mostramos un total incompleto.</span></div>;
- return <div className="macro-row nutrition-estimate"><b>≈ {Math.round(data.calories)} kcal</b><span>{data.protein} g proteína</span><span>{data.carbs} g carbohidratos</span><span>{data.fat} g grasas</span><small>{total?"Total receta":"Por ración"} · valores genéricos aproximados</small>{calculated.complete&&calculated.assumptions.length>0&&<small>{calculated.assumptions.join(" · ")}</small>}</div>;
+ return <div className="macro-row nutrition-estimate"><b>≈ {Math.round(data.calories)} kcal</b><span>{data.protein} g proteína</span><span>{data.carbs} g carbohidratos</span><span>{data.fat} g grasas</span><small>{total?"Total receta":"Por ración"} · {calculated.complete?"valores genéricos aproximados":"estimación del recetario; ingredientes sin recalcular"}</small>{calculated.complete&&calculated.assumptions.length>0&&<small>{calculated.assumptions.join(" · ")}</small>}</div>;
 }
 
 function Habitos({state}:{state:AppState}){

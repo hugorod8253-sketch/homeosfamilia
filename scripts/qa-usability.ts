@@ -13,6 +13,7 @@ for(const [phrase,name,servings,location] of [
  ['Nos ha sobrado arroz con pollo','Arroz con pollo',1,'Nevera'],
 ] as const){const x=parsePreparedInput(phrase);assert.equal(x.name,name);assert.equal(x.servings,servings);assert.equal(x.location,location)}
 const ideas=dailyIdeas(RECIPES.map(r=>({r})));assert.deepEqual(ideas.map(x=>x.slot),['Desayuno','Comida','Cena']);assert.equal(new Set(ideas.map(x=>x.r.id)).size,3);assert.ok(!/plátano con chocolate/i.test(ideas[0].r.title));
+const breakfast=estimateRecipeNutrition(RECIPES.find(r=>r.id==='x15')!);assert.ok(breakfast.complete);if(breakfast.complete)assert.ok(breakfast.perServing.protein>15);
 for(const id of ['world-gazpacho','world-salmorejo']){
  const recipe=RECIPES.find(r=>r.id===id)!;const nutrition=estimateRecipeNutrition(recipe);assert.ok(nutrition.complete);
  if(nutrition.complete){assert.ok(nutrition.perServing.calories>100);assert.ok(nutrition.perServing.calories<600);assert.ok(nutrition.perServing.protein>0);

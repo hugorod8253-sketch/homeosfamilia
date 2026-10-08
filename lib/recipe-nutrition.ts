@@ -43,7 +43,7 @@ const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLower
 export function estimateRecipeNutrition(recipe:{servings:number;ingredients:{name:string;qty:string}[]}){
  const total:Nutrients={calories:0,protein:0,carbs:0,fat:0};const missing:string[]=[];const assumptions:string[]=[];
  for(const i of recipe.ingredients){
-  const incompatible=/cocid|frit|adobad|salsa|conserva|lata|loncha/.test(norm(i.name));
+  const incompatible=/\b(?:cocid\w*|frit\w*|adobad\w*|salsa|conserva|lata|lonchas?)\b/.test(norm(i.name));
   const food=incompatible&&!/garbanzo.*cocid|lenteja.*cocid/.test(norm(i.name))?undefined:foods.find(f=>f.match.test(norm(i.name)));const q=norm(i.qty).replace(',','.').match(/^(\d+(?:\.\d+)?)\s*(kg|g|ml|l|uds?|unidades?|lonchas?)$/);
   if(!food||!q){missing.push(i.name);continue;}
   const amount=Number(q[1]),unit=q[2];let grams=amount;

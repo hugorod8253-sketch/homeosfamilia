@@ -2272,3 +2272,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .home-final .home-mini-events{gap:4px!important}
  .home-final .home-final-recommend{align-content:center!important}
 }
+@media(min-width:1200px) and (min-height:800px){
+ .home-final .home-final-head{margin-bottom:0!important}
+ .home-final .home-final-actions{margin:0!important;grid-template-columns:210px minmax(0,1fr)!important}
+ .home-final .home-final-top .home-final-ideas>button img{height:44px!important;width:54px!important}
+ .home-final .home-final-habit-grid>button{min-height:26px!important;padding:3px 0!important}
+}
