@@ -2073,3 +2073,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .home-final-action-grid strong{font-size:16px!important}
 .home-theme-card>button{font-size:16px!important;background:#edf5ef!important;color:#285c43!important;border:1px solid #d3e5d8!important;border-radius:12px!important;font-weight:650!important}
 .storage-error{position:fixed;z-index:250;inset:12px 12px auto;max-width:760px;margin:0 auto;padding:14px 18px;border:1px solid #b86b42;border-radius:12px;background:#fff4e9;color:#703b20;font-size:16px;line-height:1.4}
+
+/* Audited responsive home: supersede older mobile card and ordering rules. */
+.home-final .home-final-top .home-final-ideas>button:not(.home-no-menu-actions button){min-height:76px!important;height:auto!important;display:flex!important;align-items:center!important;padding:10px!important;gap:10px!important}
+.home-final .home-card-head>button{flex-shrink:0;min-height:36px!important;font-size:14px!important;white-space:normal!important;padding:6px!important}
+.home-final .home-card-head small{font-size:13px!important;line-height:1.4!important}
+@media(max-width:720px){
+ .home-final{display:flex!important;flex-direction:column!important}
+ .home-final>.home-mobile-brand{order:0!important}
+ .home-final>.home-final-head{order:1!important}
+ .home-final>.home-final-top{order:2!important}
+ .home-final>.home-final-actions{order:3!important}
+ .home-final>.home-final-mid{display:grid!important;order:4!important;grid-template-columns:1fr!important}
+ .home-final>.home-final-bottom{display:grid!important;order:5!important;grid-template-columns:1fr!important}
+ .home-final>.apple-calendar{order:6!important}
+ .home-final-summary-grid small,.home-final-summary-grid em{font-size:12px!important;line-height:1.4!important}
+}
