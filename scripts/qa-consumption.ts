@@ -30,6 +30,7 @@ assert.ok(RECIPES.filter(r=>matchesRecipeSearch(r,'Japan')).length>=6);
 assert.equal(changeShoppingQuantity(1,'g',-1),1);assert.equal(changeShoppingQuantity(90,'g',-1),80);assert.equal(changeShoppingQuantity(1,'uds',-1),1);assert.equal(changeShoppingQuantity(2,'L',-1),1.9);
 assert.ok(shoppingInputNeedsReview('Vale pero todo esto lo has escrito mal hemos puesto el ketchup pero lo otro no se tiene que ir'));assert.ok(shoppingInputNeedsReview('quita ketchup'));assert.ok(!shoppingInputNeedsReview('leche, 2 yogures y 1 kg de pollo'));
 assert.equal(splitShoppingEntries('Necesito pasta para macarrones y ketchup')[0],'macarrones');assert.equal(parseShoppingQuantity('1 kg de pollo').unit,'kg');
+assert.deepEqual(splitShoppingEntries('Necesito comprar ketchup para hacer macarrones con tomate, también para luego para cenar lomo adobado con patatas'),['ketchup','macarrones','tomate','lomo adobado','patatas'],'voice phrases keep every food and remove conversational glue');
 assert.ok(productSuggestions('pescado').length>=5);assert.ok(productSuggestions('carne').length>=3);assert.ok(productSuggestions('pechuga').length>=2);
 console.log('PASS: consumo semanal, acumulación, cantidades, unidades, congelador, reservas, confirmaciones, idiomas, tiendas y conversaciones');
 

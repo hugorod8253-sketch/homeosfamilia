@@ -4,8 +4,13 @@ export function normalizeSpokenShoppingText(value: string) {
   for (const [word, number] of Object.entries(words)) out = out.replace(new RegExp("\\b" + word + "\\b", "gi"), number);
   out=out.replace(/\bperito\b/gi,"frito");
   out=out.replace(/\bpasta\s+para\s+(macarrones|espaguetis|espaguetti)\b/gi, "$1");
+  // Voice requests often contain the reason for the purchase. Keep the foods
+  // around the connectors and discard the conversational glue.
+  out=out.replace(/\b(?:también\s+)?para\s+(?:luego\s+)?(?:hacer|cenar|comer|preparar)\b/gi," y ");
+  out=out.replace(/\b(?:y\s+)?luego\s+para\s+(?:hacer|cenar|comer|preparar)\b/gi," y ");
+  out=out.replace(/\b(?:también\s+)?para\s+luego\b/gi," y ");
   out=out.replace(/^\s*(?:(?:necesito|necesitamos|quiero|queremos|hay que|apunta|añade|añadir|agrega|agregar|comprar|luego)\s+)+/i, "");
-  return out.replace(/\bmedio\s+(kilo|kg|litro|l)\b/gi,(_,unit)=>"0,5 " + unit).replace(/\bmedia\s+docena\b/gi,"6 uds").replace(/[ \t]+/g," ").trim();
+  return out.replace(/\bmedio\s+(kilo|kg|litro|l)\b/gi,(_,unit)=>"0,5 " + unit).replace(/\bmedia\s+docena\b/gi,"6 uds").replace(/\by\s+y\b/gi,"y").replace(/[ \t]+/g," ").trim();
 }
 
 export function splitShoppingEntries(value: string) {
@@ -16,7 +21,7 @@ export function splitShoppingEntries(value: string) {
     const withCon=clean.match(/^(.+?)\s+con\s+(.+)$/i);
     return withCon?[withCon[1],withCon[2]]:[clean];
   });
-  return raw.map(entry=>entry.trim().replace(/\s+/g," ")).filter(Boolean).slice(0,12);
+  return raw.map(entry=>entry.trim().replace(/^(?:y\s+)+/i,"").replace(/\s+/g," ")).filter(Boolean).slice(0,12);
 }
 
 export function parseShoppingQuantity(input: string) {
