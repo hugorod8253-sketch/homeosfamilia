@@ -31,3 +31,8 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
  return {source,dailyRate:planFromBase(rate,item.unit),estimatedQty:Math.round(planFromBase(remaining,item.unit)*100)/100,daysLeft:rate?remaining/rate:null,confidence:source==='confirmed'?'media':source==='unknown'?'sin datos':'baja',basis:source==='confirmed'?'Ritmo ajustado con cantidades confirmadas y compras':source==='purchases'?'Ritmo provisional de recompra; comprar no demuestra que se haya acabado':source==='habit'?'Ritmo inicial indicado por ti; todavía sin comprobar':'Aún no hay datos suficientes de consumo'};
 }
 export function shoppingQuantityStep(unit:string){return /^(g|ml)$/i.test(unit)?10:/^(kg|l)$/i.test(unit)?.1:1}
+export function changeShoppingQuantity(qty:number,unit:string,delta:number){
+ const measured=planUnitFamily(unit)==='mass'||planUnitFamily(unit)==='volume';
+ const minimum=measured&&/^(kg|l)$/i.test(unit)?.01:1;
+ return Math.round(Math.max(Math.min(qty,minimum),qty+delta*shoppingQuantityStep(unit))*100)/100;
+}

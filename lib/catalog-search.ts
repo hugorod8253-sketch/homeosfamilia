@@ -20,7 +20,9 @@ export function searchTerms(query:string){
  });
 }
 export function matchesRecipeSearch(recipe:{title:string;description?:string;country?:string;ingredients:{name:string;key?:string}[]},query:string){
- const text=normalizeProductText([recipe.title,recipe.description||'',recipe.country||'',...recipe.ingredients.map(i=>i.name+' '+(i.key||''))].join(' '));
+ const text=normalizeProductText([recipe.title,recipe.description||'',(recipe.country||'')+' '+recipeCountryLabel(recipe.country),...recipe.ingredients.map(i=>i.name+' '+(i.key||''))].join(' '));
  const terms=searchTerms(query);
  return terms.every(alternatives=>alternatives.some(term=>new RegExp('(?:^| )'+term+'(?:s|es)?(?: |$)').test(text)));
 }
+const countryLabels:Record<string,string>={spain:'España',germany:'Alemania',sushi:'Japón',japan:'Japón',pasta:'Italia',italy:'Italia',pizza:'Italia',burger:'Estados Unidos',china:'China',korea:'Corea',thailand:'Tailandia',india:'India',mexico:'México',france:'Francia',netherlands:'Países Bajos',greece:'Grecia',portugal:'Portugal',morocco:'Marruecos'};
+export function recipeCountryLabel(country?:string){return country?countryLabels[country]||country:'Casera'}
