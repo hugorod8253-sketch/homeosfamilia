@@ -1201,11 +1201,13 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
  const [preparedDestination,setPreparedDestination]=useState<Location>("Nevera");
  const [editRecipe,setEditRecipe]=useState(false);
  const [recipeScope,setRecipeScope]=useState<"casa"|"planear">("casa");
- useEffect(()=>{if(mealSeed){
-  setCraving(mealSeed);
-  setTab("ideas");clearMealSeed();
- }},[mealSeed]);
- useEffect(()=>{if(focusTab){setTab(focusTab);setOpen(false);setReuseOpen(false);setSelectedRecipeId(null);setSelectedScaledRecipe(null);setCatalogQuery("");setCatalogCountry("Todos");setCraving("");clearFocusTab();window.scrollTo({top:0})}},[focusTab]);
+ useEffect(()=>{
+  if(focusTab){setTab(focusTab);setOpen(false);setReuseOpen(false);setSelectedRecipeId(null);setSelectedScaledRecipe(null);setCatalogQuery("");setCatalogCountry("Todos");setCraving("");clearFocusTab();window.scrollTo({top:0})}
+  if(mealSeed){
+   const exact=[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].find(r=>norm(r.title)===norm(mealSeed));
+   setSelectedScaledRecipe(null);setSelectedRecipeId(exact?.id||null);setCraving(mealSeed);setTab("ideas");clearMealSeed();
+  }
+ },[mealSeed,focusTab]);
  const discoveryRecipes=useMemo(()=>RECIPES.filter(r=>recipeAllowed(r,{inventory:[],dislikes:state.members.slice(0,state.profile.householdSize).flatMap(m=>m.dislikes.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean)),tools:[],people:state.profile.householdSize})),[state.members,state.profile.householdSize ]);
  const allRecipes=useMemo(()=>[...RECIPES,...state.recipePlans.map(p=>p.recipe),...aiRecipes].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i),[state.recipePlans,aiRecipes]);
  const recipeVisual=(r:Recipe,kind:"thumb"|"hero"="thumb")=>{
