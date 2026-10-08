@@ -1581,6 +1581,10 @@ function Habitos({state}:{state:AppState}){
 }
 function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
  const [quick,setQuick]=useState("");
+ const [suggestionsOpen,setSuggestionsOpen]=useState(false);
+ const [dismissedSuggestions,setDismissedSuggestions]=useState<string[]>([]);
+ const [lastDismissed,setLastDismissed]=useState<string|null>(null);
+ const suggestionTouch=useRef<{id:string;x:number;y:number}|null>(null);
  const [alreadyHave,setAlreadyHave]=useState<ShoppingItem|null>(null);
  const [haveQty,setHaveQty]=useState("");
  const [haveLocation,setHaveLocation]=useState<Location>("Despensa");
@@ -1629,9 +1633,10 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  },0);
  const recommendedMissing=state.inventory.filter(i=>{
   if(i.storageMode==="reserva"||i.category==="Preparados")return false;
-  if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente"))return false;
+  if(dismissedSuggestions.includes(i.id))return false;
+  if(state.shopping.some(q=>norm(classifyProduct(q.name,q.category).canonical)===norm(classifyProduct(i.name,i.category).canonical)))return false;
   return inventoryEstimate(state,i).prob<.32;
- }).slice(0,8);
+ });
  const pendingRecipePlans=state.recipePlans.filter(p=>p.status==="saved").map(p=>({...p,missing:missing(p.recipe,planningInventory(state,p.id))})).filter(p=>p.missing.length>0);
  const recipeShoppingItems=state.shopping.filter(i=>i.status==="pendiente"&&shoppingSources(i).some(src=>src.type==="recipe")).length;
 
@@ -1798,14 +1803,28 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   if(selectNow)setActiveStore(finalName);else setStoreFilter(finalName);
   setToast(corrected!==name?`He corregido “${name}” a ${finalName}`:exists?finalName+" ya estaba guardado":finalName+" añadido a supermercados");
  }
+ function suggestedAmount(i:InventoryItem){
+  const canonical=norm(classifyProduct(i.name,i.category).canonical);
+  const recent=state.purchaseHistory.filter(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical&&p.qty>0).slice(-6);
+  const last=recent[recent.length-1];
+  const sameUnit=recent.filter(p=>normalizedUnit(p.unit)===normalizedUnit(last?.unit||i.unit));
+  return {qty:sameUnit.length?median(sameUnit.map(p=>p.qty)):1,unit:last?.unit||i.unit};
+ }
+ function dismissSuggestion(id:string){setDismissedSuggestions(xs=>[...new Set([...xs,id])]);setLastDismissed(id)}
  function addRecommendedMissing(){
-  if(!recommendedMissing.length){setToast("No hay faltas claras ahora mismo");return}
-  setState(s=>({...s,shopping:[...s.shopping,...recommendedMissing.map(i=>{
-   const canonical=norm(classifyProduct(i.name,i.category).canonical);
-   const last=[...s.purchaseHistory].reverse().find(p=>norm(classifyProduct(p.name,p.category).canonical)===canonical);
-   return {id:crypto.randomUUID(),name:i.name,qty:last?.qty||1,unit:last?.unit||i.unit,category:i.category,subcategory:i.subcategory,requestedBy:"HomeOS",reason:"recomienda" as const,status:"pendiente" as const};
-  })]}));
-  setToast(recommendedMissing.length+" sugerencias añadidas");
+  if(!recommendedMissing.length)return;
+  setState(s=>{
+   const seen=new Set(s.shopping.map(q=>norm(classifyProduct(q.name,q.category).canonical)));
+   const additions:ShoppingItem[]=[];
+   for(const i of recommendedMissing){
+    const canonical=norm(classifyProduct(i.name,i.category).canonical);
+    if(seen.has(canonical))continue;
+    seen.add(canonical);
+    additions.push({id:crypto.randomUUID(),name:i.name,...suggestedAmount(i),category:i.category,subcategory:i.subcategory,requestedBy:"HomeOS",reason:"recomienda",status:"pendiente"});
+   }
+   return {...s,shopping:[...s.shopping,...additions]};
+  });
+  setSuggestionsOpen(false);setToast("Sugerencias añadidas sin duplicar tu lista");
  }
  function changeShoppingQty(id:string,delta:number){
   setState(s=>({...s,shopping:s.shopping.map(i=>{
@@ -1871,7 +1890,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   {shoppingActive&&!activeStore&&<article className="empty-state"><h3>Elige la tienda</h3><p>La lista se reorganizará para que veas primero lo que puedes comprar ahí.</p></article>}
   {addingStore&&<div className="inline-store-add"><div><strong>Añadir supermercado</strong><small>Se guardará para futuras compras.</small></div><input autoFocus value={newStoreName} onChange={e=>setNewStoreName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSupermarket(shoppingActive);if(e.key==="Escape"){setAddingStore(false);setNewStoreName("")}}} placeholder="Ej. BonÀrea, Ametller, tienda del barrio…"/><button className="primary" onClick={()=>addSupermarket(shoppingActive)} disabled={!newStoreName.trim()}>Guardar</button><button className="secondary" onClick={()=>{setAddingStore(false);setNewStoreName("")}}>Cancelar</button></div>}
 
-  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?"✓":productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{i.requestedName?"Escribiste: “"+i.requestedName+"”":shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em className={"store-label "+storeClass(i.supermarket)}>{i.supermarket}</em>}<button className="secondary already-have" onClick={()=>{setAlreadyHave(i);setHaveQty("");setHaveLocation(classifyProduct(i.name,i.category).location)}}>Ya lo tengo</button><div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty} <span>{i.unit}</span></b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
+  {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.length}</span></div><div className="shopping-card-grid">{items.map(i=><div className={i.status==="carrito"?"shop-visual-card checked":"shop-visual-card"} key={i.id}><button className="product-pictogram" onClick={()=>cart(i.id)} aria-pressed={i.status==="carrito"} aria-label={i.status==="carrito"?"Quitar del carrito":"Añadir al carrito"}>{i.status==="carrito"?<svg className="shopping-check-animation" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16.5 13 23 25 9"/></svg>:productIcon(i.name,i.category)}</button><div className="shop-visual-copy"><strong>{i.name}</strong><span>{i.status==="carrito"&&i.boughtQty!==undefined?("Compras "+i.boughtQty+" "+i.unit+" · necesitas "+i.qty):i.qty+" "+i.unit}</span><small>{i.requestedName?"Escribiste: “"+i.requestedName+"”":shoppingRecipeContext(i)|| (i.reason==="recomienda"?"HomeOS recomienda":i.reason==="receta"?(i.requestedBy||"Para una receta"):i.requestedBy)}</small></div>{i.supermarket&&<em className={"store-label "+storeClass(i.supermarket)}>{i.supermarket}</em>}<button className="secondary already-have" onClick={()=>{setAlreadyHave(i);setHaveQty("");setHaveLocation(classifyProduct(i.name,i.category).location)}}>Ya lo tengo</button><div className="shop-inline-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,-1)}} aria-label="Restar cantidad">−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty} <span>{i.unit}</span></b><button disabled={planLine(i)&&!shoppingActive} onClick={(e)=>{e.stopPropagation();changeShoppingQty(i.id,1)}} aria-label="Sumar cantidad">+</button><button className="remove" onClick={(e)=>{e.stopPropagation();removeShopping(i.id)}} aria-label="Eliminar">×</button></div>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button className={i.reserve?"reserve-buy active":"reserve-buy"} onClick={(e)=>{e.stopPropagation();toggleReserve(i.id)}} title="Guardar como reserva en el congelador">{i.reserve?"❄ Reserva":"＋ Reserva"}</button>}</div>)}</div></article>)}</div>
 
    <aside className="purchase-tools">
     <div className="ticket-actions">
@@ -1883,8 +1902,11 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
     {ocrStatus==="error"&&<div className="local-ocr-card error"><strong>No se pudo leer con suficiente claridad</strong><p>Haz otra foto más recta y con buena luz, o continúa con la lista y el total manual.</p></div>}
     <input ref={receiptCameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>{ticketSelected(e.target.files?.[0],ocrPhotoCount>0);e.currentTarget.value=""}}/>
     <input ref={receiptRef} hidden type="file" accept="image/*,.pdf" multiple onChange={e=>{ticketFilesSelected(e.target.files);e.currentTarget.value=""}}/>
+    {shoppingActive&&<p className="receipt-fallback-note">¿No tienes el ticket? Marca lo comprado e introduce el total. Puedes terminar sin precios por producto.</p>}
     {shoppingActive&&<label className="purchase-total"><span>Total de la compra <small>{state.profile.financeMode==="preciso"?"obligatorio en modo preciso":"opcional"}</small></span><div><input inputMode="decimal" value={purchaseTotal} onChange={e=>setPurchaseTotal(e.target.value)} placeholder={estimatedTotal>0?"≈ "+estimatedTotal.toFixed(2):"0,00"}/><b>€</b></div>{state.profile.financeMode==="orientativo"&&estimatedTotal>0&&<small>Si lo dejas vacío, HomeOS usará ≈ {estimatedTotal.toFixed(2)} € con los precios que ya conoce.</small>}</label>}
-    <article className="tool-card smart-restock"><span>✦</span><div><strong>Reposición sugerida</strong><p>{recommendedMissing.length?recommendedMissing.length+" productos parecen faltar por vuestro ritmo de consumo.":"No hay faltas claras que añadir ahora."}</p>{recommendedMissing.length>0&&<button onClick={addRecommendedMissing}>Añadir sugeridos</button>}</div></article>
+    <article className="tool-card smart-restock"><span>✦</span><div><strong>¿Quieres ideas para tu compra?</strong><p>Opcional · revisa la propuesta y añade solo lo que quieras.</p><button onClick={()=>setSuggestionsOpen(v=>!v)}>{suggestionsOpen?"Cerrar sugerencias":"Ver sugerencias"}</button></div></article>
+    {suggestionsOpen&&<section className="restock-review" aria-label="Sugerencias de compra"><div className="restock-review-head"><strong>{recommendedMissing.length} sugerencias</strong><button onClick={()=>setSuggestionsOpen(false)} aria-label="Cerrar sugerencias">×</button></div><p>Desliza a cualquier lado para descartar. Tu lista se mantiene hasta que pulses añadir.</p>{recommendedMissing.map(i=>{const amount=suggestedAmount(i);return <div className="restock-suggestion" key={i.id} onTouchStart={e=>{const t=e.touches[0];suggestionTouch.current={id:i.id,x:t.clientX,y:t.clientY}}} onTouchEnd={e=>{const start=suggestionTouch.current;suggestionTouch.current=null;if(!start||start.id!==i.id)return;const t=e.changedTouches[0];const dx=Math.abs(t.clientX-start.x),dy=Math.abs(t.clientY-start.y);if(dx>70&&dx>dy*1.5)dismissSuggestion(i.id)}}><span>{productIcon(i.name,i.category)}</span><div><strong>{i.name}</strong><small>{amount.qty} {amount.unit} · cantidad habitual</small></div><button onClick={()=>dismissSuggestion(i.id)} aria-label={"Descartar "+i.name}>×</button></div>})}{lastDismissed&&<button className="secondary" onClick={()=>{setDismissedSuggestions(xs=>xs.filter(id=>id!==lastDismissed));setLastDismissed(null)}}>Deshacer descarte</button>}{recommendedMissing.length>0?<button className="primary" onClick={addRecommendedMissing}>Añadir los {recommendedMissing.length} restantes</button>:<p>No hay más sugerencias para esta compra.</p>}</section>}
+
    </aside>
   </div>}
 

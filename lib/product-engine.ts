@@ -256,6 +256,11 @@ const RULES:Rule[]=[
  P("sándwich",/sandwich|bocadillo\s+preparado/,"Preparados","Sándwich","Nevera","alta","sandwich","cold-required"),
 
  // Dulces y snacks
+ P("Mentos",/mentos/,"Snacks y dulces","Golosinas","Despensa","baja","candy","shelf"),
+ P("Chupa Chups",/chupa\s*chups|piruleta/,"Snacks y dulces","Golosinas","Despensa","baja","candy","shelf"),
+ P("magdalenas",/magdalena/,"Snacks y dulces","Bollería","Despensa","media","cookie","shelf"),
+ P("valencianas",/valencian[ao]/,"Snacks y dulces","Bollería","Despensa","media","cookie","shelf"),
+ P("ensaimadas",/ensaimada/,"Snacks y dulces","Bollería","Despensa","media","cookie","shelf"),
  P("barrita de proteína",/barrita.*prote|protein\s+bar/,"Suplementos","Barritas","Despensa","baja","protein-bar","supplement"),
  P("barrita de chocolate",/barrita.*chocolate/,"Snacks y dulces","Chocolate","Despensa","baja","chocolate-bar","shelf"),
  P("chocolate con almendras",/chocolate.*almendra/,"Snacks y dulces","Chocolate","Despensa","baja","chocolate-almond","shelf"),

@@ -68,6 +68,10 @@ for(const name of ["Brócoli","Coliflor","Espinacas","Judías verdes","Guisantes
 for(const filling of ["jamón","pollo","bacalao","setas","cocido","queso"])add("Croquetas congeladas de "+filling,"croquetas congeladas");
 for(const filling of ["margarita","cuatro quesos","barbacoa","jamón y queso","pepperoni","vegetal","atún","pollo"])add("Pizza congelada "+filling,"pizza congelada");
 for(const flavour of ["vainilla","chocolate","fresa","nata","limón","mango","pistacho","café"])add("Helado de "+flavour,"helado");
+list("gominolas","Mentos menta|Mentos frutas|Chupa Chups fresa|Chupa Chups cola|Gominolas de ositos|Gominolas de regaliz|Caramelos sin azúcar");
+list("magdalenas","Magdalenas tradicionales|Magdalenas de chocolate|Magdalenas integrales");
+list("valencianas","Valencianas");
+list("ensaimadas","Ensaimada lisa|Ensaimada de cabello de ángel|Ensaimada de crema");
 export const PRODUCT_VARIETIES=result;
 export const PRODUCT_VARIETY_INDEX=new Map(result.map(v=>[norm(v.name),v]));
 export function findProductVariety(name:string){const n=norm(name);return PRODUCT_VARIETY_INDEX.get(n)}

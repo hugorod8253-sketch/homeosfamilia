@@ -2136,3 +2136,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .eat-tabs button{white-space:normal!important}
 @media(max-width:800px){.full-recipe-catalog .recipe-catalog-head{grid-template-columns:minmax(0,1fr)}.shopping-recipe-memory{flex-wrap:wrap}.shopping-recipe-memory>div{min-width:0;flex:1}.shopping-recipe-memory button{width:100%}}
 @media(max-width:600px){.full-recipe-grid{grid-template-columns:minmax(0,1fr)}.full-recipe-card img{height:175px}.full-recipe-card>div{min-height:0}.featured-meal>img{height:220px!important}.habit-starter-row{grid-template-columns:minmax(0,1fr)}.shop-inline-controls{grid-template-columns:28px minmax(0,1fr) 28px 28px!important}.shop-inline-controls button{width:28px!important}}
+
+/* Clear purchase feedback; keep product names readable. */
+.shop-visual-card.checked{opacity:1;background:#edf5ef;border-color:#4a8766}
+.shop-visual-card.checked .shop-visual-copy strong{text-decoration:none}
+.shopping-check-animation{width:32px;height:32px;animation:shopping-check-pop .3s ease-out}
+.shopping-check-animation path{fill:none;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:0;animation:shopping-check-draw .35s ease-out}
+@keyframes shopping-check-draw{from{stroke-dashoffset:40}to{stroke-dashoffset:0}}
+@keyframes shopping-check-pop{from{transform:scale(.7)}to{transform:scale(1)}}
+.restock-review{display:grid;gap:12px;padding:16px;border:1px solid #dce5dd;border-radius:18px;background:#fff;min-width:0}
+.restock-review-head,.restock-suggestion{display:flex;align-items:center;gap:12px}
+.restock-review-head strong,.restock-suggestion div{flex:1;min-width:0}
+.restock-suggestion{padding:12px;background:#f4f7f3;border-radius:12px;touch-action:pan-y}
+.restock-suggestion strong,.restock-suggestion small{display:block;overflow-wrap:anywhere}
+.restock-suggestion small{margin-top:4px}
+.restock-review p,.receipt-fallback-note{font-size:14px;line-height:1.5}
+@media(prefers-reduced-motion:reduce){.shopping-check-animation,.shopping-check-animation path{animation:none}}
