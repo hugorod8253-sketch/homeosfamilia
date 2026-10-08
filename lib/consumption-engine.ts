@@ -1,13 +1,13 @@
 import {classifyProduct,normalizeProductText} from './product-engine';
-import {planToBase,planFromBase,planUnitFamily} from './recipe-plan-engine';
-import {calendarDaysUntil,localDateIso} from './local-date';
+import {planToBase,planFromBase,planUnitFamily,normalizePlanUnit} from './recipe-plan-engine';
+import {calendarDaysUntil,localDateIso,isCalendarDate} from './local-date';
 export type ConsumptionHabit={id:string;name:string;qty:number;unit:string;days:number};
 export type StockCheck={id:string;name:string;qty:number;unit:string;date:string;location:string};
 type Purchase={name:string;category?:string;qty:number;unit:string;date:string};
 type Item=Purchase&{purchasedAt?:string;lastConfirmedAt?:string;estimateAnchorDate?:string;estimateAnchorQty?:number;location?:string;storageMode?:string};
 function key(name:string,category?:string){return normalizeProductText(classifyProduct(name,category).canonical)}
-function validDate(date:string){return /^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date+'T12:00:00'))}
-function compatible(a:string,b:string){const f=planUnitFamily(a);return f===planUnitFamily(b)&&(f==='mass'||f==='volume'||normalizeProductText(a).replace(/^uds$/,'ud')===normalizeProductText(b).replace(/^uds$/,'ud'))}
+function validDate(date:string){return isCalendarDate(date)}
+function compatible(a:string,b:string){const f=planUnitFamily(a);return f===planUnitFamily(b)&&(f==='mass'||f==='volume'||normalizePlanUnit(a)===normalizePlanUnit(b))}
 function median(xs:number[]){const s=xs.sort((a,b)=>a-b);return s.length%2?s[Math.floor(s.length/2)]:(s[s.length/2-1]+s[s.length/2])/2}
 /** Purchase intervals are a provisional hint, never proof of consumption or a stock mutation. */
 export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso(),allocation=1){
@@ -21,13 +21,13 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
  const snapshots=checks.filter(c=>matches(c)&&c.location==='Todo'&&c.qty>=0&&validDate(c.date)&&c.date<=today).sort((a,b)=>a.date.localeCompare(b.date));
  const confirmedRates:number[]=[];
  for(let i=1;i<snapshots.length;i++){const a=snapshots[i-1],b=snapshots[i],days=calendarDaysUntil(b.date,new Date(a.date+'T12:00:00'));if(days<2)continue;const incoming=buys.filter(p=>p.date>a.date&&p.date<=b.date).reduce((sum,p)=>sum+planToBase(p.qty,p.unit),0);const used=planToBase(a.qty,a.unit)+incoming-planToBase(b.qty,b.unit);if(used>=0)confirmedRates.push(used/days)}
- const habit=habits.find(h=>matches(h)&&h.qty>0&&h.days>0);
+ const habit=habits.find(h=>matches(h)&&Number.isFinite(h.qty)&&Number.isFinite(h.days)&&h.qty>0&&h.days>0);
  const source=confirmedRates.length?'confirmed':rates.length>=1?'purchases':habit?'habit':'unknown';
  const rate=confirmedRates.length?median(confirmedRates.slice(-6)):rates.length>=1?median(rates.slice(-6)):habit?planToBase(habit.qty,habit.unit)/habit.days:0;
  const anchor=item.estimateAnchorDate||item.lastConfirmedAt||item.purchasedAt;
  const age=anchor&&validDate(anchor)?Math.max(0,-calendarDaysUntil(anchor,new Date(today+'T12:00:00'))):0;
- const base=planToBase(Math.max(0,item.estimateAnchorQty??item.qty),item.unit);
- const allocatedRate=rate*Math.max(0,Math.min(1,allocation));
+ const base=planToBase(item.qty<=0?0:Math.max(0,item.estimateAnchorQty??item.qty),item.unit);
+ const allocatedRate=item.qty<=0||item.storageMode==='reserva'||item.location==='Congelador'?0:rate*Math.max(0,Math.min(1,allocation));
  const remaining=item.storageMode==='reserva'||item.location==='Congelador'||!rate?base:Math.max(0,base-allocatedRate*age);
  return {source,dailyRate:planFromBase(allocatedRate,item.unit),estimatedQty:Math.round(planFromBase(remaining,item.unit)*100)/100,daysLeft:allocatedRate?remaining/allocatedRate:null,confidence:source==='confirmed'?'media':source==='unknown'?'sin datos':'baja',basis:source==='confirmed'?'Ritmo ajustado con cantidades confirmadas y compras':source==='purchases'?'Ritmo provisional de recompra; comprar no demuestra que se haya acabado':source==='habit'?'Ritmo inicial indicado por ti; todavía sin comprobar':'Aún no hay datos suficientes de consumo'};
 }

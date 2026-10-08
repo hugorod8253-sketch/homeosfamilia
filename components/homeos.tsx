@@ -21,6 +21,7 @@ import { normalizeSpokenShoppingText, splitShoppingEntries, parseShoppingQuantit
 
 import { matchesRecipeSearch, recipeCountryLabel } from "../lib/catalog-search";
 import { SPANISH_SUPERMARKETS, normalizeSupermarket, editDistance } from "../lib/supermarkets";
+import { appendConfirmedStockCheck, emptyInventoryItem, freezeInventoryItem, thawInventoryItem } from "../lib/inventory-lifecycle";
 import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type StockCheck } from "../lib/consumption-engine";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
@@ -33,7 +34,7 @@ type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 type InventoryItem = {
   id:string; name:string; qty:number; unit:string; location:Location; estimateAnchorDate?:string; estimateAnchorQty?:number; category:string; subcategory?:string;
   stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
-  purchaseDateUnknown?:boolean; price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedPlanId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; mealPrepInitialServings?:number; mealPrepDays?:number; mealPrepStart?:string; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
+  purchaseDateUnknown?:boolean; price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedPlanId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; mealPrepInitialServings?:number; mealPrepDays?:number; mealPrepStart?:string; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; lastStockCheckId?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
 };
 type ShoppingItem = {
   id:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
@@ -58,7 +59,7 @@ type Profile = {
   nutrition:NutritionMode; cooking:CookingStyle; shoppingCycle:"diaria"|"semanal"|"quincenal"|"mensual"|"mixta";
   consumptionHabits?:ConsumptionHabit[]; consumptionSetupDone?:boolean; notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
-type AppState = {
+export type AppState = {
   stockChecks:StockCheck[]; retiredWeeklyMenu?:WeeklyMenuPlan; menuPreferences:MenuPreferences; inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; mealHistory:MealRecord[]; weeklyMenu:WeeklyMenuPlan|null; recipePlans:RecipePlan[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
   profile:Profile; budget:number; spent:number; waste:number; wasteSaved:number; productEngineVersion:number;
 };
@@ -89,7 +90,7 @@ const DEFAULT:AppState={
  profile:{householdSize:1,supermarkets:[],mainSupermarket:"",goals:[],nutrition:"basica",cooking:"rapido",shoppingCycle:"semanal",notifications:true,onboardingDone:false,financeMode:"orientativo",kitchenTools:[]}
 };
 
-function normalizeState(x:any):AppState{
+export function normalizeState(x:any):AppState{
  const raw=x&&typeof x==="object"&&!Array.isArray(x)?x:{};
  const rawMembers=Array.isArray(raw.members)?raw.members:DEFAULT.members;
  const rawProfile=raw.profile&&typeof raw.profile==="object"&&!Array.isArray(raw.profile)?raw.profile:{};
@@ -131,7 +132,7 @@ function normalizeState(x:any):AppState{
   return {...i,category:pref.category||p.category,subcategory:i.subcategory||p.subcategory};
  }):baseShopping;
  const shopping=migratedShopping.map(i=>({...i,supermarket:i.supermarket?normalizeSupermarket(i.supermarket):undefined,sources:i.sources?.length?i.sources:shoppingSources(i)}));
- return cleanWeeklyState({...DEFAULT,...raw,stockChecks:Array.isArray(raw.stockChecks)?raw.stockChecks.filter((c:any)=>c&&typeof c.name==="string"&&typeof c.date==="string"&&Number.isFinite(c.qty)&&c.qty>=0).slice(-600):[],menuPreferences:normalizeMenuPreferences(raw.menuPreferences),profile,members,events:Array.isArray(raw.events)?raw.events.slice(-200):[],inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory.slice(-600):[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions.slice(-240):[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory.slice(-400):[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done").slice(-80):[],productPreferences,budget:Math.max(0,Number(raw.budget)||0),spent:Math.max(0,Number(raw.spent)||0),waste:Math.max(0,Number(raw.waste)||0),wasteSaved:Math.max(0,Number(raw.wasteSaved)||0),productEngineVersion:1});
+ return cleanWeeklyState({...DEFAULT,...raw,stockChecks:Array.isArray(raw.stockChecks)?raw.stockChecks.filter((c:any)=>c&&typeof c.name==="string"&&typeof c.date==="string"&&Number.isFinite(c.qty)&&c.qty>=0):[],menuPreferences:normalizeMenuPreferences(raw.menuPreferences),profile,members,events:Array.isArray(raw.events)?raw.events.slice(-200):[],inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done"):[],productPreferences,budget:Math.max(0,Number(raw.budget)||0),spent:Math.max(0,Number(raw.spent)||0),waste:Math.max(0,Number(raw.waste)||0),wasteSaved:Math.max(0,Number(raw.wasteSaved)||0),productEngineVersion:1});
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
@@ -322,9 +323,9 @@ function consumeNeed(inv:InventoryItem[],need:{key:string;amount:number;unit:str
  if(remaining>0)exact=false;
  return {inventory:out,exact};
 }
-function consumeRecipeIngredients(inv:InventoryItem[],ingredients:RecipeIngredient[]){
+export function consumeRecipeIngredients(inv:InventoryItem[],ingredients:RecipeIngredient[],context?:AppState,today=localDateIso()){
  const result=consumePlanIngredients(inv,ingredients,usableInventoryItem);
- return {...result,inventory:result.inventory.map(i=>{const before=inv.find(x=>x.id===i.id);return before?.estimateAnchorQty!==undefined&&before.qty!==i.qty?{...i,estimateAnchorQty:Math.max(0,before.estimateAnchorQty-(before.qty-i.qty))}:i})};
+ return {...result,inventory:result.inventory.map(i=>{const before=inv.find(x=>x.id===i.id);return before?.estimateAnchorQty!==undefined&&before.qty!==i.qty?{...i,estimateAnchorQty:Math.max(0,(context?estimateInventoryConsumption(before,inv,context.purchaseHistory,context.profile.consumptionHabits,context.stockChecks,today).estimatedQty:before.estimateAnchorQty)-(before.qty-i.qty)),estimateAnchorDate:context?today:before.estimateAnchorDate}:i})};
 }
 
 function ensureMembers(members:Member[],count:number){
@@ -385,7 +386,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
   const reviewDue=item.qualityReviewAt&&daysUntil(item.qualityReviewAt)<=0;
   return {prob:.96,label:"Probablemente hay",tone:reviewDue?"review":"hay",basis:reviewDue?"Reserva registrada · conviene revisar calidad":"Reserva registrada · no se descuenta por rotación normal"};
  }
- if(item.lastConfirmedAt&&daysUntil(item.lastConfirmedAt)>=-1)return {prob:.99,label:"Cantidad confirmada",tone:"hay",basis:"Cantidad real confirmada por ti; el ritmo de consumo se estima por separado"};
+ if(item.stock!=="poco"&&item.lastConfirmedAt&&daysUntil(item.lastConfirmedAt)>=-1)return {prob:.99,label:"Cantidad confirmada",tone:"hay",basis:"Cantidad real confirmada por ti; el ritmo de consumo se estima por separado"};
  if(item.stock==="incierto")return {prob:.5,label:"Revisar",tone:"incierto",basis:"Cantidad o estado pendiente de confirmar"};
  if(item.category==="Preparados")return {prob:item.stock==="poco"?.42:.9,label:"Raciones registradas",tone:item.stock==="poco"?"incierto":"hay",basis:"Cantidad de comida preparada registrada; el paso de los días no confirma que se haya comido"};
  const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
@@ -454,6 +455,95 @@ function navIcon(id:View,_icon:string){
 const nav:{id:View;label:string;icon:string}[]=[
  {id:"inicio",label:"Inicio",icon:"⌂"},{id:"comer",label:"Comer",icon:"♨"},{id:"comprar",label:"Comprar",icon:"⌁"},{id:"casa",label:"Casa",icon:"⌂"},{id:"finanzas",label:"Finanzas",icon:"▥"}
 ];
+
+export function reconcileRecipeShopping(base:AppState,onlyPlanIds?:string[]){
+  let shopping=[...base.shopping];
+  const targets=base.recipePlans.filter(p=>p.status==="saved"&&p.shoppingLinked&&(!onlyPlanIds||onlyPlanIds.includes(p.id)));
+  for(const plan of targets){
+   shopping=shopping.flatMap(item=>{
+    const next=shoppingSources(item).filter(src=>src.planId!==plan.id);
+    const updated=withShoppingSources(item,next);
+    return updated?[updated]:[];
+   });
+   const shortages=recipeShortages(plan.recipe.ingredients,planningInventory({...base,shopping},plan.id));
+   for(const shortage of shortages){
+    const unit=shortage.unit||inferUnit(shortage.name);
+    const canonical=norm(classifyProduct(shortage.name,inferCategory(shortage.name)).canonical);
+    const source:ShoppingSource={id:"recipe:"+plan.id+":"+canonical,type:"recipe",label:plan.recipe.title,qty:shortage.missing,unit,planId:plan.id,recipeId:plan.recipe.id,plannedFor:plan.plannedFor,buyAfter:recommendedBuyAfter(shortage.name,inferCategory(shortage.name),plan.plannedFor)};
+    const existing=shopping.findIndex(q=>q.status==="pendiente"&&planUnitFamily(q.unit)===planUnitFamily(unit)&&norm(classifyProduct(q.name,q.category).canonical)===canonical);
+    if(existing>=0){
+     const q=shopping[existing];
+     const updated=withShoppingSources(q,[...shoppingSources(q),source]);
+     if(updated)shopping[existing]={...updated,requestedBy:updated.recipePlanIds&&updated.recipePlanIds.length>1?"Varias recetas":q.requestedBy};
+    }else{
+     shopping.push({id:crypto.randomUUID(),name:shortage.name,qty:shortage.missing,unit,category:inferCategory(shortage.name),requestedBy:"Receta · "+plan.recipe.title,reason:"receta",status:"pendiente",recipePlanId:plan.id,recipePlanIds:[plan.id],recipeId:plan.recipe.id,sources:[source]});
+    }
+   }
+  }
+  return {...base,shopping};
+ }
+
+export function completePurchase(s:AppState,cartIds:string[],total?:number,activeStore="",today=localDateIso()):AppState{
+ const cart=s.shopping.filter(i=>cartIds.includes(i.id)&&i.status==="carrito"&&Number.isFinite(i.boughtQty??i.qty)&&(i.boughtQty??i.qty)>0);
+ if(!cart.length)return s;
+   const inventory=[...s.inventory];
+   for(const x of cart){
+    const buyQty=Math.max(.01,x.boughtQty??x.qty);
+    const sourcesBefore=shoppingSources(x);
+    const sourcesAfter=remainingSourcesAfterPurchase(sourcesBefore,buyQty,x.unit);
+    const remainingById=new Map(sourcesAfter.map(src=>[src.id,src.qty]));
+    const fulfilledSources=sourcesBefore.map(src=>({...src,qty:Math.max(0,Math.round((src.qty-(remainingById.get(src.id)||0))*100)/100)})).filter(src=>src.qty>0);
+    const profile=classifyProduct(x.name,x.category);
+    const pref=s.productPreferences[profile.canonical]||{};
+    const category=pref.category||profile.category;
+    const reserveAllowed=x.reserve&&(Boolean(freezerQualityGuide(x.name,category,profile.subcategory))||category==="Carne");
+    const location=(reserveAllowed?"Congelador":recommendedLocation(x.name,category,pref.location)) as Location;
+    const guide=reserveAllowed?freezerQualityGuide(x.name,category,profile.subcategory):null;
+    const frozenAt=reserveAllowed?today:undefined;
+    const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
+    const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
+    const planReservations=fulfilledSources.filter(src=>src.type==="recipe"&&Boolean(src.planId)&&src.qty>0);
+    const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed)&&(i.qty<=0||(!i.expires&&profile.rotation!=="alta")));
+    if(idx>=0){
+     const current=inventory[idx];
+     const estimatedExpires=current.qty<=0?estimated?.date:current.expires?current.estimatedExpires:(current.estimatedExpires&&estimated?.date?(current.estimatedExpires<estimated.date?current.estimatedExpires:estimated.date):(current.estimatedExpires||estimated?.date));
+     const mergedPlanReservations=[...(current.planReservations||[])];
+     for(const incoming of planReservations){
+      const ri=mergedPlanReservations.findIndex(r=>r.id===incoming.id);
+      if(ri>=0)mergedPlanReservations[ri]={...mergedPlanReservations[ri],qty:Math.round((mergedPlanReservations[ri].qty+incoming.qty)*100)/100};
+      else mergedPlanReservations.push(incoming);
+     }
+     inventory[idx]={...current,...(current.qty<=0?{expires:undefined,dateType:undefined,estimatedExpires:estimated?.date,estimatedDateType:estimated?.kind,estimateBasis:estimated?.basis,lastConfirmedAt:undefined,purchaseDateUnknown:false}:{}),category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,estimateAnchorQty:estimateInventoryConsumption(current,inventory,[...s.purchaseHistory,{name:x.name,qty:buyQty,unit:x.unit,date:today,category}],s.profile.consumptionHabits,s.stockChecks,today).estimatedQty+buyQty,estimateAnchorDate:today,stock:"hay",purchasedAt:current.qty>0?current.purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:mergedPlanReservations.length?mergedPlanReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
+    }else{
+     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
+    }
+   }
+   const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
+    const p=classifyProduct(x.name,x.category);
+    const pref=s.productPreferences[p.canonical]||{};
+    return {
+     id:crypto.randomUUID(),
+     name:x.name,
+     qty:Math.max(.01,x.boughtQty??x.qty),
+     unit:x.unit,
+     category:pref.category||p.category,
+     subcategory:p.subcategory,
+     date:today,
+     supermarket:x.supermarket||activeStore||undefined,
+     requestedBy:x.requestedBy,
+     price:x.price
+    };
+   })];
+   const purchaseSessions=typeof total==="number"&&total>=0?[...s.purchaseSessions,{id:crypto.randomUUID(),date:today,total,supermarket:activeStore||undefined}]:s.purchaseSessions;
+   const shoppingAfterPurchase=s.shopping.flatMap(item=>{
+    if(!cart.some(x=>x.id===item.id))return [item];
+    const remaining=remainingSourcesAfterPurchase(shoppingSources(item),Math.max(.01,item.boughtQty??item.qty),item.unit);
+    const updated=withShoppingSources({...item,status:"pendiente",boughtQty:undefined},remaining);
+    return updated?[updated]:[];
+   });
+   const purchasedState={...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:shoppingAfterPurchase};
+   return reconcileWeeklyShopping(reconcileRecipeShopping(purchasedState));
+}
 
 export default function HomeOS(){
  const [view,setView]=useState<View>("inicio");
@@ -733,33 +823,7 @@ export default function HomeOS(){
    return {plans:s.recipePlans.map(p=>p.id===existing.id?{...p,recipe,plannedFor:plannedFor||p.plannedFor,shoppingLinked:p.shoppingLinked||shoppingLinked}:p),planId:existing.id};
   }
   const planId=crypto.randomUUID();
-  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:localDateIso(),plannedFor,status:"saved" as const,shoppingLinked}].slice(-80),planId};
- }
- function reconcileRecipeShopping(base:AppState,onlyPlanIds?:string[]){
-  let shopping=[...base.shopping];
-  const targets=base.recipePlans.filter(p=>p.status==="saved"&&p.shoppingLinked&&(!onlyPlanIds||onlyPlanIds.includes(p.id)));
-  for(const plan of targets){
-   shopping=shopping.flatMap(item=>{
-    const next=shoppingSources(item).filter(src=>src.planId!==plan.id);
-    const updated=withShoppingSources(item,next);
-    return updated?[updated]:[];
-   });
-   const shortages=recipeShortages(plan.recipe.ingredients,planningInventory({...base,shopping},plan.id));
-   for(const shortage of shortages){
-    const unit=shortage.unit||inferUnit(shortage.name);
-    const canonical=norm(classifyProduct(shortage.name,inferCategory(shortage.name)).canonical);
-    const source:ShoppingSource={id:"recipe:"+plan.id+":"+canonical,type:"recipe",label:plan.recipe.title,qty:shortage.missing,unit,planId:plan.id,recipeId:plan.recipe.id,plannedFor:plan.plannedFor,buyAfter:recommendedBuyAfter(shortage.name,inferCategory(shortage.name),plan.plannedFor)};
-    const existing=shopping.findIndex(q=>q.status==="pendiente"&&planUnitFamily(q.unit)===planUnitFamily(unit)&&norm(classifyProduct(q.name,q.category).canonical)===canonical);
-    if(existing>=0){
-     const q=shopping[existing];
-     const updated=withShoppingSources(q,[...shoppingSources(q),source]);
-     if(updated)shopping[existing]={...updated,requestedBy:updated.recipePlanIds&&updated.recipePlanIds.length>1?"Varias recetas":q.requestedBy};
-    }else{
-     shopping.push({id:crypto.randomUUID(),name:shortage.name,qty:shortage.missing,unit,category:inferCategory(shortage.name),requestedBy:"Receta · "+plan.recipe.title,reason:"receta",status:"pendiente",recipePlanId:plan.id,recipePlanIds:[plan.id],recipeId:plan.recipe.id,sources:[source]});
-    }
-   }
-  }
-  return {...base,shopping};
+  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:localDateIso(),plannedFor,status:"saved" as const,shoppingLinked}],planId};
  }
  function saveRecipePlan(recipe:Recipe,plannedFor?:string){
   setState(s=>{
@@ -804,66 +868,8 @@ export default function HomeOS(){
  function finishShopping(total?:number){
   const cart=state.shopping.filter(i=>i.status==="carrito");
   if(!cart.length){setToast("Todavía no hay productos en el carrito");return}
-  const today=localDateIso();
-  setState(s=>{
-   const inventory=[...s.inventory];
-   for(const x of cart){
-    const buyQty=Math.max(.01,x.boughtQty??x.qty);
-    const sourcesBefore=shoppingSources(x);
-    const sourcesAfter=remainingSourcesAfterPurchase(sourcesBefore,buyQty,x.unit);
-    const remainingById=new Map(sourcesAfter.map(src=>[src.id,src.qty]));
-    const fulfilledSources=sourcesBefore.map(src=>({...src,qty:Math.max(0,Math.round((src.qty-(remainingById.get(src.id)||0))*100)/100)})).filter(src=>src.qty>0);
-    const profile=classifyProduct(x.name,x.category);
-    const pref=s.productPreferences[profile.canonical]||{};
-    const category=pref.category||profile.category;
-    const reserveAllowed=x.reserve&&(Boolean(freezerQualityGuide(x.name,category,profile.subcategory))||category==="Carne");
-    const location=(reserveAllowed?"Congelador":recommendedLocation(x.name,category,pref.location)) as Location;
-    const guide=reserveAllowed?freezerQualityGuide(x.name,category,profile.subcategory):null;
-    const frozenAt=reserveAllowed?today:undefined;
-    const qualityReviewAt=reserveAllowed&&guide?addMonthsIso(today,guide.minMonths):undefined;
-    const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
-    const planReservations=fulfilledSources.filter(src=>src.type==="recipe"&&Boolean(src.planId)&&src.qty>0);
-    const idx=inventory.findIndex(i=>norm(i.name)===norm(x.name)&&i.unit===x.unit&&i.location===location&&Boolean(i.storageMode==="reserva")===Boolean(reserveAllowed));
-    if(idx>=0){
-     const current=inventory[idx];
-     const estimatedExpires=current.expires?current.estimatedExpires:(current.estimatedExpires&&estimated?.date?(current.estimatedExpires<estimated.date?current.estimatedExpires:estimated.date):(current.estimatedExpires||estimated?.date));
-     const mergedPlanReservations=[...(current.planReservations||[])];
-     for(const incoming of planReservations){
-      const ri=mergedPlanReservations.findIndex(r=>r.id===incoming.id);
-      if(ri>=0)mergedPlanReservations[ri]={...mergedPlanReservations[ri],qty:Math.round((mergedPlanReservations[ri].qty+incoming.qty)*100)/100};
-      else mergedPlanReservations.push(incoming);
-     }
-     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,estimateAnchorQty:estimateInventoryConsumption(current,s.inventory,[...s.purchaseHistory,{name:x.name,qty:buyQty,unit:x.unit,date:today,category}],s.profile.consumptionHabits,s.stockChecks).estimatedQty+buyQty,estimateAnchorDate:today,stock:"hay",purchasedAt:current.qty>0?current.purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:mergedPlanReservations.length?mergedPlanReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
-    }else{
-     inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
-    }
-   }
-   const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
-    const p=classifyProduct(x.name,x.category);
-    const pref=s.productPreferences[p.canonical]||{};
-    return {
-     id:crypto.randomUUID(),
-     name:x.name,
-     qty:Math.max(.01,x.boughtQty??x.qty),
-     unit:x.unit,
-     category:pref.category||p.category,
-     subcategory:p.subcategory,
-     date:today,
-     supermarket:x.supermarket||activeStore||undefined,
-     requestedBy:x.requestedBy,
-     price:x.price
-    };
-   })].slice(-600);
-   const purchaseSessions=typeof total==="number"&&total>=0?[...s.purchaseSessions,{id:crypto.randomUUID(),date:today,total,supermarket:activeStore||undefined}].slice(-240):s.purchaseSessions;
-   const shoppingAfterPurchase=s.shopping.flatMap(item=>{
-    if(item.status!=="carrito")return [item];
-    const remaining=remainingSourcesAfterPurchase(shoppingSources(item),Math.max(.01,item.boughtQty??item.qty),item.unit);
-    const updated=withShoppingSources({...item,status:"pendiente",boughtQty:undefined},remaining);
-    return updated?[updated]:[];
-   });
-   const purchasedState={...s,inventory,purchaseHistory,purchaseSessions,spent:typeof total==="number"&&total>=0?s.spent+total:s.spent,shopping:shoppingAfterPurchase};
-   return reconcileWeeklyShopping(reconcileRecipeShopping(purchasedState));
-  });
+  const ids=cart.map(i=>i.id),today=localDateIso();
+  setState(s=>completePurchase(s,ids,total,activeStore,today));
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
 
@@ -1361,7 +1367,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
   if(recipe.ingredients.some(i=>!i.name.trim()||(parseQty(i.qty)?.amount||0)<=0)){setToast("Revisa las cantidades y unidades antes de confirmar");return}
   let wasExact=true;
   setState(s=>{
-   const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients);
+   const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients,s);
    wasExact=consumed.exact;
    let inventory=consumed.inventory;
    const today=localDateIso();
@@ -1374,7 +1380,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
    const mealHistory=eatenServings>0?[...s.mealHistory,{
     id:crypto.randomUUID(),date:today,recipeId:recipe.id,title:recipe.title+(recipe.adapted?" (adaptada)":""),servings:eatenServings,
     ingredients:recipe.ingredients.map(i=>({name:i.name,key:i.key,category:inferCategory(i.name)}))
-   }].slice(-400):s.mealHistory;
+   }]:s.mealHistory;
    const completedPlanIds=s.recipePlans.filter(p=>p.recipe.id===recipe.id).map(p=>p.id);
    const releasedInventory=inventory.map(i=>({...i,planReservations:(i.planReservations||[]).filter(r=>!r.planId||!completedPlanIds.includes(r.planId))}));
    return reconcileWeeklyShopping({...s,inventory:releasedInventory,mealHistory,recipePlans:s.recipePlans.filter(p=>p.recipe.id!==recipe.id)});
@@ -1582,11 +1588,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   if(!canStoreAt(item.name,item.category,haveLocation)){setToast(storageWarning(item.name,item.category,haveLocation));return}
   setState(s=>{const matches=s.inventory.filter(i=>norm(classifyProduct(i.name,i.category).canonical)===norm(profile.canonical)&&i.location===haveLocation&&normalizedUnit(i.unit)===normalizedUnit(item.unit));
    const id=matches[0]?.id||crypto.randomUUID();
-   const inventory=[...s.inventory.filter(i=>!matches.some(x=>x.id===i.id)),{...matches[0],id,name:item.name,qty,unit:item.unit,location:haveLocation,category:item.category,subcategory:item.subcategory,stock:"hay" as const,purchasedAt:matches[0]?.purchasedAt||isoAfterDays(0),purchaseDateUnknown:!matches[0]||matches[0].purchaseDateUnknown,lastConfirmedAt:isoAfterDays(0),estimateAnchorDate:isoAfterDays(0),estimateAnchorQty:qty}];
+   const inventory=[...s.inventory.filter(i=>!matches.some(x=>x.id===i.id)),{...matches[0],id,name:item.name,qty,unit:item.unit,location:haveLocation,category:item.category,subcategory:item.subcategory,stock:"hay" as const,purchasedAt:matches[0]?.purchasedAt||isoAfterDays(0),purchaseDateUnknown:!matches[0]||matches[0].purchaseDateUnknown,lastConfirmedAt:isoAfterDays(0),lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:isoAfterDays(0),estimateAnchorQty:qty}];
    const shopping=s.shopping.flatMap(i=>{if(i.id!==item.id)return [i];const sources=remainingSourcesAfterPurchase(shoppingSources(i),qty,item.unit);const updated=withShoppingSources(i,sources);return updated?[updated]:[]});
-   const total=inventory.filter(i=>norm(classifyProduct(i.name,i.category).canonical)===norm(classifyProduct(item.name,item.category).canonical)&&normalizedUnit(i.unit)===normalizedUnit(item.unit)).reduce((sum,i)=>sum+i.qty,0);
-   const check:StockCheck={id:crypto.randomUUID(),name:item.name,qty:total,unit:item.unit,date:isoAfterDays(0),location:"Todo"};
-   return reconcileWeeklyShopping({...s,inventory,shopping,stockChecks:[...s.stockChecks.filter(c=>!(c.date===check.date&&norm(c.name)===norm(check.name)&&normalizedUnit(c.unit)===normalizedUnit(check.unit))),check].slice(-600)});
+   return reconcileWeeklyShopping({...s,inventory,shopping,stockChecks:appendConfirmedStockCheck(s.stockChecks,inventory,inventory.find(i=>i.id===id)!,isoAfterDays(0))});
   });setAlreadyHave(null);setToast("Cantidad confirmada en Casa · no se registra como compra");
  }
  const [productChoice,setProductChoice]=useState<{raw:string;name:string;qty:number;unit:string;supermarket?:string;options:ReturnType<typeof productSuggestions>}|null>(null);
@@ -1909,24 +1913,22 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
  const shown=state.inventory.slice().sort((a,b)=>daysUntil(a.expires||a.estimatedExpires||addDaysIso(a.purchasedAt,classifyProduct(a.name,a.category).rotation==="alta"?3:999))-daysUntil(b.expires||b.estimatedExpires||addDaysIso(b.purchasedAt,classifyProduct(b.name,b.category).rotation==="alta"?3:999))).filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?(i.expires||i.estimatedExpires?daysUntil(i.expires||i.estimatedExpires)<=3:classifyProduct(i.name,i.category).rotation==="alta"&&daysUntil(i.purchasedAt)<=-2)&&i.stock!=="falta"&&i.location!=="Congelador":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
- function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty,servings:stock==="falta"&&i.category==="Preparados"?0:i.servings}:i)}))}
+ function setStock(id:string,stock:StockState){setState(s=>{const today=localDateIso(),item=s.inventory.find(i=>i.id===id);const inventory=s.inventory.map(i=>i.id===id?(stock==="falta"?emptyInventoryItem(i,today):{...i,stock}):i);return {...s,inventory,stockChecks:stock==="falta"&&item?appendConfirmedStockCheck(s.stockChecks,inventory,inventory.find(i=>i.id===id)!,today):s.stockChecks}})}
  function openStockForm(item?:InventoryItem){setStockEdit(item||null);setStockName(item?.name||"");setStockQty(item?String(item.qty):"");setStockUnit(item?.unit||"ud");setStockLocation(item?.location||"Despensa");setStockDate(item?.expires||"");setStockDateType(item?.dateType||"caducidad");setStockFormOpen(true)}
  function saveStockCount(){
   const qty=Number(stockQty.replace(",","."));if(!stockName.trim()||!Number.isFinite(qty)||qty<0)return;
   const today=localDateIso(),p=classifyProduct(stockName),name=stockName.trim();
   setState(s=>{
    const same=s.inventory.find(i=>i.id===stockEdit?.id)||(!stockEdit?s.inventory.find(i=>norm(i.name)===norm(name)&&normalizedUnit(i.unit)===normalizedUnit(stockUnit)&&i.location===stockLocation):undefined);
-   const item:InventoryItem={...same,id:same?.id||crypto.randomUUID(),name,qty,unit:stockUnit,location:stockLocation,category:same?.category==="Preparados"?"Preparados":p.category,servings:same?.category==="Preparados"?qty:same?.servings,subcategory:p.subcategory,stock:qty>0?"hay":"falta",purchasedAt:same?.purchasedAt||today,purchaseDateUnknown:same?.purchaseDateUnknown??!same,lastConfirmedAt:today,estimateAnchorDate:today,estimateAnchorQty:qty,expires:stockDate||undefined,dateType:stockDate?stockDateType:undefined,estimatedExpires:stockDate?undefined:same?.estimatedExpires,estimatedDateType:stockDate?undefined:same?.estimatedDateType};
+   const item:InventoryItem={...same,id:same?.id||crypto.randomUUID(),name,qty,unit:stockUnit,location:stockLocation,category:same?.category==="Preparados"?"Preparados":p.category,servings:same?.category==="Preparados"?qty:same?.servings,subcategory:p.subcategory,stock:qty>0?"hay":"falta",purchasedAt:same?.purchasedAt||today,purchaseDateUnknown:same?.purchaseDateUnknown??!same,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:today,estimateAnchorQty:qty,expires:stockDate||undefined,dateType:stockDate?stockDateType:undefined,estimatedExpires:stockDate?undefined:same?.estimatedExpires,estimatedDateType:stockDate?undefined:same?.estimatedDateType};
    const inventory=same?s.inventory.map(i=>i.id===same.id?item:i):[item,...s.inventory];
-   const total=inventory.filter(i=>norm(classifyProduct(i.name,i.category).canonical)===norm(p.canonical)&&normalizedUnit(i.unit)===normalizedUnit(stockUnit)).reduce((sum,i)=>sum+i.qty,0);
-   const check:StockCheck={id:crypto.randomUUID(),name:p.canonical,qty:total,unit:stockUnit,date:today,location:"Todo"};
-   return {...s,inventory,stockChecks:[...s.stockChecks.filter(c=>!(c.date===today&&norm(c.name)===norm(check.name)&&normalizedUnit(c.unit)===normalizedUnit(check.unit))),check].slice(-600)};
+   return {...s,inventory,stockChecks:appendConfirmedStockCheck(s.stockChecks,inventory,item,today)};
   });setStockFormOpen(false);setToast("Cantidad real confirmada · no cuenta como compra");
  }
  function confirmStillHere(id:string){const item=state.inventory.find(i=>i.id===id);if(item)openStockForm(item)}
  function discardProduct(i:InventoryItem){
   const loss=typeof i.price==="number"?Math.max(0,i.price):0;
-  setState(s=>({...s,waste:s.waste+loss,inventory:s.inventory.map(x=>x.id===i.id?{...x,stock:"falta",qty:0}:x)}));
+  setState(s=>{const current=s.inventory.find(x=>x.id===i.id);if(!current||current.stock==="falta")return s;return {...s,waste:s.waste+loss,inventory:s.inventory.map(x=>x.id===i.id?emptyInventoryItem(x,localDateIso()):x)}});
   setToast(loss>0?"Desperdicio registrado · "+loss.toFixed(2)+" €":"Marcado como tirado");
  }
  function eatPrepared(i:InventoryItem){
@@ -1936,7 +1938,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
    const nextQty=Math.max(0,(current.servings||current.qty||1)-1);
    const ingredients=current.preparedIngredients?.length?current.preparedIngredients:[{name:current.name,key:current.name,category:inferCategory(current.name)}];
    const meal:MealRecord={id:crypto.randomUUID(),date:today,recipeId:current.preparedRecipeId||current.id,title:current.name,servings:1,ingredients};
-   return {...s,mealHistory:[...s.mealHistory,meal].slice(-400),inventory:s.inventory.map(x=>x.id===current.id?{...x,qty:nextQty,servings:nextQty,stock:nextQty<=0?"falta":x.stock}:x)};
+   return {...s,mealHistory:[...s.mealHistory,meal],inventory:s.inventory.map(x=>x.id===current.id?{...x,qty:nextQty,servings:nextQty,stock:nextQty<=0?"falta":x.stock}:x)};
   });
   setToast("1 ración consumida · Casa y hábitos actualizados");
  }
@@ -1962,7 +1964,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
    const qualityReviewAt=guide?addMonthsIso(frozenAt,guide.minMonths):undefined;
    return {...s,
     productPreferences:{...s.productPreferences,[key]:{...(s.productPreferences[key]||{}),location:"Congelador"}},
-    inventory:s.inventory.map(i=>i.id===id?{...i,location:"Congelador",frozenAt,qualityReviewAt,originalExpires:i.originalExpires||i.expires,expires:undefined,dateType:undefined}:i)
+    inventory:s.inventory.map(i=>i.id===id?{...freezeInventoryItem(i,frozenAt,estimateInventoryConsumption(i,s.inventory,s.purchaseHistory,s.profile.consumptionHabits,s.stockChecks,frozenAt).estimatedQty),qualityReviewAt}:i)
    };
   });
   setToast("Guardado en congelador · HomeOS lo recordará");
@@ -1974,7 +1976,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   const profile=classifyProduct(i.name,i.category);
   setState(s=>({...s,
    productPreferences:{...s.productPreferences,[profile.canonical]:{...(s.productPreferences[profile.canonical]||{}),location:next}},
-   inventory:s.inventory.map(x=>x.id===i.id?{...x,location:next,frozenAt:undefined,stock:x.location==="Congelador"?"incierto":x.stock}:x)
+   inventory:s.inventory.map(x=>x.id===i.id?(x.location==="Congelador"?thawInventoryItem(x,next,localDateIso()):{...x,location:next}):x)
   }));
   setToast("Ubicación aprendida para futuras compras");
  }
