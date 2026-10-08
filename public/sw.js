@@ -1,11 +1,11 @@
-const CACHE="homeos-shell-v10-cultural-dishes";
+const CACHE="homeos-shell-v11-audited-flows";
 const SHELL=["/","/manifest.webmanifest","/icon.svg?v=3"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}));
   self.skipWaiting();
 });
 self.addEventListener("activate",event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("homeos-shell-")&&k!==CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener("fetch",event=>{
@@ -14,7 +14,8 @@ self.addEventListener("fetch",event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin)return;
   if(req.mode==="navigate"){
-    event.respondWith(fetch(req).then(res=>{
+    event.respondWith(fetch(req).then(async res=>{
+      if(!res.ok)return (await caches.match("/"))||res;
       const copy=res.clone(); caches.open(CACHE).then(c=>c.put("/",copy)).catch(()=>{});
       return res;
     }).catch(()=>caches.match("/")));

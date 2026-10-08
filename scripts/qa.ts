@@ -10,13 +10,22 @@ import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFrom
 import { buildWeeklyMenu, resolveCalorieReference } from "../lib/weekly-menu";
 import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
-import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
+import { mergeAdditiveCounter, mergeThreeWay, mergeHouseholdState } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
-import { parsePlanQty, freeInventoryAfterReservations, planFromBase, planToBase, recipeShortages, remainingSourcesAfterPurchase, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
+import { localDateIso, calendarDaysUntil } from "../lib/local-date";
+import { readBrowserStorage, writeBrowserStorage, removeBrowserStorage } from "../lib/browser-storage";
+import { parsePlanQty, freeInventoryAfterReservations, planFromBase, planToBase, recipeShortages, remainingSourcesAfterPurchase, resizeShoppingSources, removePlanFromSources, sumSources } from "../lib/recipe-plan-engine";
 
 function assert(condition:any,message:string){
  if(!condition)throw new Error("QA: "+message);
 }
+assert(readBrowserStorage("qa")===null&&!writeBrowserStorage("qa","x"),"storage helpers must work safely during server rendering");
+const deniedStorage={getItem(){throw new Error("denied")},setItem(){throw new Error("quota")},removeItem(){throw new Error("denied")}};
+Object.defineProperty(globalThis,"window",{value:{localStorage:deniedStorage},configurable:true});
+assert(readBrowserStorage("qa")===null&&!writeBrowserStorage("qa","x")&&!removeBrowserStorage("qa"),"denied or full browser storage must not crash the app");
+delete (globalThis as any).window;
+const auditedServiceWorker=readFileSync(new URL("../public/sw.js",import.meta.url),"utf8");
+assert(auditedServiceWorker.includes('k.startsWith("homeos-shell-")'),"app updates must preserve unrelated caches, including downloaded local AI models");
 function product(name:string,category:string,location:string){
  const p=classifyProduct(name);
  assert(p.category===category,name+" category expected "+category+" got "+p.category);
@@ -90,6 +99,14 @@ assert(receipt.total===6,"receipt total should parse");
 assert(receipt.items.length===3,"receipt should parse 3 product lines");
 assert(receipt.items.some(x=>x.name.toLowerCase().includes("leche")),"receipt should include milk");
 assert(receipt.items.some(x=>x.qty===2),"receipt should parse x2 quantity");
+const dottedReceipt=parseReceiptText("LECHE 2.50\nDEVOLUCION -1.50\nTOTAL 2.50\nSUBTOTAL 10.00");
+assert(dottedReceipt.total===2.5,"receipt decimal points must not inflate totals or accept SUBTOTAL as TOTAL");
+assert(dottedReceipt.items.length===1&&dottedReceipt.items[0].price===2.5,"refunds must not become positive purchases");
+assert(parseReceiptText("TOTAL 2,50").total===2.5,"comma decimals remain supported");
+const lateToday=new Date(2026,9,8,0,15);
+assert(localDateIso(lateToday)==="2026-10-08","calendar dates must use local midnight rather than UTC");
+assert(calendarDaysUntil("2026-10-08",lateToday)===0&&calendarDaysUntil("2026-10-09",lateToday)===1,"expiry days must not change depending on the current hour");
+assert(calendarDaysUntil("2026-10-07",new Date(2026,9,8,23,59))===-1,"yesterday is expired for the entire local day");
 const mergedReceipt=mergeReceiptCandidates(
  [{name:"Leche",qty:1,price:1.25,raw:"LECHE 1,25"}],
  [{name:"Leche",qty:1,price:1.25,raw:"LECHE 1,25"},{name:"Pan",qty:1,price:1.1,raw:"PAN 1,10"}]
@@ -157,6 +174,10 @@ assert(shortages.some(x=>x.key==="leche"&&x.missing===300),"recipe shortage shou
 assert(shortages.some(x=>x.key==="huevo"&&x.missing===2),"recipe shortage should subtract eggs already at home");
 const sourceTotal=sumSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"L");
 assert(sourceTotal===1.5,"shopping sources should merge compatible recipe and manual quantities");
+const sharedSources=[{id:"m1",type:"manual" as const,label:"Fran",qty:1,unit:"L"},{id:"m2",type:"manual" as const,label:"Hugo",qty:500,unit:"ml"}];
+assert(sumSources(resizeShoppingSources(sharedSources,2.5,"L"),"L")===2.5,"increasing a shared shopping line must preserve its total across contributors");
+assert(sumSources(resizeShoppingSources(sharedSources,.5,"L"),"L")===.5,"reducing a shared shopping line must consume a quantity once");
+assert(sumSources(remainingSourcesAfterPurchase(sharedSources,.5,"L"),"L")===1,"already-have confirmation must not subtract its quantity from every contributor");
 assert(planFromBase(planToBase(1,"L"),"ml")===1000,"shopping unit conversion must preserve 1 L as 1000 ml");
 assert(planFromBase(planToBase(750,"g"),"kg")===0.75,"shopping unit conversion must preserve 750 g as 0.75 kg");
 const remainingSources=removePlanFromSources([{id:"m",type:"manual",label:"Habitual",qty:1,unit:"L"},{id:"r",type:"recipe",label:"Receta",qty:500,unit:"ml",planId:"p1"}],"p1");
@@ -167,6 +188,8 @@ const aiClamped=sanitizeLocalAiRecipes([{title:"X",time:999,servings:99,ingredie
 assert(aiClamped[0].time===180&&aiClamped[0].servings===12,"local AI sanitizer should clamp unreasonable time and serving values");
 let badAiShape=false;try{sanitizeLocalAiRecipes([{title:"Vacía",ingredients:[],steps:[]}],2)}catch{badAiShape=true}
 assert(badAiShape,"local AI sanitizer should reject recipes without usable ingredients or steps");
+let unmeasurableAi=false;try{sanitizeLocalAiRecipes([{title:"Sal",ingredients:[{name:"Sal",qty:"al gusto",key:"sal"}],steps:["Mezclar"]}])}catch{unmeasurableAi=true}
+assert(unmeasurableAi,"generated recipes must have measurable ingredients so they can be cooked and deducted");
 assert(LOCAL_AI_MOBILE_MODEL==="SmolLM2-360M-Instruct-q4f32_1-MLC","mobile local AI should use the broadly compatible q4f32 WebLLM model");
 const aiCasaPrompt=buildLocalAiPrompt({request:"Quiero cenar",inventory:["Huevos"],people:2,dislikes:[],tools:["Sartén"],mode:"normal",scope:"casa"});
 const aiPlanPrompt=buildLocalAiPrompt({request:"Quiero una lasaña",inventory:["Huevos"],people:2,dislikes:[],tools:["Horno"],mode:"normal",scope:"planear"});
@@ -182,6 +205,13 @@ const syncRemote={shopping:[{id:"a",name:"Leche",qty:2}],profile:{cooking:"norma
 const syncMerged=mergeThreeWay(syncBase,syncLocal,syncRemote);
 assert(syncMerged.shopping.some((x:any)=>x.id==="b")&&syncMerged.shopping.find((x:any)=>x.id==="a")?.qty===2,"three-way sync should preserve an independent local addition and remote edit");
 assert(syncMerged.profile.cooking==="normal","three-way sync should accept a remote field when local left it unchanged");
+const changesDuringWrite={...syncLocal,shopping:[...syncLocal.shopping,{id:"c",name:"Arroz",qty:1}]};
+const afterWrite=mergeThreeWay(syncLocal,changesDuringWrite,syncMerged);
+assert(afterWrite.shopping.some((x:any)=>x.id==="c")&&afterWrite.shopping.find((x:any)=>x.id==="a")?.qty===2,"edits made while resolving a sync conflict must survive the write response");
+const resumed=mergeHouseholdState({...syncBase,spent:10},{...changesDuringWrite,spent:15},{...syncRemote,spent:17});
+assert(resumed.spent===22&&resumed.shopping.some((x:any)=>x.id==="c"),"reopening after offline edits must preserve unsent additions and combine independent expenses once");
+const sharedStores=mergeThreeWay(["Mercadona","Lidl"],["Mercadona"],["Mercadona","Lidl","Dia"]);
+assert(!sharedStores.includes("Lidl")&&sharedStores.includes("Dia"),"sync must preserve a removed supermarket alongside another device's new supermarket");
 const deleted=mergeThreeWay([{id:"a",qty:1}],[],[{id:"a",qty:1}]);
 assert(deleted.length===0,"three-way sync should preserve a deletion when the other device did not edit the item");
 const deletionConflict=mergeThreeWay([{id:"a",qty:1}],[],[{id:"a",qty:2}]);

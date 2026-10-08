@@ -38,7 +38,7 @@ export function mergeThreeWay(base:any,local:any,remote:any):any{
 
  if(Array.isArray(local)&&Array.isArray(remote)&&Array.isArray(base)){
   const primitive=[...base,...local,...remote].every(x=>x==null||["string","number","boolean"].includes(typeof x));
-  if(primitive)return [...new Set([...remote,...local])];
+  if(primitive)return [...new Set([...remote,...local])].filter(value=>!base.includes(value)||(local.includes(value)&&remote.includes(value)));
   return local;
  }
 
@@ -70,4 +70,12 @@ export function mergeThreeWay(base:any,local:any,remote:any):any{
 export function mergeAdditiveCounter(base:unknown,local:unknown,remote:unknown){
  const b=Number(base)||0,l=Number(local)||0,r=Number(remote)||0;
  return Math.max(0,b+(l-b)+(r-b));
+}
+
+export function mergeHouseholdState(base:any,local:any,remote:any){
+ const merged={...mergeThreeWay(base,local,remote)};
+ for(const key of ["spent","waste","wasteSaved"]){
+  if(key in local||key in remote)merged[key]=mergeAdditiveCounter(base[key],local[key],remote[key]);
+ }
+ return merged;
 }

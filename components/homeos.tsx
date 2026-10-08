@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { localDateIso, calendarDaysUntil } from "../lib/local-date";
+import { readBrowserStorage, writeBrowserStorage, removeBrowserStorage } from "../lib/browser-storage";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, SyncConflictError, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
 import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freezerQualityGuide, productSuggestions, recommendedLocation, storageWarning } from "../lib/product-engine";
 import { ProductGlyph } from "./product-glyph";
@@ -12,8 +14,8 @@ import { DEFAULT_MENU_PREFERENCES, normalizeMenuPreferences, type MenuPreference
 import { RECIPE_THEMES, themeForMonth, themeForPeriod, themeRecipes } from "../lib/recipe-themes";
 import { retireWeeklyMenu } from "../lib/retire-weekly-menu";
 import { recipeAllowed, type WeeklyMenuPlan } from "../lib/weekly-menu";
-import { freeInventoryAfterReservations, planFromBase, planToBase, planUnitFamily, recipeShortages, planProductMatches, consumePlanIngredients, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
-import { mergeAdditiveCounter, mergeThreeWay } from "../lib/sync-merge";
+import { freeInventoryAfterReservations, planFromBase, planToBase, planUnitFamily, recipeShortages, planProductMatches, consumePlanIngredients, resizeShoppingSources, remainingSourcesAfterPurchase, removePlanFromSources, sumSources, type ShoppingSource } from "../lib/recipe-plan-engine";
+import { mergeHouseholdState } from "../lib/sync-merge";
 import { habitBalanceSignals } from "../lib/habit-balance";
 import { normalizeSpokenShoppingText, splitShoppingEntries, parseShoppingQuantity } from "../lib/shopping-input";
 
@@ -127,17 +129,17 @@ function normalizeState(x:any):AppState{
 }
 function loadState():AppState{
  if(typeof window==="undefined") return DEFAULT;
- try{return normalizeState(JSON.parse(localStorage.getItem("homeos:v5")||"{}"))}catch{return DEFAULT}
+ try{return normalizeState(JSON.parse(readBrowserStorage("homeos:v5")||"{}"))}catch{return DEFAULT}
 }
-function daysUntil(date?:string){if(!date)return 999;const d=new Date(date+"T12:00:00");return Math.ceil((d.getTime()-Date.now())/86400000)}
+function daysUntil(date?:string){return date?calendarDaysUntil(date):999}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
-function isoAfterDays(days:number){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
-function weekendPlanIso(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay();if(day===6||day===0)return d.toISOString().slice(0,10);d.setDate(d.getDate()+(6-day));return d.toISOString().slice(0,10)}
+function isoAfterDays(days:number){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return localDateIso(d)}
+function weekendPlanIso(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay();if(day===6||day===0)return localDateIso(d);d.setDate(d.getDate()+(6-day));return localDateIso(d)}
 
 function demoState(_withMenu:boolean):AppState{
  const today=new Date();today.setHours(12,0,0,0);
- const iso=(offset=0)=>{const d=new Date(today);d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10)};
- const month=today.toISOString().slice(0,7);
+ const iso=(offset=0)=>{const d=new Date(today);d.setDate(d.getDate()+offset);return localDateIso(d)};
+ const month=localDateIso(today).slice(0,7);
  const inventory:InventoryItem[]=[
   {id:"demo-tomate",name:"Tomate cherry",qty:1,unit:"ud",location:"Nevera",category:"Fruta y verdura",stock:"hay",purchasedAt:iso(-3),expires:iso(1),dateType:"caducidad",supermarket:"Mercadona"},
   {id:"demo-yogur",name:"Yogur natural",qty:3,unit:"uds",location:"Nevera",category:"Lácteos",stock:"hay",purchasedAt:iso(-4),expires:iso(2),dateType:"caducidad",supermarket:"Lidl"},
@@ -357,8 +359,8 @@ function recommendedBuyAfter(name:string,cat:string,plannedFor?:string){
  const d=new Date(plannedFor+"T12:00:00");
  if(Number.isNaN(d.getTime()))return undefined;
  d.setDate(d.getDate()-daysBefore);
- const iso=d.toISOString().slice(0,10);
- const today=new Date().toISOString().slice(0,10);
+ const iso=localDateIso(d);
+ const today=localDateIso();
  return iso>today?iso:undefined;
 }
 function median(values:number[]){
@@ -476,6 +478,7 @@ export default function HomeOS(){
  const [view,setView]=useState<View>("inicio");
  const [state,setState]=useState<AppState>(DEFAULT);
  const [hydrated,setHydrated]=useState(false);
+ const [storageError,setStorageError]=useState(false);
  const [toast,setToast]=useState("");
  const [purchaseUndo,setPurchaseUndo]=useState<{recipeId:string;title:string;previous?:RecipePlan}|null>(null);
  const [profileOpen,setProfileOpen]=useState(false);
@@ -495,10 +498,13 @@ export default function HomeOS(){
  const syncRevisionRef=useRef(0);
  const lastSyncedJsonRef=useRef("");
  const syncCreateRef=useRef(false);
+ const syncWritingRef=useRef(false);
+ const [syncWriteTick,setSyncWriteTick]=useState(0);
  const syncTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const stateRef=useRef(state);
  const readyPlansRef=useRef<Set<string>>(new Set());
  const readyPlansInitializedRef=useRef(false);
+ function rememberSyncSnapshot(json:string){lastSyncedJsonRef.current=json;writeBrowserStorage("homeos:sync-base:v1",json)}
 
  useEffect(()=>{stateRef.current=state},[state]);
  useEffect(()=>{
@@ -518,8 +524,8 @@ export default function HomeOS(){
   if(newlyReady.length===1)setToast("Ya tienes todo para "+newlyReady[0].recipe.title);
   else if(newlyReady.length>1)setToast(newlyReady.length+" recetas guardadas ya están listas para cocinar");
  },[hydrated,state.inventory,state.recipePlans]);
- useEffect(()=>{if(!hydrated||demoMode)return;const saved=localStorage.getItem("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
- useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)localStorage.setItem("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
+ useEffect(()=>{if(!hydrated||demoMode)return;const saved=readBrowserStorage("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
+ useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)writeBrowserStorage("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
 
  useEffect(()=>{
   let alive=true;
@@ -537,10 +543,11 @@ export default function HomeOS(){
    }
    const fresh=params.get("fresh")==="1";
    if(fresh){
-    localStorage.removeItem("homeos:v5");
-    localStorage.removeItem("homeos:device-member");
-    localStorage.removeItem("homeos:quick-guide-seen");
+    removeBrowserStorage("homeos:v5");
+    removeBrowserStorage("homeos:device-member");
+    removeBrowserStorage("homeos:quick-guide-seen");
     clearSync();
+    removeBrowserStorage("homeos:sync-base:v1");
     window.history.replaceState({},document.title,window.location.pathname);
    }
    const local=fresh?DEFAULT:loadState();
@@ -552,10 +559,13 @@ export default function HomeOS(){
      if(!alive)return;
      if(remote){
       const remoteState=normalizeState(remote.data);
+      let base={...DEFAULT,spent:Math.min(local.spent,remoteState.spent),waste:Math.min(local.waste,remoteState.waste),wasteSaved:Math.min(local.wasteSaved,remoteState.wasteSaved)};
+      try{const savedBase=readBrowserStorage("homeos:sync-base:v1");if(savedBase)base=normalizeState(JSON.parse(savedBase))}catch{}
+      const restored=local.profile.onboardingDone?normalizeState(mergeHouseholdState(base,local,remoteState)):remoteState;
       setSyncCreds(creds);
       syncRevisionRef.current=remote.revision;
-      lastSyncedJsonRef.current=JSON.stringify(remoteState);
-      setState(remoteState);
+      rememberSyncSnapshot(JSON.stringify(remoteState));
+      setState(restored);
       setSyncStatus("synced");
      }else{
       clearSync();
@@ -585,7 +595,7 @@ export default function HomeOS(){
   createRemoteHousehold("Mi hogar",snapshot).then(({creds,revision})=>{
    setSyncCreds(creds);
    syncRevisionRef.current=revision;
-   lastSyncedJsonRef.current=JSON.stringify(snapshot);
+   rememberSyncSnapshot(JSON.stringify(snapshot));
    setSyncStatus("synced");
   }).catch(()=>setSyncStatus("error")).finally(()=>{syncCreateRef.current=false});
  },[hydrated,state.profile.onboardingDone,syncCreds,demoMode]);
@@ -593,54 +603,66 @@ export default function HomeOS(){
  useEffect(()=>{
   if(!hydrated||demoMode||typeof window==="undefined")return;
   const json=JSON.stringify(state);
-  localStorage.setItem("homeos:v5",json);
+  setStorageError(!writeBrowserStorage("homeos:v5",json));
   if(!syncCreds||!state.profile.onboardingDone||!syncConfigured()||json===lastSyncedJsonRef.current)return;
   if(syncTimerRef.current)clearTimeout(syncTimerRef.current);
   syncTimerRef.current=setTimeout(async()=>{
+   if(syncWritingRef.current)return;
+   syncWritingRef.current=true;
+   const snapshot=stateRef.current;
+   const snapshotJson=JSON.stringify(snapshot);
+   let saved=false;
    setSyncStatus("connecting");
    try{
-    const revision=await writeRemoteHousehold(syncCreds,stateRef.current,syncRevisionRef.current);
+    const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
     syncRevisionRef.current=revision;
-    lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
+    rememberSyncSnapshot(snapshotJson);
+    saved=true;
     setSyncStatus("synced");
    }catch(err){
     if(err instanceof SyncConflictError){
-     try{await resolveSyncConflict(syncCreds)}catch{setSyncStatus("error")}
+     try{await resolveSyncConflict(syncCreds);saved=true}catch{setSyncStatus("error")}
     }else setSyncStatus("error");
+   }finally{
+    syncWritingRef.current=false;
+    if(saved&&JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)setSyncWriteTick(n=>n+1);
    }
   },700);
   return()=>{if(syncTimerRef.current)clearTimeout(syncTimerRef.current)};
- },[state,hydrated,syncCreds,demoMode]);
+ },[state,hydrated,syncCreds,demoMode,syncWriteTick]);
 
  useEffect(()=>{
   if(!hydrated||demoMode||!syncCreds||!syncConfigured())return;
   let alive=true;
   const pull=async()=>{
    if(document.visibilityState==="hidden")return;
-   if(JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)return;
+   if(syncWritingRef.current)return;
+   if(JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current){setSyncWriteTick(n=>n+1);return}
+   const beforeRead=lastSyncedJsonRef.current;
    try{
     const remote=await readRemoteHousehold(syncCreds);
-    if(!alive||!remote||remote.revision<=syncRevisionRef.current)return;
+    if(!alive||!remote||remote.revision<=syncRevisionRef.current||syncWritingRef.current||JSON.stringify(stateRef.current)!==beforeRead)return;
     const remoteState=normalizeState(remote.data);
     syncRevisionRef.current=remote.revision;
-    lastSyncedJsonRef.current=JSON.stringify(remoteState);
+    rememberSyncSnapshot(JSON.stringify(remoteState));
     setState(remoteState);
     setSyncStatus("synced");
    }catch{if(alive)setSyncStatus("error")}
   };
   const id=window.setInterval(pull,15000);
   window.addEventListener("focus",pull);
+  window.addEventListener("online",pull);
   document.addEventListener("visibilitychange",pull);
-  return()=>{alive=false;window.clearInterval(id);window.removeEventListener("focus",pull);document.removeEventListener("visibilitychange",pull)};
+  return()=>{alive=false;window.clearInterval(id);window.removeEventListener("focus",pull);window.removeEventListener("online",pull);document.removeEventListener("visibilitychange",pull)};
  },[hydrated,syncCreds,demoMode]);
 
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{
   if(!hydrated||demoMode||!state.profile.onboardingDone||typeof window==="undefined")return;
-  if(localStorage.getItem("homeos:quick-guide-seen")!=="1")setTourOpen(true);
+  if(readBrowserStorage("homeos:quick-guide-seen")!=="1")setTourOpen(true);
  },[hydrated,state.profile.onboardingDone,demoMode]);
  function closeQuickGuide(){
-  localStorage.setItem("homeos:quick-guide-seen","1");
+  writeBrowserStorage("homeos:quick-guide-seen","1");
   setTourOpen(false);
  }
  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"})},[view]);
@@ -656,7 +678,7 @@ export default function HomeOS(){
    storeSync(creds);
    setSyncCreds(creds);
    syncRevisionRef.current=remote.revision;
-   lastSyncedJsonRef.current=JSON.stringify(remoteState);
+   rememberSyncSnapshot(JSON.stringify(remoteState));
    setState(remoteState);
    setSyncStatus("synced");
    setToast("Hogar conectado");
@@ -679,36 +701,38 @@ export default function HomeOS(){
   try{base=normalizeState(JSON.parse(lastSyncedJsonRef.current||"{}"))}catch{}
   const local=stateRef.current;
   const remoteState=normalizeState(remote.data);
-  let merged=normalizeState(mergeThreeWay(base,local,remoteState));
-  merged={...merged,
-   spent:mergeAdditiveCounter(base.spent,local.spent,remoteState.spent),
-   waste:mergeAdditiveCounter(base.waste,local.waste,remoteState.waste),
-   wasteSaved:mergeAdditiveCounter(base.wasteSaved,local.wasteSaved,remoteState.wasteSaved)
-  };
+  const merged=normalizeState(mergeHouseholdState(base,local,remoteState));
   const revision=await writeRemoteHousehold(creds,merged,remote.revision);
   syncRevisionRef.current=revision;
-  lastSyncedJsonRef.current=JSON.stringify(merged);
-  stateRef.current=merged;
-  setState(merged);
+  rememberSyncSnapshot(JSON.stringify(merged));
+  const latest=stateRef.current;
+  const next=normalizeState(mergeHouseholdState(local,latest,merged));
+  stateRef.current=next;
+  setState(next);
   setSyncStatus("synced");
   return revision;
  }
 
  async function syncNow(){
   if(!syncCreds)return;
+  if(syncWritingRef.current){setToast("La sincronización ya está en curso");return}
+  syncWritingRef.current=true;
+  const snapshot=stateRef.current;
+  let saved=false;
   setSyncStatus("connecting");
   try{
-   const revision=await writeRemoteHousehold(syncCreds,stateRef.current,syncRevisionRef.current);
+   const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
    syncRevisionRef.current=revision;
-   lastSyncedJsonRef.current=JSON.stringify(stateRef.current);
+   rememberSyncSnapshot(JSON.stringify(snapshot));
+   saved=true;
    setSyncStatus("synced");
    setToast("Hogar sincronizado");
   }catch(err){
    if(err instanceof SyncConflictError){
-    try{await resolveSyncConflict(syncCreds);setToast("Cambios de varios dispositivos combinados")}
+    try{await resolveSyncConflict(syncCreds);saved=true;setToast("Cambios de varios dispositivos combinados")}
     catch{setSyncStatus("error");setToast("No se pudo resolver la sincronización")}
    }else{setSyncStatus("error");setToast("No se pudo sincronizar")}
-  }
+  }finally{syncWritingRef.current=false;if(saved&&JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)setSyncWriteTick(n=>n+1)}
  }
 
  const expiring=useMemo(()=>state.inventory.filter(i=>{
@@ -716,7 +740,7 @@ export default function HomeOS(){
   const date=i.expires||i.estimatedExpires;
   return Boolean(date)&&daysUntil(date)<=3;
  }),[state.inventory]);
- const monthKey=new Date().toISOString().slice(0,7);
+ const monthKey=localDateIso().slice(0,7);
  const monthlySpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(monthKey)).reduce((n,x)=>n+x.total,0):state.spent;
  const available=state.budget-monthlySpent;
  const confidence=state.inventory.filter(i=>i.stock!=="incierto").length/Math.max(1,state.inventory.length);
@@ -727,7 +751,7 @@ export default function HomeOS(){
    return {plans:s.recipePlans.map(p=>p.id===existing.id?{...p,recipe,plannedFor:plannedFor||p.plannedFor,shoppingLinked:p.shoppingLinked||shoppingLinked}:p),planId:existing.id};
   }
   const planId=crypto.randomUUID();
-  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:new Date().toISOString().slice(0,10),plannedFor,status:"saved" as const,shoppingLinked}].slice(-80),planId};
+  return {plans:[...s.recipePlans,{id:planId,recipe,createdAt:localDateIso(),plannedFor,status:"saved" as const,shoppingLinked}].slice(-80),planId};
  }
  function reconcileRecipeShopping(base:AppState,onlyPlanIds?:string[]){
   let shopping=[...base.shopping];
@@ -798,7 +822,7 @@ export default function HomeOS(){
  function finishShopping(total?:number){
   const cart=state.shopping.filter(i=>i.status==="carrito");
   if(!cart.length){setToast("Todavía no hay productos en el carrito");return}
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateIso();
   setState(s=>{
    const inventory=[...s.inventory];
    for(const x of cart){
@@ -865,6 +889,7 @@ export default function HomeOS(){
  if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus}/>;
 
  return <div className={demoMode?"app-shell demo-mode":"app-shell"}>
+  {storageError&&<div className="storage-error" role="alert">No se pueden guardar los cambios en este navegador. Revisa el espacio o los permisos de almacenamiento antes de cerrar HomeOS.</div>}
   <aside className="sidebar">
    <div className="brand">{logo()}<div><strong>HomeOS</strong><span>Tu cocina, sin carga mental</span></div></div>
    <nav>
@@ -1259,9 +1284,9 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
     const profile=classifyProduct(out.name,out.category);
     const existing=inv.findIndex(i=>norm(i.name)===norm(out.name)&&i.unit===out.unit&&i.location===out.location);
     if(existing>=0){
-     inv=inv.map((i,idx)=>idx===existing?{...i,qty:i.qty+out.qty,stock:"hay",purchasedAt:new Date().toISOString().slice(0,10),preparedAt:new Date().toISOString().slice(0,10)}:i);
+     inv=inv.map((i,idx)=>idx===existing?{...i,qty:i.qty+out.qty,stock:"hay",purchasedAt:localDateIso(),preparedAt:localDateIso()}:i);
     }else{
-     inv=[{id:crypto.randomUUID(),name:out.name,qty:out.qty,unit:out.unit,location:out.location,category:out.category,subcategory:profile.subcategory,stock:"hay",purchasedAt:new Date().toISOString().slice(0,10),preparedAt:new Date().toISOString().slice(0,10),source:"receta"},...inv];
+     inv=[{id:crypto.randomUUID(),name:out.name,qty:out.qty,unit:out.unit,location:out.location,category:out.category,subcategory:profile.subcategory,stock:"hay",purchasedAt:localDateIso(),preparedAt:localDateIso(),source:"receta"},...inv];
     }
    }
    return {...s,inventory:inv};
@@ -1348,7 +1373,7 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
    const consumed=consumeRecipeIngredients(s.inventory,recipe.ingredients);
    wasExact=consumed.exact;
    let inventory=consumed.inventory;
-   const today=new Date().toISOString().slice(0,10);
+   const today=localDateIso();
    if(servingsToStore>0){
     const existing=inventory.findIndex(i=>norm(i.name)===norm(recipe.title)&&i.category==="Preparados"&&i.location===preparedDestination);
     if(existing>=0)inventory=inventory.map((i,idx)=>idx===existing?{...i,qty:i.qty+servingsToStore,servings:(i.servings||i.qty)+servingsToStore,stock:"hay",preparedAt:today,purchasedAt:today,source:mode==="mealprep"?"mealprep":i.source,mealPrepInitialServings:mode==="mealprep"?(i.mealPrepInitialServings||i.servings||i.qty)+servingsToStore:i.mealPrepInitialServings,mealPrepDays:i.mealPrepDays,mealPrepStart:mode==="mealprep"?(i.mealPrepStart||today):i.mealPrepStart,preparedRecipeId:recipe.id,preparedIngredients:recipe.ingredients.map(x=>({name:x.name,key:x.key,category:inferCategory(x.name)}))}:i);
@@ -1565,7 +1590,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   setState(s=>{const matches=s.inventory.filter(i=>norm(classifyProduct(i.name,i.category).canonical)===norm(profile.canonical)&&i.location===haveLocation&&normalizedUnit(i.unit)===normalizedUnit(item.unit));
    const id=matches[0]?.id||crypto.randomUUID();
    const inventory=[...s.inventory.filter(i=>!matches.some(x=>x.id===i.id)),{...matches[0],id,name:item.name,qty,unit:item.unit,location:haveLocation,category:item.category,subcategory:item.subcategory,stock:"hay" as const,purchasedAt:matches[0]?.purchasedAt||isoAfterDays(0),purchaseDateUnknown:!matches[0]||matches[0].purchaseDateUnknown,lastConfirmedAt:isoAfterDays(0)}];
-   const shopping=s.shopping.flatMap(i=>{if(i.id!==item.id)return [i];const remaining=Math.max(0,i.qty-qty);if(remaining===0)return [];const sources=shoppingSources(i).map(x=>({...x,qty:Math.max(0,x.qty-qty)})).filter(x=>x.qty>0);const updated=withShoppingSources(i,sources);return updated?[updated]:[]});
+   const shopping=s.shopping.flatMap(i=>{if(i.id!==item.id)return [i];const sources=remainingSourcesAfterPurchase(shoppingSources(i),qty,item.unit);const updated=withShoppingSources(i,sources);return updated?[updated]:[]});
    return reconcileWeeklyShopping({...s,inventory,shopping});
   });setAlreadyHave(null);setToast("Cantidad confirmada en Casa · no se registra como compra");
  }
@@ -1579,7 +1604,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const [shoppingListening,setShoppingListening]=useState(false);
  const shoppingRecognitionRef=useRef<any>(null);
  const shoppingTranscriptRef=useRef("");
+ const shoppingInterimRef=useRef("");
  const shoppingListeningRef=useRef(false);
+ useEffect(()=>()=>{shoppingListeningRef.current=false;shoppingRecognitionRef.current?.abort()},[]);
  const [ocrStatus,setOcrStatus]=useState<"idle"|"reading"|"ready"|"error">("idle");
  const [ocrProgress,setOcrProgress]=useState(0);
  const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
@@ -1654,25 +1681,28 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   setToast(entries.length===1?entries[0]+" añadido":entries.length+" productos añadidos");
  } function startShoppingVoice(){
   if(shoppingListening){
-   shoppingRecognitionRef.current?.stop();
    setShoppingListening(false);shoppingListeningRef.current=false;
-   const finalText=shoppingTranscriptRef.current.trim();
-   shoppingTranscriptRef.current="";
-   if(finalText)add(finalText);
+   const finalText=(shoppingTranscriptRef.current+" "+shoppingInterimRef.current).trim();
+   shoppingRecognitionRef.current?.abort();
+   shoppingTranscriptRef.current="";shoppingInterimRef.current="";
+   if(finalText){setQuick(finalText);setToast("Dictado listo · revisa la lista y pulsa Añadir")}
    return;
   }
   const W=(window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
   const recognition=new W(); shoppingRecognitionRef.current=recognition;
   recognition.lang="es-ES";recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
-  shoppingTranscriptRef.current="";shoppingListeningRef.current=true;setShoppingListening(true);
+  shoppingTranscriptRef.current="";shoppingInterimRef.current="";shoppingListeningRef.current=true;setShoppingListening(true);
   recognition.onresult=(e:any)=>{
+   let interim="";
    for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)shoppingTranscriptRef.current+=(shoppingTranscriptRef.current?" ":"")+e.results[i][0].transcript;
-   if(shoppingTranscriptRef.current)setQuick(shoppingTranscriptRef.current);
+   for(let i=e.resultIndex;i<e.results.length;i++)if(!e.results[i].isFinal)interim+=e.results[i][0].transcript+" ";
+   shoppingInterimRef.current=interim.trim();
+   setQuick((shoppingTranscriptRef.current+" "+interim).trim());
   };
-  recognition.onerror=()=>setToast("No he podido entender la voz");
-  recognition.onend=()=>{if(shoppingListeningRef.current){try{recognition.start()}catch{}}};
-  recognition.start();
+  recognition.onerror=(event:any)=>{if(event.error==="no-speech")return;shoppingListeningRef.current=false;setShoppingListening(false);setToast(event.error==="not-allowed"?"Permiso de micrófono denegado · puedes escribir la lista":"No he podido entender la voz · el texto reconocido se conserva")};
+  recognition.onend=()=>{if(shoppingListeningRef.current){try{recognition.start()}catch{shoppingListeningRef.current=false;setShoppingListening(false)}}};
+  try{recognition.start()}catch{shoppingListeningRef.current=false;setShoppingListening(false);setToast("No se pudo activar el micrófono · puedes escribir la lista")}
  }
  async function ticketSelected(file?:File,append=false){
   if(!file)return;
@@ -1768,7 +1798,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
    if(shoppingActive&&i.status==="carrito")return {...i,boughtQty:Math.max(.1,Math.round(((i.boughtQty??i.qty)+delta)*100)/100)};
    if(planLine(i))return i;
    const qty=Math.max(.1,Math.round((i.qty+delta)*100)/100);
-   const sources=i.sources?.map((src,idx)=>idx===0?{...src,qty}:src);
+   const sources=resizeShoppingSources(shoppingSources(i),qty,i.unit);
    return {...i,qty,sources};
   })}));
  }
@@ -1783,7 +1813,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   const weekly=sources.some(x=>x.type==="weekly");
   const manual=sources.some(x=>x.type==="manual");
   const buyAfter=sources.map(x=>x.buyAfter).filter((x):x is string=>Boolean(x)&&x!=="").sort()[0];
-  const timing=buyAfter&&buyAfter>new Date().toISOString().slice(0,10)?" · mejor desde "+new Date(buyAfter+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric"}):"";
+  const timing=buyAfter&&buyAfter>localDateIso()?" · mejor desde "+new Date(buyAfter+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric"}):"";
   if(titles.length&&weekly)return (manual?"Habitual + ":"")+"menú + "+titles.length+" receta"+(titles.length===1?"":"s")+timing;
   if(titles.length===1)return (manual?"Habitual + ":"")+"para "+titles[0]+timing;
   if(titles.length>1)return (manual?"Habitual + ":"")+"para "+titles.length+" recetas"+timing;
@@ -1799,7 +1829,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const filteredList=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
  const planLine=(i:ShoppingItem)=>shoppingSources(i).some(src=>src.type==="recipe"||src.type==="weekly");
  const intentBase=(shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList);
- const todayShopping=new Date().toISOString().slice(0,10);
+ const todayShopping=localDateIso();
  const shoppingRank=(i:ShoppingItem)=>{
   if(!planLine(i))return 1;
   const sources=shoppingSources(i);
@@ -1814,7 +1844,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
  return <section className="stack">
   {alreadyHave&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Confirmar lo que tengo"><div className="modal-head"><h2>Ya tengo {alreadyHave.name}</h2><button aria-label="Cerrar confirmación" onClick={()=>setAlreadyHave(null)}>×</button></div><p>Confirma cuánto tienes en esta ubicación, en {alreadyHave.unit}. No lo contaremos como comprado.</p><label>Cantidad real en casa<input type="number" min="0.01" step="any" value={haveQty} onChange={e=>setHaveQty(e.target.value)}/></label><label>Ubicación<select value={haveLocation} onChange={e=>setHaveLocation(e.target.value as Location)}><option>Despensa</option><option>Nevera</option><option>Congelador</option></select></label><button className="primary" disabled={!(Number(haveQty)>0)} onClick={confirmAlreadyHave}>Confirmar cantidad</button></section></div>}
-  <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Añade productos y HomeOS los organiza por tienda y categoría.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
+  <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Añade productos y HomeOS los organiza por tienda y categoría.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));if(purchaseTotal.trim()&&(!Number.isFinite(n)||n<0)){setToast("Introduce un total válido, igual o mayor que cero");return}const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
 
   {pendingRecipePlans.length>0&&<article className="shopping-recipe-memory"><span>🍳</span><div><small>RECETAS GUARDADAS</small><strong>{pendingRecipePlans.length} receta{pendingRecipePlans.length===1?"":"s"} esperando ingredientes</strong><p>{recipeShoppingItems?recipeShoppingItems+" productos ya están vinculados a esas recetas.":"Puedes añadir los faltantes sin volver a buscar las recetas."}</p></div><button onClick={()=>pendingRecipePlans.forEach(p=>addFromRecipe(p.recipe,p.plannedFor))}>Añadir faltantes</button></article>}
   {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. leche, 2 yogures y 1 kg de pollo…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label="Añadir por voz">{shoppingListening?"…":micIcon()}</button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
@@ -1861,9 +1891,9 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
  const shown=state.inventory.filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?Boolean(i.expires||i.estimatedExpires)&&daysUntil(i.expires||i.estimatedExpires)<=3&&i.stock!=="falta"&&i.location!=="Congelador":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
- function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty}:i)}))}
+ function setStock(id:string,stock:StockState){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock,qty:stock==="falta"?0:i.qty,servings:stock==="falta"&&i.category==="Preparados"?0:i.servings}:i)}))}
  function confirmStillHere(id:string){
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateIso();
   setState(s=>({...s,inventory:s.inventory.map(i=>i.id===id?{...i,stock:"hay",lastConfirmedAt:today,qty:i.qty<=0?1:i.qty}:i)}));
   setToast("Confirmado · HomeOS ajustará la estimación");
  }
@@ -1873,7 +1903,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   setToast(loss>0?"Desperdicio registrado · "+loss.toFixed(2)+" €":"Marcado como tirado");
  }
  function eatPrepared(i:InventoryItem){
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateIso();
   setState(s=>{
    const current=s.inventory.find(x=>x.id===i.id);if(!current||current.stock==="falta")return s;
    const nextQty=Math.max(0,(current.servings||current.qty||1)-1);
@@ -1890,13 +1920,13 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  function mealPrepExpectedRemaining(i:InventoryItem){
   if(i.source!=="mealprep"||!i.mealPrepStart||!i.mealPrepDays||!i.mealPrepInitialServings)return null;
   const start=new Date(i.mealPrepStart+"T12:00:00").getTime();
-  const today=new Date(new Date().toISOString().slice(0,10)+"T12:00:00").getTime();
+  const today=new Date(localDateIso()+"T12:00:00").getTime();
   const elapsed=Math.max(0,Math.floor((today-start)/86400000));
   const expectedConsumed=Math.min(i.mealPrepInitialServings,Math.floor(i.mealPrepInitialServings*Math.min(i.mealPrepDays,elapsed)/Math.max(1,i.mealPrepDays)));
   return Math.max(0,i.mealPrepInitialServings-expectedConsumed);
  }
  function freeze(id:string){
-  const frozenAt=new Date().toISOString().slice(0,10);
+  const frozenAt=localDateIso();
   setState(s=>{
    const item=s.inventory.find(i=>i.id===id);
    if(!item)return s;
@@ -1961,7 +1991,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  }
  function savePrepared(){
   const name=preparedName.trim();if(!name)return;
-  const preparedAt=new Date().toISOString().slice(0,10);
+  const preparedAt=localDateIso();
   const detected=detectProductsInText(name).map(p=>({name:p.canonical,key:p.canonical,category:p.category}));
   const item:InventoryItem={id:crypto.randomUUID(),name,qty:preparedServings,unit:"raciones",location:preparedLocation,category:"Preparados",stock:"hay",purchasedAt:preparedAt,preparedAt,servings:preparedServings,source:preparedKind,mealPrepInitialServings:preparedKind==="mealprep"?preparedServings:undefined,mealPrepDays:preparedKind==="mealprep"?mealPrepDays:undefined,mealPrepStart:preparedKind==="mealprep"?preparedAt:undefined,preparedIngredients:detected};
   setState(s=>({...s,inventory:[item,...s.inventory]}));
@@ -1988,7 +2018,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
     <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{!i.expires&&i.estimatedExpires&&<small className="date-alert estimate" title={i.estimateBasis}>≈ {i.estimatedDateType==="caducidad"?"Caducidad":"Consumo pref."} {new Date(i.estimatedExpires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · revisa envase</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}{i.source==="mealprep"&&i.mealPrepDays&&<span>Objetivo {i.mealPrepDays} días</span>}</div>}
     {i.source==="mealprep"&&i.stock!=="falta"&&<div className="mealprep-tracker"><div><small>RACIONES DE MEAL PREP</small><strong>{i.servings||i.qty||0} restantes</strong>{mealPrepExpectedRemaining(i)!==null&&<span>Según el ritmo previsto: ≈ {mealPrepExpectedRemaining(i)} hoy</span>}</div><div className="mealprep-stepper"><button onClick={()=>eatPrepared(i)} aria-label="Restar una ración">−</button><b>{i.servings||i.qty||0}</b><button onClick={()=>addMealPrepServing(i)} aria-label="Añadir una ración">+</button></div></div>}
-    <div className="inventory-actions">{i.stock!=="falta"&&<button className="action-out" onClick={()=>setStock(i.id,"falta")}><span>🔴</span> Se acabó</button>}{i.stock!=="falta"&&<button className="action-low" onClick={()=>setStock(i.id,"poco")}><span>🟡</span> Queda poco</button>}{estimate.tone==="incierto"&&i.stock!=="falta"&&<button className="action-confirm" onClick={()=>confirmStillHere(i.id)}>✓ Sigue aquí</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button className="action-freeze" onClick={()=>freeze(i.id)}>🧊 Congelar</button>}{i.stock==="falta"&&<button className="action-buy" onClick={()=>addToBuy(i)}>🛒 Comprar</button>}{i.category==="Preparados"&&i.source!=="mealprep"&&i.stock!=="falta"&&<button className="action-eat" onClick={()=>eatPrepared(i)}>🍽 Comer 1</button>}{i.stock!=="falta"&&<button className="recipe-from-product" onClick={()=>openRecipes(i.name)}>🍴 Hacer receta</button>}{density==="detail"&&i.stock!=="falta"&&<button className="discard-product" onClick={()=>discardProduct(i)}>Tirar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
+    <div className="inventory-actions">{i.stock!=="falta"&&<button className="action-out" onClick={()=>setStock(i.id,"falta")}><span>🔴</span> Se acabó</button>}{i.stock!=="falta"&&<button className="action-low" onClick={()=>setStock(i.id,"poco")}><span>🟡</span> Queda poco</button>}{estimate.tone==="incierto"&&i.stock!=="falta"&&<button className="action-confirm" onClick={()=>confirmStillHere(i.id)}>✓ Sigue aquí</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button className="action-freeze" onClick={()=>freeze(i.id)}>🧊 Congelar</button>}{i.stock==="falta"&&<button className="action-buy" onClick={()=>addToBuy(i)}>🛒 Comprar</button>}{i.category==="Preparados"&&i.source!=="mealprep"&&i.stock!=="falta"&&<button className="action-eat" onClick={()=>eatPrepared(i)}>🍽 Comer 1</button>}{i.stock!=="falta"&&<button className="recipe-from-product" onClick={()=>openRecipes(i.name)}>🍴 Hacer receta</button>}{density==="detail"&&i.stock!=="falta"&&<button className="discard-product" onClick={()=>discardProduct(i)}>Tirar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=localDateIso()).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=localDateIso()).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
    </article>
   })}</div>
 
@@ -1999,7 +2029,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
 function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;available:number;monthlySpent:number}){
  const [selectedCategory,setSelectedCategory]=useState<string|null>(null);
  const usedPct=Math.min(100,Math.round(monthlySpent/Math.max(1,state.budget)*100));
- const monthKey=new Date().toISOString().slice(0,7);
+ const monthKey=localDateIso().slice(0,7);
  const pricedHistory=state.purchaseHistory.filter(i=>i.date.startsWith(monthKey)&&typeof i.price==="number"&&(i.price||0)>0);
  const pricedInventory=state.inventory.filter(i=>typeof i.price==="number"&&(i.price||0)>0);
  function financeCategory(i:{category:string;subcategory?:string;location?:Location}){

@@ -1,3 +1,4 @@
+import { parsePlanQty } from "./recipe-plan-engine";
 export type LocalAiProgress={progress:number;text:string};
 export type LocalAiRecipe={
  title:string;
@@ -70,7 +71,7 @@ export function sanitizeLocalAiRecipes(raw:unknown,people=1):LocalAiRecipe[]{
    key:String(x?.key||x?.name||"").trim().toLowerCase().slice(0,60)
   })).filter((x:any)=>x.name&&x.key):[];
   const steps=Array.isArray(r?.steps)?r.steps.slice(0,10).map((x:any)=>String(x).trim().slice(0,240)).filter(Boolean):[];
-  if(!ingredients.length||!steps.length)return [];
+  if(!ingredients.length||!steps.length||ingredients.some((x:any)=>!parsePlanQty(x.qty)||!Number.isFinite(parsePlanQty(x.qty)!.amount)||parsePlanQty(x.qty)!.amount<=0))return [];
   return [{
    title:String(r?.title||("Idea "+(i+1))).trim().slice(0,80)||("Idea "+(i+1)),
    description:String(r?.description||"").trim().slice(0,220),
@@ -105,7 +106,7 @@ export function buildLocalAiPrompt(input:{
  const scopeRule=scope==="planear"
   ?"El usuario está PLANIFICANDO y puede comprar. Respeta sobre todo el plato o antojo pedido; usa lo que ya hay cuando encaje, pero puedes incluir ingredientes faltantes razonables."
   :"El usuario quiere cocinar CON LO QUE HAY. Prioriza fuertemente el inventario disponible y minimiza ingredientes faltantes; no presentes como lista una receta que depende de muchas compras si existe una alternativa viable.";
- const system="Eres el asistente culinario local de HomeOS. Responde SOLO con un array JSON válido de 3 recetas. No uses markdown. No inventes que un alimento caducado o estropeado es seguro. Si un ingrediente no aparece en inventario pero el usuario afirma explícitamente que lo tiene en su petición, trátalo como disponible para esta consulta. "+scopeRule+" Mantén recetas domésticas realistas para España. No des consejos médicos ni nutricionales. Respeta alimentos indicados como no gustar/evitar. Cada receta debe tener: title, description, time (minutos, entero), servings (entero), ingredients [{name,qty,key}], steps [strings], tools [strings]. Las cantidades deben ser razonables y los pasos breves.";
+ const system="Eres el asistente culinario local de HomeOS. Responde SOLO con un array JSON válido de 3 recetas. No uses markdown. No inventes que un alimento caducado o estropeado es seguro. Si un ingrediente no aparece en inventario pero el usuario afirma explícitamente que lo tiene en su petición, trátalo como disponible para esta consulta. "+scopeRule+" Mantén recetas domésticas realistas para España. No des consejos médicos ni nutricionales. Respeta alimentos indicados como no gustar/evitar. Cada receta debe tener: title, description, time (minutos, entero), servings (entero), ingredients [{name,qty,key}], steps [strings], tools [strings]. Cada cantidad debe incluir un número positivo y una unidad concreta (g, ml, uds); nunca uses «al gusto» como cantidad. Las cantidades deben ser razonables y los pasos breves.";
  const user="Petición: "+(input.request||"Dame ideas para comer con lo que tengo")+"\nPersonas: "+input.people+"\nModo: "+input.mode+"\nObjetivo: "+(scope==="planear"?"planificar, se puede comprar":"cocinar con Casa")+"\nInventario conocido: "+inventory+"\nNo gusta / evitar: "+dislikes+"\nEquipamiento disponible: "+tools+"\nGenera 3 opciones distintas.";
  return {system,user};
 }
@@ -133,7 +134,7 @@ export async function generateLocalRecipes(input:{
    max_tokens:900
   });
   lastRaw=reply?.choices?.[0]?.message?.content||"";
-  try{parsed=extractLocalAiJson(lastRaw);if(Array.isArray(parsed))break}catch{}
+  try{parsed=sanitizeLocalAiRecipes(extractLocalAiJson(lastRaw),input.people);if(parsed.length)break}catch{parsed=null}
  }
  if(!Array.isArray(parsed))throw new Error("bad_json");
  return sanitizeLocalAiRecipes(parsed,input.people);

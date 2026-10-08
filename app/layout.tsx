@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PwaRegister from "../components/pwa-register";
+import DialogAccessibility from "../components/dialog-accessibility";
 
 export const metadata: Metadata = {
   title: "HomeOS · Tu hogar, en orden",
@@ -19,5 +20,5 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="es"><body>{children}<PwaRegister/></body></html>;
+  return <html lang="es"><body>{children}<PwaRegister/><DialogAccessibility/></body></html>;
 }

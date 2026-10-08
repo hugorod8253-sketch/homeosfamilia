@@ -160,3 +160,12 @@ export function remainingSourcesAfterPurchase(sources:ShoppingSource[],purchased
  }
  return next.filter(x=>x.qty>0);
 }
+
+/** Resize a shared manual line without assigning its full total to every contributor. */
+export function resizeShoppingSources(sources:ShoppingSource[],targetQty:number,unit:string){
+ const current=sumSources(sources,unit);
+ if(targetQty<=current)return remainingSourcesAfterPurchase(sources,current-Math.max(0,targetQty),unit);
+ const first=sources.findIndex(s=>planUnitFamily(s.unit)===planUnitFamily(unit));
+ if(first<0)return sources;
+ return sources.map((s,i)=>i===first?{...s,qty:Math.round((s.qty+planFromBase(planToBase(targetQty-current,unit),s.unit))*100)/100}:s);
+}

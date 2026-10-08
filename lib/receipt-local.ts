@@ -1,13 +1,13 @@
 export type ReceiptCandidate={name:string;qty:number;price?:number;raw:string};
 export type ReceiptParse={items:ReceiptCandidate[];total?:number;text:string};
 
-const money=(s:string)=>Number(s.replace(".","").replace(",",".").replace(/[^0-9.]/g,""));
+const money=(s:string)=>Number(s.includes(",")?s.replace(/\./g,"").replace(",","."):s);
 
 export function parseReceiptText(text:string):ReceiptParse{
  const lines=text.split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean);
  let total:number|undefined;
  for(const line of lines){
-  const m=line.match(/(?:TOTAL(?:\s+A\s+PAGAR)?|IMPORTE(?:\s+TOTAL)?)[^0-9]*(\d{1,4}[.,]\d{2})/i);
+  const m=line.match(/\b(?:TOTAL(?:\s+A\s+PAGAR)?|IMPORTE(?:\s+TOTAL)?)[^0-9]*(\d{1,4}[.,]\d{2})/i);
   if(m){const n=money(m[1]);if(Number.isFinite(n))total=n;}
  }
  const ignore=/(subtotal|\biva\b|base\s+imponible|tarjeta|efectivo|cambio|importe|total|ahorro|descuento|pago|fecha|hora|cajer|ticket|factura|nif|cif|tel[eé]fono|gracias|cliente|operaci[oó]n|autorizaci[oó]n|saldo|redondeo|donaci[oó]n)/i;
