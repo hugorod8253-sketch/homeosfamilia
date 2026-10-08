@@ -6,7 +6,7 @@ export function editDistance(a:string,b:string){
 }
 export function normalizeSupermarket(value:string){
  const name=value.trim().replace(/\s+/g,' '),key=normalizeProductText(name);
- const aliases:Record<string,string>={bonaria:'BonÀrea',bonarea:'BonÀrea',bonare:'BonÀrea',meradona:'Mercadona',mercdona:'Mercadona'};
+ const aliases:Record<string,string>={ldl:'Lidl',lid:'Lidl',lild:'Lidl',bonaria:'BonÀrea',bonarea:'BonÀrea',bonare:'BonÀrea',meradona:'Mercadona',mercdona:'Mercadona'};
  if(aliases[key])return aliases[key];
  const exact=SPANISH_SUPERMARKETS.find(x=>normalizeProductText(x)===key);if(exact)return exact;
  const near=SPANISH_SUPERMARKETS.map(x=>({x,d:editDistance(normalizeProductText(x),key)})).sort((a,b)=>a.d-b.d);
