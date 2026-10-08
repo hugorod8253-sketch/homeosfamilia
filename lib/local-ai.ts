@@ -20,6 +20,13 @@ export function localAiSupported(){
  if(typeof window==="undefined")return false;
  return "gpu" in navigator && Boolean((navigator as any).gpu);
 }
+export function localAiErrorMessage(error:unknown){
+ const message=error instanceof Error?error.message:String(error||"");
+ if(/webgpu|gpu|adapter|memory|buffer|device lost|shader/i.test(message))return "Este dispositivo no ofrece los recursos gráficos necesarios para la IA local. Puedes seguir usando el recetario.";
+ if(/fetch|network|download|load.*model/i.test(message))return "No se ha podido descargar el modelo de IA. Comprueba la conexión; el recetario sigue disponible.";
+ if(/bad_json|bad_recipe_shape/i.test(message))return "La IA no ha generado una receta válida. No se han añadido compras ni cambiado el inventario.";
+ return "No se han podido generar ideas ahora. El recetario sigue disponible.";
+}
 export function preferredLocalAiModel(){
  if(typeof window==="undefined")return DESKTOP_MODEL;
  const mobile=/iphone|ipad|ipod|android/i.test(navigator.userAgent)||window.innerWidth<820;
@@ -34,7 +41,7 @@ async function createEngine(modelId:string,onProgress?:(p:LocalAiProgress)=>void
    onProgress?.({progress:p,text:report?.text||"Preparando IA local"});
   },
   logLevel:"WARN"
- },{context_window_size:2048});
+ },{context_window_size:4096});
 }
 async function getEngine(onProgress?:(p:LocalAiProgress)=>void){
  if(!localAiSupported())throw new Error("webgpu_unavailable");
@@ -131,7 +138,7 @@ export async function generateLocalRecipes(input:{
     {role:"user",content:user}
    ],
    temperature:attempt?0.15:.35,
-   max_tokens:900
+   max_tokens:2000
   });
   lastRaw=reply?.choices?.[0]?.message?.content||"";
   try{parsed=sanitizeLocalAiRecipes(extractLocalAiJson(lastRaw),input.people);if(parsed.length)break}catch{parsed=null}

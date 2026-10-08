@@ -8,7 +8,7 @@ import { EXTRA_RECIPES } from "../lib/extra-recipes";
 import { REUSE_IDEAS } from "../lib/reuse-engine";
 import { estimateShelfLifeFromReference, LIDL_2026_SHELF_LIFE, shelfLifeBandFromReference, shelfLifeReferenceDays } from "../lib/shelf-life-calibration";
 import { buildWeeklyMenu, resolveCalorieReference } from "../lib/weekly-menu";
-import { buildLocalAiPrompt, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
+import { buildLocalAiPrompt, localAiErrorMessage, LOCAL_AI_MODEL, LOCAL_AI_MOBILE_FALLBACK_MODEL, LOCAL_AI_MOBILE_MODEL, parseLocalAiResponse, sanitizeLocalAiRecipes } from "../lib/local-ai";
 import { prebuiltAppConfig } from "@mlc-ai/web-llm";
 import { mergeAdditiveCounter, mergeThreeWay, mergeHouseholdState } from "../lib/sync-merge";
 import { connectionCode, parseConnectionCode } from "../lib/homeos-sync";
@@ -190,6 +190,9 @@ let badAiShape=false;try{sanitizeLocalAiRecipes([{title:"Vacía",ingredients:[],
 assert(badAiShape,"local AI sanitizer should reject recipes without usable ingredients or steps");
 let unmeasurableAi=false;try{sanitizeLocalAiRecipes([{title:"Sal",ingredients:[{name:"Sal",qty:"al gusto",key:"sal"}],steps:["Mezclar"]}])}catch{unmeasurableAi=true}
 assert(unmeasurableAi,"generated recipes must have measurable ingredients so they can be cooked and deducted");
+assert(localAiErrorMessage(new Error("Failed to fetch")).includes("descargar"),"AI download failures should explain how to continue");
+assert(localAiErrorMessage(new Error("webgpu_unavailable")).includes("recursos gráficos"),"AI hardware failures should distinguish unsupported devices");
+assert(localAiErrorMessage(new Error("bad_json")).includes("No se han añadido compras"),"invalid AI output must be clearly rejected before affecting household data");
 assert(LOCAL_AI_MOBILE_MODEL==="SmolLM2-360M-Instruct-q4f32_1-MLC","mobile local AI should use the broadly compatible q4f32 WebLLM model");
 const aiCasaPrompt=buildLocalAiPrompt({request:"Quiero cenar",inventory:["Huevos"],people:2,dislikes:[],tools:["Sartén"],mode:"normal",scope:"casa"});
 const aiPlanPrompt=buildLocalAiPrompt({request:"Quiero una lasaña",inventory:["Huevos"],people:2,dislikes:[],tools:["Horno"],mode:"normal",scope:"planear"});

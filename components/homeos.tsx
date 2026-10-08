@@ -7,7 +7,7 @@ import { addMonthsIso, canStoreAt, classifyProduct, detectProductsInText, freeze
 import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 import { RECIPES as BUILTIN_RECIPES } from "../lib/recipes";
-import { generateLocalRecipes, localAiSupported } from "../lib/local-ai";
+import { generateLocalRecipes, localAiSupported, localAiErrorMessage } from "../lib/local-ai";
 import { mergeReceiptCandidates, readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { DEFAULT_MENU_PREFERENCES, normalizeMenuPreferences, type MenuPreferences } from "../lib/menu-preferences";
@@ -1353,9 +1353,9 @@ function Comer({state,setState,addFromRecipe,saveRecipePlan,cancelRecipePlan,unl
    });
    setAiRecipes(mapped);
    if(mapped[0]){setSelectedScaledRecipe(null);setSelectedRecipeId(mapped[0].id)}
-   setToast("3 ideas creadas con IA local");
+   setToast(mapped.length+" "+(mapped.length===1?"idea creada":"ideas creadas")+" con IA local");
   }catch(err:any){
-   setAiError(err?.message==="webgpu_unavailable"?"Este navegador no soporta la IA local.":"No he podido generar ideas ahora. El libro local sigue disponible.");
+   setAiError(localAiErrorMessage(err));
   }finally{
    setAiLoading(false);
   }
@@ -1828,7 +1828,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  }
  const filteredList=state.shopping.filter(i=>storeFilter==="Todos"||i.supermarket===storeFilter||(!i.supermarket&&storeFilter==="Cualquiera"));
  const planLine=(i:ShoppingItem)=>shoppingSources(i).some(src=>src.type==="recipe"||src.type==="weekly");
- const intentBase=(shoppingActive&&activeStore?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):filteredList);
+ const intentBase=(shoppingActive&&activeStore&&activeStore!=="Compra general"?state.shopping.filter(i=>(!i.supermarket||i.supermarket===activeStore)):shoppingActive&&activeStore==="Compra general"?state.shopping:filteredList);
  const todayShopping=localDateIso();
  const shoppingRank=(i:ShoppingItem)=>{
   if(!planLine(i))return 1;
@@ -1841,7 +1841,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  const mainItems=intentBase.filter(i=>shoppingIntentFilter==="todos"||(shoppingIntentFilter==="planes"?planLine(i):!planLine(i))).slice().sort((a,b)=>shoppingRank(a)-shoppingRank(b)||shoppingRecipeDue(a).localeCompare(shoppingRecipeDue(b)));
  const hasPlanLines=state.shopping.some(planLine);
  const grouped=mainItems.reduce<Record<string,ShoppingItem[]>>((a,i)=>{(a[i.category]??=[]).push(i);return a},{});
- const other=shoppingActive&&activeStore?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
+ const other=shoppingActive&&activeStore&&activeStore!=="Compra general"?state.shopping.filter(i=>i.supermarket&&i.supermarket!==activeStore&&i.status==="pendiente"):[];
  return <section className="stack">
   {alreadyHave&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Confirmar lo que tengo"><div className="modal-head"><h2>Ya tengo {alreadyHave.name}</h2><button aria-label="Cerrar confirmación" onClick={()=>setAlreadyHave(null)}>×</button></div><p>Confirma cuánto tienes en esta ubicación, en {alreadyHave.unit}. No lo contaremos como comprado.</p><label>Cantidad real en casa<input type="number" min="0.01" step="any" value={haveQty} onChange={e=>setHaveQty(e.target.value)}/></label><label>Ubicación<select value={haveLocation} onChange={e=>setHaveLocation(e.target.value as Location)}><option>Despensa</option><option>Nevera</option><option>Congelador</option></select></label><button className="primary" disabled={!(Number(haveQty)>0)} onClick={confirmAlreadyHave}>Confirmar cantidad</button></section></div>}
   <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Añade productos y HomeOS los organiza por tienda y categoría.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));if(purchaseTotal.trim()&&(!Number.isFinite(n)||n<0)){setToast("Introduce un total válido, igual o mayor que cero");return}const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
