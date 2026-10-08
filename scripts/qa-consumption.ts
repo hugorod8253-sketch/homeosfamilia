@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {estimateConsumption,shoppingQuantityStep,changeShoppingQuantity} from '../lib/consumption-engine';
+import {estimateConsumption,estimateInventoryConsumption,shoppingQuantityStep,changeShoppingQuantity} from '../lib/consumption-engine';
 import {matchesRecipeSearch} from '../lib/catalog-search';
 import {normalizeSupermarket} from '../lib/supermarkets';
 import {shoppingInputNeedsReview,splitShoppingEntries,parseShoppingQuantity} from '../lib/shopping-input';
@@ -32,3 +32,6 @@ assert.ok(shoppingInputNeedsReview('Vale pero todo esto lo has escrito mal hemos
 assert.equal(splitShoppingEntries('Necesito pasta para macarrones y ketchup')[0],'macarrones');assert.equal(parseShoppingQuantity('1 kg de pollo').unit,'kg');
 assert.ok(productSuggestions('pescado').length>=5);assert.ok(productSuggestions('carne').length>=3);assert.ok(productSuggestions('pechuga').length>=2);
 console.log('PASS: consumo semanal, acumulación, cantidades, unidades, congelador, reservas, confirmaciones, idiomas, tiendas y conversaciones');
+
+const twoLocations=[{...milk,qty:1,estimateAnchorQty:1,location:'Despensa'},{...milk,qty:1,estimateAnchorQty:1,location:'Nevera'}];
+const split=twoLocations.map(i=>estimateInventoryConsumption(i,twoLocations,buys,[],[],'2026-10-08'));assert.ok(Math.abs(split.reduce((n,x)=>n+x.dailyRate,0)-1/7)<1e-9);assert.equal(split.reduce((n,x)=>n+x.estimatedQty,0),1,'household rate is only applied once across two locations');

@@ -21,7 +21,7 @@ import { normalizeSpokenShoppingText, splitShoppingEntries, parseShoppingQuantit
 
 import { matchesRecipeSearch, recipeCountryLabel } from "../lib/catalog-search";
 import { SPANISH_SUPERMARKETS, normalizeSupermarket, editDistance } from "../lib/supermarkets";
-import { estimateConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type StockCheck } from "../lib/consumption-engine";
+import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type StockCheck } from "../lib/consumption-engine";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -388,7 +388,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.lastConfirmedAt&&daysUntil(item.lastConfirmedAt)>=-1)return {prob:.99,label:"Cantidad confirmada",tone:"hay",basis:"Cantidad real confirmada por ti; el ritmo de consumo se estima por separado"};
  if(item.stock==="incierto")return {prob:.5,label:"Revisar",tone:"incierto",basis:"Cantidad o estado pendiente de confirmar"};
  if(item.category==="Preparados")return {prob:item.stock==="poco"?.42:.9,label:"Raciones registradas",tone:item.stock==="poco"?"incierto":"hay",basis:"Cantidad de comida preparada registrada; el paso de los días no confirma que se haya comido"};
- const estimate=estimateConsumption(item,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
+ const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
  if(estimate.source==="unknown")return {prob:.55,label:"Cantidad sin comprobar",tone:"incierto",basis:estimate.basis};
  const recorded=Math.max(.01,item.estimateAnchorQty??item.qty);
  const ratio=estimate.estimatedQty/recorded;
@@ -833,7 +833,7 @@ export default function HomeOS(){
       if(ri>=0)mergedPlanReservations[ri]={...mergedPlanReservations[ri],qty:Math.round((mergedPlanReservations[ri].qty+incoming.qty)*100)/100};
       else mergedPlanReservations.push(incoming);
      }
-     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,estimateAnchorQty:estimateConsumption(current,[...s.purchaseHistory,{name:x.name,qty:buyQty,unit:x.unit,date:today,category}],s.profile.consumptionHabits,s.stockChecks).estimatedQty+buyQty,estimateAnchorDate:today,stock:"hay",purchasedAt:current.qty>0?current.purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:mergedPlanReservations.length?mergedPlanReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
+     inventory[idx]={...current,category,subcategory:profile.subcategory,qty:Math.max(0,current.qty)+buyQty,estimateAnchorQty:estimateInventoryConsumption(current,s.inventory,[...s.purchaseHistory,{name:x.name,qty:buyQty,unit:x.unit,date:today,category}],s.profile.consumptionHabits,s.stockChecks).estimatedQty+buyQty,estimateAnchorDate:today,stock:"hay",purchasedAt:current.qty>0?current.purchasedAt:today,price:typeof x.price==="number"?x.price:current.price,supermarket:x.supermarket||activeStore||current.supermarket,planReservations:mergedPlanReservations.length?mergedPlanReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt,expires:undefined,dateType:undefined,estimatedExpires:undefined,estimatedDateType:undefined,estimateBasis:undefined}:(!current.expires&&estimatedExpires?{estimatedExpires,estimatedDateType:current.estimatedDateType||estimated?.kind,estimateBasis:current.estimateBasis||estimated?.basis}:{}))};
     }else{
      inventory.unshift({id:crypto.randomUUID(),name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
     }
@@ -2040,7 +2040,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   <div className={"inventory-grid "+density}>{shown.length===0&&<article className="friendly-empty inventory-empty"><span>⌂</span><h3>No hay productos aquí</h3><p>Prueba otro filtro o registra una compra.</p></article>}{shown.map(i=>{
    const displayLocation=i.location==="Suplementos"?"Despensa":i.location==="Sin ubicar"?"Revisar":i.location;
    const estimate=inventoryEstimate(state,i);
-   const consumption=estimateConsumption(i,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
+   const consumption=estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
    return <article className="inventory-card" key={i.id}>
     <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
     <div className="inventory-name-row"><h3>{i.name}</h3><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>

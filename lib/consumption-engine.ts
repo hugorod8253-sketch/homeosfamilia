@@ -10,7 +10,7 @@ function validDate(date:string){return /^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.
 function compatible(a:string,b:string){const f=planUnitFamily(a);return f===planUnitFamily(b)&&(f==='mass'||f==='volume'||normalizeProductText(a).replace(/^uds$/,'ud')===normalizeProductText(b).replace(/^uds$/,'ud'))}
 function median(xs:number[]){const s=xs.sort((a,b)=>a-b);return s.length%2?s[Math.floor(s.length/2)]:(s[s.length/2-1]+s[s.length/2])/2}
 /** Purchase intervals are a provisional hint, never proof of consumption or a stock mutation. */
-export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso()){
+export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso(),allocation=1){
  const canonical=key(item.name,item.category);
  const matches=(p:{name:string;category?:string;unit:string})=>key(p.name,p.category)===canonical&&compatible(p.unit,item.unit);
  const buys=purchases.filter(p=>matches(p)&&p.qty>0&&Number.isFinite(p.qty)&&validDate(p.date)&&p.date<=today);
@@ -27,12 +27,21 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
  const anchor=item.estimateAnchorDate||item.lastConfirmedAt||item.purchasedAt;
  const age=anchor&&validDate(anchor)?Math.max(0,-calendarDaysUntil(anchor,new Date(today+'T12:00:00'))):0;
  const base=planToBase(Math.max(0,item.estimateAnchorQty??item.qty),item.unit);
- const remaining=item.storageMode==='reserva'||item.location==='Congelador'||!rate?base:Math.max(0,base-rate*age);
- return {source,dailyRate:planFromBase(rate,item.unit),estimatedQty:Math.round(planFromBase(remaining,item.unit)*100)/100,daysLeft:rate?remaining/rate:null,confidence:source==='confirmed'?'media':source==='unknown'?'sin datos':'baja',basis:source==='confirmed'?'Ritmo ajustado con cantidades confirmadas y compras':source==='purchases'?'Ritmo provisional de recompra; comprar no demuestra que se haya acabado':source==='habit'?'Ritmo inicial indicado por ti; todavía sin comprobar':'Aún no hay datos suficientes de consumo'};
+ const allocatedRate=rate*Math.max(0,Math.min(1,allocation));
+ const remaining=item.storageMode==='reserva'||item.location==='Congelador'||!rate?base:Math.max(0,base-allocatedRate*age);
+ return {source,dailyRate:planFromBase(allocatedRate,item.unit),estimatedQty:Math.round(planFromBase(remaining,item.unit)*100)/100,daysLeft:allocatedRate?remaining/allocatedRate:null,confidence:source==='confirmed'?'media':source==='unknown'?'sin datos':'baja',basis:source==='confirmed'?'Ritmo ajustado con cantidades confirmadas y compras':source==='purchases'?'Ritmo provisional de recompra; comprar no demuestra que se haya acabado':source==='habit'?'Ritmo inicial indicado por ti; todavía sin comprobar':'Aún no hay datos suficientes de consumo'};
 }
 export function shoppingQuantityStep(unit:string){return /^(g|ml)$/i.test(unit)?10:/^(kg|l)$/i.test(unit)?.1:1}
 export function changeShoppingQuantity(qty:number,unit:string,delta:number){
  const measured=planUnitFamily(unit)==='mass'||planUnitFamily(unit)==='volume';
  const minimum=measured&&/^(kg|l)$/i.test(unit)?.01:1;
  return Math.round(Math.max(Math.min(qty,minimum),qty+delta*shoppingQuantityStep(unit))*100)/100;
+}
+
+/** A household rate is shared once across compatible locations, not applied to every row. */
+export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Array<Omit<Item,'date'>&{stock?:string}>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso()){
+ const peers=inventory.filter(i=>i.stock!=='falta'&&i.qty>0&&i.location!=='Congelador'&&i.storageMode!=='reserva'&&key(i.name,i.category)===key(item.name,item.category)&&compatible(i.unit,item.unit));
+ const total=peers.reduce((sum,i)=>sum+planToBase(Math.max(0,i.estimateAnchorQty??i.qty),i.unit),0);
+ const own=planToBase(Math.max(0,item.estimateAnchorQty??item.qty),item.unit);
+ return estimateConsumption(item,purchases,habits,checks,today,total>0?own/total:1);
 }
