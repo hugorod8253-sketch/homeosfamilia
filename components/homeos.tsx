@@ -920,7 +920,7 @@ function ConsumptionSetup({state,setState,finish}:{state:AppState;setState:React
    const canonical=norm(classifyProduct(p.name,p.category).canonical);
    if(p.qty<=0)continue;
    if(!latest.has(canonical)){latest.set(canonical,{id:"habit-"+canonical,name:p.name,qty:p.qty,unit:p.unit,days:7});dates.set(canonical,p.date)}
-   else if(dates.get(canonical)===p.date){const c=latest.get(canonical)!;if(planUnitFamily(c.unit)===planUnitFamily(p.unit)&&(planUnitFamily(c.unit)!=="count"||c.unit===p.unit))c.qty=planFromBase(planToBase(c.qty,c.unit)+planToBase(p.qty,p.unit),c.unit)}
+   else if(dates.get(canonical)===p.date){const c=latest.get(canonical)!;if(planUnitFamily(c.unit)===planUnitFamily(p.unit)&&(["mass","volume"].includes(planUnitFamily(c.unit))||c.unit===p.unit))c.qty=planFromBase(planToBase(c.qty,c.unit)+planToBase(p.qty,p.unit),c.unit)}
   }
   if(latest.size)return [...latest.values()].slice(0,6);
   return [{id:"habit-leche",name:"Leche",qty:1,unit:"L",days:7},{id:"habit-huevos",name:"Huevos",qty:12,unit:"uds",days:7}];

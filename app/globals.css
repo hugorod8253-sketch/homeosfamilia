@@ -2278,3 +2278,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .home-final .home-final-top .home-final-ideas>button img{height:44px!important;width:54px!important}
  .home-final .home-final-habit-grid>button{min-height:26px!important;padding:3px 0!important}
 }
+@media(min-width:1200px) and (min-height:800px){
+ main:has(.home-final){padding-bottom:4px!important}
+}
