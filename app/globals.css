@@ -2259,3 +2259,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .consumption-start-card{padding:16px!important;min-height:0!important;gap:14px!important}
 .consumption-start-card h3{margin:0 0 6px!important}
 .consumption-start-card p{margin:0!important}
+.home-mini-week{display:none!important}
+@media(min-width:1200px) and (min-height:800px){
+ .home-final .home-card-head{min-height:0!important;height:auto!important;padding:0!important;gap:8px!important;align-items:center!important}
+ .home-final .home-card-head strong{margin:0!important;line-height:1.2!important;font-size:20px!important}
+ .home-final .home-card-head small{margin:0 0 3px!important;line-height:1.25!important}
+ .home-final .home-final-menu,.home-final .home-final-summary,.home-final .home-final-habits{display:block!important}
+ .home-final .home-mini-agenda{display:block!important}
+ .home-final .home-mini-calendar{padding:0!important;align-self:start!important}
+ .home-final .home-mini-month{display:none!important}
+ .home-final .home-mini-week{display:grid!important}
+ .home-final .home-mini-events{gap:4px!important}
+ .home-final .home-final-recommend{align-content:center!important}
+}

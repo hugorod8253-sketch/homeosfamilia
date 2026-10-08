@@ -991,7 +991,7 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
   <div className="home-mini-agenda-body">
    <div className="home-mini-calendar" onClick={onOpen}>
     <div className="home-mini-weekdays">{["L","M","X","J","V","S","D"].map(d=><span key={d}>{d}</span>)}</div>
-    <div className="home-mini-days">{Array.from({length:first}).map((_,i)=><span key={"b"+i}/>)}
+    <div className="home-mini-days home-mini-week">{Array.from({length:7},(_,i)=>today.getDate()-((today.getDay()+6)%7)+i).map((d,i)=>d<1||d>days?<span key={i}/>:<button key={i} className={(d===today.getDate()?"today ":"")+(eventDays.has(d)?"has-event":"")} onClick={e=>{e.stopPropagation();onOpen()}}>{d}</button>)}</div><div className="home-mini-days home-mini-month">{Array.from({length:first}).map((_,i)=><span key={"b"+i}/>)}
      {Array.from({length:days},(_,i)=>i+1).map(d=><button key={d} className={(d===today.getDate()?"today ":"")+(eventDays.has(d)?"has-event":"")} onClick={e=>{e.stopPropagation();onOpen()}}>{d}</button>)}
     </div>
    </div>
