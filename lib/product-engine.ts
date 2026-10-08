@@ -18,6 +18,8 @@ export function productSuggestions(name:string):ProductProfile[]{
  const out:ProductProfile[]=[];
  const add=(x:string)=>{const p=classifyProduct(x);if(!out.some(y=>y.canonical===p.canonical))out.push(p)};
  if(/^(pescado|peix|fish|pesacado)$/.test(n)){["merluza","lubina","dorada","salmón","bacalao","atún fresco","sardina"].forEach(add);}
+ if(/^(pan|panes)$/.test(n)){["Pan blanco","Pan integral","Pan de molde blanco","Pan de molde integral","Baguette","Pan de centeno","Pan sin gluten"].forEach(add);}
+ if(/^(platano|platanos)$/.test(n)){["Plátano de Canarias","Banana","Plátano macho"].forEach(add);}
  if(/^pechuga$/.test(n)){add("pechuga de pollo");add("pechuga de pavo");}
  if(/\bpavo\b/.test(n)){add("pechuga de pavo");add("solomillo de pavo");add("pavo en lonchas");}
  if(/\bpollo\b/.test(n)&&!/(caldo|sopa|croqueta|nugget|asado)/.test(n)){add("pechuga de pollo");add("solomillo de pollo");add("pollo entero");}
@@ -123,7 +125,9 @@ const RULES:Rule[]=[
  P("verduras variadas",/^verduras?(?:\s+variadas?)?$/,"Fruta y verdura","Verdura","Nevera","alta","leafy","flex"),
  // Frutas
  P("fruta",/^frutas?(?:\s+(?:variadas?|de\s+temporada))?$/,"Fruta y verdura","Fruta","Nevera","alta","apple","flex"),
- P("plátano",/platano|banana/,"Fruta y verdura","Fruta","Despensa","alta","banana","flex"),
+ P("Plátano de Canarias",/platano.*canarias/,"Fruta y verdura","Fruta","Despensa","alta","banana","flex"),
+ P("Banana",/banana/,"Fruta y verdura","Fruta","Despensa","alta","banana","flex"),
+ P("plátano",/platano/,"Fruta y verdura","Fruta","Despensa","alta","banana","flex"),
  P("manzana",/manzana/,"Fruta y verdura","Fruta","Nevera","media","apple","flex"),
  P("pera",/\bpera\b|peras/,"Fruta y verdura","Fruta","Nevera","media","pear","flex"),
  P("naranja",/naranja/,"Fruta y verdura","Fruta","Despensa","media","orange","flex"),
