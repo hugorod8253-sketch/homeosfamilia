@@ -2388,3 +2388,4 @@ main p,.modal p{font-size:16px!important}
 
 @media(min-width:821px){.home-final .home-final-head{position:static!important}}
 .inventory-grid.compact .stock-badge{background:#eef2ec!important;color:#52634e!important;font-weight:600!important}
+.stock-review-illustration>.product-glyph,.stock-review-illustration .product-illustration{display:block!important;width:64px!important;height:64px!important;min-width:64px!important;max-width:64px!important;flex:none!important}
