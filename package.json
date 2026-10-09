@@ -6,20 +6,22 @@
     "dev": "next dev",
     "build": "npm run qa && next build",
     "start": "next start",
-    "qa": "node --import tsx scripts/qa.ts && node --import tsx scripts/qa-illustrations.ts && node --import tsx scripts/qa-recipes.ts && node --import tsx scripts/qa-menu-personalization.ts && node --import tsx scripts/qa-usability.ts && node --import tsx scripts/qa-household-reading.ts && node --import tsx scripts/qa-clear-ui.ts && node --import tsx scripts/qa-purchase-cycle.ts"
+    "qa": "node --import tsx scripts/qa.ts && node --import tsx scripts/qa-illustrations.ts && node --import tsx scripts/qa-recipes.ts && node --import tsx scripts/qa-menu-personalization.ts && node --import tsx scripts/qa-usability.ts && node --import tsx scripts/qa-household-reading.ts && node --import tsx scripts/qa-clear-ui.ts && node --import tsx scripts/qa-purchase-cycle.ts && node --import tsx scripts/qa-barcode-product.ts"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "0.2.85",
+    "@zxing/browser": "0.1.5",
+    "@zxing/library": "0.21.3",
     "next": "16.3.8",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "tesseract.js": "7.0.0",
-    "@mlc-ai/web-llm": "0.2.85"
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.0"
   }
 }

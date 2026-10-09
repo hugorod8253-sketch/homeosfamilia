@@ -7,6 +7,10 @@ import { dailyIdeas } from "../lib/daily-ideas";
 import { parsePreparedInput } from "../lib/prepared-input";
 import { estimateRecipeNutrition } from "../lib/recipe-nutrition";
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { BarcodeProduct } from "../lib/barcode-product";
+import { scannedPackage } from "../lib/scanned-package";
+const ProductScanner = dynamic(()=>import("./product-scanner"),{ssr:false});
 import { localDateIso, calendarDaysUntil } from "../lib/local-date";
 import { readBrowserStorage, writeBrowserStorage, removeBrowserStorage } from "../lib/browser-storage";
 import { clearSync, connectionCode, createRemoteHousehold, getStoredSync, parseConnectionCode, readRemoteHousehold, storeSync, syncConfigured, SyncConflictError, type SyncCredentials, writeRemoteHousehold } from "../lib/homeos-sync";
@@ -39,15 +43,15 @@ type NutritionMode = "basica"|"detallada"|"off";
 type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 
 type InventoryItem = {
-  id:string; purchaseSessionId?:string; name:string; qty:number; lastKnownQty?:number; unit:string; location:Location; estimateAnchorDate?:string; estimateAnchorQty?:number; category:string; subcategory?:string;
+  id:string; purchaseSessionId?:string; barcode?:string; brand?:string; packageSize?:string; name:string; qty:number; lastKnownQty?:number; unit:string; location:Location; estimateAnchorDate?:string; estimateAnchorQty?:number; category:string; subcategory?:string;
   quickLevel?:QuickLevel; quickObservedAt?:string; mealPrepAuto?:boolean; mealPrepAutoStart?:string; mealPrepAutoQty?:number; mealPrepAutoDays?:number; mealPrepAutoApplied?:number; mealPrepAutoDepleted?:boolean; stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
   purchaseDateUnknown?:boolean; price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedPlanId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; mealPrepInitialServings?:number; mealPrepDays?:number; mealPrepStart?:string; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; lastStockCheckId?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
 };
 type ShoppingItem = {
-  id:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
+  id:string; barcode?:string; brand?:string; packageSize?:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string; sources?:ShoppingSource[]; boughtQty?:number;
 };
-type PurchaseRecord = {id:string;purchaseSessionId?:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
+type PurchaseRecord = {id:string;barcode?:string;brand?:string;packageSize?:string;purchaseSessionId?:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type PurchaseSession = {id:string;date:string;total:number;totalKnown?:boolean;supermarket?:string};
 type MealRecord = {id:string;date:string;recipeId:string;title:string;servings:number;ingredients:{name:string;key:string;category:string}[]};
 type ProductPreference = {location?:Location;category?:string};
@@ -515,7 +519,7 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
     const fulfilledSources=sourcesBefore.map(src=>({...src,qty:Math.max(0,Math.round((src.qty-(remainingById.get(src.id)||0))*100)/100)})).filter(src=>src.qty>0);
     const profile=classifyProduct(x.name,x.category);
     const pref=s.productPreferences[profile.canonical]||{};
-    const category=pref.category||profile.category;
+    const category=pref.category||(x.barcode?x.category:profile.category);
     const reserveAllowed=x.reserve&&(Boolean(freezerQualityGuide(x.name,category,profile.subcategory))||category==="Carne");
     const location=(reserveAllowed?"Congelador":recommendedLocation(x.name,category,pref.location)) as Location;
     const guide=reserveAllowed?freezerQualityGuide(x.name,category,profile.subcategory):null;
@@ -524,17 +528,17 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
     const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
     const planReservations=fulfilledSources.filter(src=>src.type==="recipe"&&Boolean(src.planId)&&src.qty>0);
     // Each checkout creates its own dated lot; old quantities and dates remain untouched.
-    inventory.unshift({id:crypto.randomUUID(),purchaseSessionId:sessionId,name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,source:"compra",price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
+    inventory.unshift({id:crypto.randomUUID(),purchaseSessionId:sessionId,barcode:x.barcode,brand:x.brand,packageSize:x.packageSize,name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,source:"compra",price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
     const p=classifyProduct(x.name,x.category);
     const pref=s.productPreferences[p.canonical]||{};
     return {
      id:crypto.randomUUID(),purchaseSessionId:sessionId,
-     name:x.name,
+     name:x.name,barcode:x.barcode,brand:x.brand,packageSize:x.packageSize,
      qty:Math.max(.01,x.boughtQty??x.qty),
      unit:x.unit,
-     category:pref.category||p.category,
+     category:pref.category||(x.barcode?x.category:p.category),
      subcategory:p.subcategory,
      date:today,
      supermarket:x.supermarket||activeStore||undefined,
@@ -553,6 +557,22 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
    return reconcileWeeklyShopping(reconcileRecipeShopping(purchasedState));
 }
 
+/** Public product facts are displayed separately; only the user's chosen stock observation is stored. */
+export function addScannedProduct(s:AppState,product:BarcodeProduct,target:'shopping'|'inventory',packs:number,chosenLocation='',extra=false):{state:AppState;message:string}{
+ const count=Math.max(1,Math.min(99,Math.floor(packs)||1)), amount=scannedPackage(product), qty=amount.qty*count;
+ const classified=classifyProduct(product.name);
+ const category=product.kind==='beauty'?'Higiene y cuidado':classified.category==='Por clasificar'?'Despensa':classified.category;
+ const matches=(i:{barcode?:string;name:string})=>i.barcode?i.barcode.padStart(14,'0')===product.barcode.padStart(14,'0'):norm(i.name)===norm(product.name);
+ const existing=target==='shopping'?s.shopping.find(matches):s.inventory.find(i=>matches(i)&&i.stock!=='falta');
+ if(existing&&target==='shopping')return {state:s,message:'Ya está en la lista. Puedes ajustar su cantidad allí.'};
+ if(existing&&target==='inventory'&&!extra)return {state:s,message:'Ya está registrado en casa. Si son otros envases, pulsa «Registrar envases adicionales».'};
+ const base={id:crypto.randomUUID(),barcode:product.barcode,name:product.name,brand:product.brand,packageSize:product.packageSize,qty,unit:amount.unit,category,subcategory:classified.subcategory};
+ if(target==='shopping')return {state:{...s,shopping:[...s.shopping,{...base,requestedBy:'Escáner',reason:'persona',status:'pendiente'}]},message:'Añadido a la compra. Márcalo cuando lo cojas.'};
+ const location=(["Nevera","Congelador","Despensa","Sin ubicar"].includes(chosenLocation)?chosenLocation:product.kind==='beauty'?'Sin ubicar':recommendedLocation(product.name,category)) as Location;
+ const today=localDateIso();
+ return {state:{...s,inventory:[{...base,location,stock:'hay',purchasedAt:'',purchaseDateUnknown:true,lastConfirmedAt:today,estimateAnchorDate:today,estimateAnchorQty:qty},...s.inventory]},message:'Registrado en casa. No se ha añadido ningún gasto ni inventado una fecha de compra.'};
+}
+
 export default function HomeOS(){
  const [view,setView]=useState<View>("inicio");
  const [state,setState]=useState<AppState>(DEFAULT);
@@ -562,6 +582,7 @@ export default function HomeOS(){
  const [purchaseUndo,setPurchaseUndo]=useState<{recipeId:string;title:string;previous?:RecipePlan}|null>(null);
  const [profileOpen,setProfileOpen]=useState(false);
  const [tourOpen,setTourOpen]=useState(false);
+ const [scannerOpen,setScannerOpen]=useState(false);
  const [consumptionSetupOpen,setConsumptionSetupOpen]=useState(false);
  const [mobileMoreOpen,setMobileMoreOpen]=useState(false);
  const [demoMode,setDemoMode]=useState<"menu"|"ideas"|null>(null);
@@ -899,7 +920,7 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions"><button className="scanner-entry" onClick={()=>setScannerOpen(true)} aria-label="Escanear producto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Escanear</span></button>{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
    {view==="habitos"&&<section className="stack"><Habitos state={state} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
@@ -910,6 +931,7 @@ export default function HomeOS(){
 
   <nav className="bottom-nav">{nav.filter(n=>n.id!=="finanzas").map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");if(n.id==="comer"){setComerFocus("catalog");setMealSeed("")}setMobileMoreOpen(false);setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}<button className={mobileMoreOpen||view==="finanzas"||view==="habitos"?"active more-tab": "more-tab"} onClick={()=>setMobileMoreOpen(v=>!v)}><span className="more-dots">•••</span><small>Más</small></button></nav>
   {mobileMoreOpen&&<div className="mobile-more-backdrop" onMouseDown={()=>setMobileMoreOpen(false)}><div className="mobile-more-sheet" onMouseDown={e=>e.stopPropagation()}><div className="mobile-more-handle"/><button onClick={()=>{setView("finanzas");setMobileMoreOpen(false)}}><span className="more-icon finance">▥</span><div><strong>Finanzas</strong><small>Gasto, presupuesto y categorías</small></div><b>›</b></button>{state.profile.nutrition!=="off"&&<button onClick={()=>{setView("habitos");setMobileMoreOpen(false)}}><span className="more-icon habits">◴</span><div><strong>Hábitos</strong><small>Cómo está comiendo el hogar</small></div><b>›</b></button>}<button onClick={()=>{setProfileOpen(true);setMobileMoreOpen(false)}}><span className="more-icon settings">⚙</span><div><strong>Configuración</strong><small>Hogar, preferencias y sincronización</small></div><b>›</b></button></div></div>}
+  {scannerOpen&&<ProductScanner close={()=>setScannerOpen(false)} onAdd={(product,target,packs,location,extra)=>{const next=addScannedProduct(stateRef.current,product,target,packs,location,extra);if(next.state!==stateRef.current){stateRef.current=next.state;setState(next.state)}return next.message}}/>}
   {consumptionSetupOpen&&<div className="modal-backdrop"><section className="modal confirm-stock-modal"><div className="modal-head"><h2>Tu ritmo habitual</h2><button aria-label="Cerrar hábitos iniciales" onClick={()=>setConsumptionSetupOpen(false)}>×</button></div><ConsumptionSetup state={state} setState={setState} finish={()=>setConsumptionSetupOpen(false)}/></section></div>}
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
