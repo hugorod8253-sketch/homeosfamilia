@@ -9,7 +9,7 @@ export const RECIPE_THEMES=[
  {id:"india",icon:"🇮🇳",title:"India",description:"Dal, chana masala, palak paneer, aloo gobi y pakoras."},
  {id:"spain",icon:"🇪🇸",title:"España",description:"Salmorejo, croquetas, pan con tomate, pisto y marmitako."},
  {id:"pasta",icon:"🇮🇹",title:"Italia",description:"Risotto, minestrone, lasaña, bruschetta y pasta."},
- {id:"pizza",icon:"🍕",title:"Noche de pizza",description:"Seis pizzas con ingredientes y fotografías propios."},
+ {id:"pizza",icon:"🍕",title:"Pizzas del mundo",description:"Seis pizzas con ingredientes y fotografías propios."},
  {id:"burger",icon:"🇺🇸",title:"Estados Unidos",description:"Hamburguesas, mac and cheese, alitas, sloppy joe y brownie."},
  {id:"france",icon:"🇫🇷",title:"Francia",description:"Ratatouille, quiche, sopa de cebolla, crêpes y croque monsieur."},
  {id:"netherlands",icon:"🇳🇱",title:"Países Bajos",description:"Stamppot, hutspot, erwtensoep, poffertjes y bitterballen."},

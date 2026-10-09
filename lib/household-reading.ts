@@ -14,7 +14,7 @@ export function freshnessNotice(item:FreshnessItem,daysLeft:number|null=null,tod
   if(expiry&&daysLeft!==null&&Number.isFinite(daysLeft)&&daysLeft>left)return {kind:'slow',text:'Caduca en '+left+' días; al ritmo estimado podría sobrar',priority:2};
   return null;
  }
- if(item.estimatedExpires&&isCalendarDate(item.estimatedExpires)&&days(item.estimatedExpires)<=3)return {kind:'estimate',text:'Fecha orientativa próxima · comprueba la etiqueta si aún queda',priority:3};
+ if(item.estimatedExpires&&isCalendarDate(item.estimatedExpires)&&days(item.estimatedExpires)<=3)return {kind:'estimate',text:days(item.estimatedExpires)<0?'El plazo estimado ha pasado · revisa la fecha del envase':'Podría caducar pronto · fecha estimada',priority:3};
  if(item.name&&item.purchasedAt&&!item.purchaseDateUnknown&&isCalendarDate(item.purchasedAt)&&days(item.purchasedAt)<=-2&&classifyProduct(item.name,item.category).rotation==='alta')return {kind:'estimate',text:'Fresco sin fecha registrada · prioriza su uso y respeta la etiqueta',priority:3};
  return null;
 }
