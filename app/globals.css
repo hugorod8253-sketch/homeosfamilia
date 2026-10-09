@@ -2347,6 +2347,29 @@ main p,.modal p{font-size:16px!important}
  .home-final .home-final-habit-grid>button>div{grid-template-columns:minmax(78px,auto) minmax(40px,1fr) auto!important}
  .home-final .home-final-habit-grid strong{word-break:normal!important;overflow-wrap:normal!important}
 }
+/* One readable state and quiet actions, without competing colour blocks. */
+.inventory-grid.compact .inventory-card{gap:5px!important;padding:14px!important}
+.inventory-grid.compact .inventory-qty{margin:0!important;color:#647064}
+.inventory-grid.compact .inventory-name-row{margin:0!important}
+.inventory-actions button,.inventory-actions .recipe-from-product,.inventory-actions .action-low,.inventory-actions .action-out,.inventory-actions .action-confirm{background:#f5f7f4!important;border:1px solid #dde4dc!important;color:#34493d!important;box-shadow:none!important}
+.inventory-actions .action-out{color:#82453d!important}
+.inventory-actions .action-low{color:#756039!important}
+.inventory-grid.compact .inventory-actions{padding-top:8px!important;gap:6px!important}
+.inventory-freshness{margin:4px 0!important;background:#faf7f0!important;color:#6c6148!important;padding:8px!important}
+.stock-review-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 18px}
+.stock-review-options button{min-height:54px;background:#f3f6f1;border:1px solid #dbe3d6;border-radius:12px;font-size:16px;font-weight:600;color:#344a39;cursor:pointer}
+.stock-review-illustration{display:grid;place-items:center;font-size:44px;height:70px}.stock-review-illustration :is(img,svg){width:64px!important;height:64px!important}
+.stock-exact-details>summary{font-size:15px;line-height:1.4;cursor:pointer;padding:12px 0;color:#52614e}
+.stock-exact-details[open]>label{display:grid;gap:6px;margin:12px 0}
+.freshness-overview button{display:flex;align-items:center;gap:10px!important;background:white!important}
+.freshness-item-icon{flex:0 0 40px;font-size:30px!important}.freshness-item-icon :is(img,svg){width:40px!important;height:40px!important}
+.freshness-overview button>div{min-width:0}
+.mealprep-tracker{flex-wrap:wrap;background:#f5f7f3!important;border-color:#dfe5db!important;color:#40523b!important}
+.mealprep-tracker strong{font-size:17px!important}.mealprep-tracker span{font-size:14px!important;display:block;line-height:1.4}
+.mealprep-auto-toggle{min-height:40px;flex-basis:100%;border:1px solid #dce3d5;border-radius:9px;background:white;font-size:15px;color:#3d5037;cursor:pointer}
+.hv-adjust-help{font-size:16px;line-height:1.45;background:#f2f5ef;padding:12px 16px;border-radius:12px;color:#4b6045}
+.hv-heading>.primary{font-size:16px;min-height:48px;padding:12px 16px;white-space:normal}
+@media(min-width:821px){.main:has(.home-final){position:relative}.home-final .home-weather{position:absolute!important;top:14px!important;right:120px!important;margin:0!important;padding:0!important;min-height:38px!important;background:transparent!important;box-shadow:none!important}.home-topbar{margin-bottom:0!important}}
 @media(max-width:560px){
  .shopping-row-icon{display:grid!important;grid-column:2!important;grid-row:1!important;align-self:start}
  .shopping-pick{grid-column:1!important;grid-row:1!important}
@@ -2362,3 +2385,6 @@ main p,.modal p{font-size:16px!important}
  .home-final{gap:8px!important}
  .home-final .home-mini-agenda{padding:4px 12px!important}
 }
+
+@media(min-width:821px){.home-final .home-final-head{position:static!important}}
+.inventory-grid.compact .stock-badge{background:#eef2ec!important;color:#52634e!important;font-weight:600!important}

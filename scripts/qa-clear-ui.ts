@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {observeStock,startAutoPrepared,advanceAutoPrepared,remainingAutoDays} from '../lib/quick-inventory';
 import {quickStockChoices,speechErrorMessage} from '../lib/quick-stock';
 import {splitShoppingEntries,shoppingInputNeedsReview} from '../lib/shopping-input';
 import {freshnessNotice} from '../lib/household-reading';
@@ -25,4 +26,21 @@ const x={name:'Yogur',qty:1,stock:'hay',location:'Nevera',estimatedExpires:'2026
 assert.equal(freshnessNotice(x,null,'2026-10-09')?.text,'Podría caducar pronto · fecha estimada');
 assert.match(freshnessNotice(x,null,'2026-10-11')!.text,/plazo estimado/);
 assert.ok(!/Caduca mañana/.test(freshnessNotice(x,null,'2026-10-09')!.text));
-console.log('PASS: clear UI quantities, unit integrity, speech errors, long requests, monthly themes and estimated dates');
+const observation=observeStock({qty:900,stock:'hay',lastConfirmedAt:'2026-10-08'},'mitad','2026-10-09');
+assert.equal(observation.qty,900);assert.equal(observation.lastConfirmedAt,undefined);
+assert.equal(observeStock({qty:0,stock:'falta'},'bastante').qty,0);
+const prepared=startAutoPrepared({qty:7,servings:7,stock:'hay',source:'mealprep',location:'Nevera'},7,'2026-10-01');
+const dayThree=advanceAutoPrepared(prepared,'2026-10-04');
+assert.equal(dayThree.qty,4);assert.equal(dayThree.servings,4);
+assert.equal(advanceAutoPrepared(dayThree,'2026-10-04'),dayThree);
+assert.equal(advanceAutoPrepared(prepared,'2026-09-30'),prepared);
+const finished=advanceAutoPrepared(dayThree,'2026-10-08');
+assert.equal(finished.qty,0);assert.equal(finished.mealPrepAutoDepleted,true);assert.equal(finished.stock,'incierto');
+assert.equal(advanceAutoPrepared(finished,'2026-12-01'),finished);
+const frozen={...prepared,location:'Congelador'};assert.equal(advanceAutoPrepared(frozen,'2026-10-04'),frozen);
+const paused={...dayThree,mealPrepAuto:false};assert.equal(advanceAutoPrepared(paused,'2026-10-20'),paused);
+assert.equal(remainingAutoDays(dayThree,'2026-10-04'),4);
+const corrected=startAutoPrepared({...dayThree,qty:5,servings:5},4,'2026-10-04');
+assert.equal(advanceAutoPrepared(corrected,'2026-10-04').qty,5);
+assert.equal(advanceAutoPrepared(corrected,'2026-10-08').qty,0);
+console.log('PASS: quick observations do not invent quantities; daily meal prep is idempotent, correctable, paused in freezer and separate from confirmed consumption');
