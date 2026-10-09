@@ -1,4 +1,5 @@
 "use client";
+import { freshnessNotice, stockCoverage } from "../lib/household-reading";
 import { dailyIdeas } from "../lib/daily-ideas";
 import { parsePreparedInput } from "../lib/prepared-input";
 import { estimateRecipeNutrition } from "../lib/recipe-nutrition";
@@ -812,11 +813,7 @@ export default function HomeOS(){
   }finally{syncWritingRef.current=false;if(saved&&JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)setSyncWriteTick(n=>n+1)}
  }
 
- const expiring=useMemo(()=>state.inventory.filter(i=>{
-  if(i.stock==="falta"||i.location==="Congelador"||i.storageMode==="reserva")return false;
-  const date=i.expires||i.estimatedExpires;
-  return date?daysUntil(date)<=3:classifyProduct(i.name,i.category).rotation==="alta"&&daysUntil(i.purchasedAt)<=-2;
- }),[state.inventory]);
+ const expiring=useMemo(()=>state.inventory.filter(i=>!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks).daysLeft)).sort((a,b)=>(freshnessNotice(a)?.priority??2)-(freshnessNotice(b)?.priority??2)),[state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks]);
  const monthKey=localDateIso().slice(0,7);
  const monthlySpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(monthKey)).reduce((n,x)=>n+x.total,0):state.spent;
  const available=state.budget-monthlySpent;
@@ -893,9 +890,9 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><span className="topbar-logo">{logo()}</span><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
-   {view==="habitos"&&<section className="stack"><div className="page-intro"><div><span className="eyebrow">HÁBITOS</span><h2>Cómo comemos</h2><p>Compras, consumo confirmado y tendencias del hogar, reunidos en un mismo lugar.</p></div></div><article className="list-card consumption-start-card"><div><h3>Ritmo de consumo del hogar</h3><p>{(state.profile.consumptionReviewedAt&&calendarDaysUntil(state.profile.consumptionReviewedAt)<-14)?"¿Ha cambiado vuestro ritmo? Revísalo en menos de un minuto.":state.profile.consumptionHabits?.length?state.profile.consumptionHabits.length+(state.profile.consumptionHabits.length===1?" hábito orientativo":" hábitos orientativos")+" · las cantidades confirmadas tienen prioridad":"Configura un punto de partida breve; las compras por sí solas no confirman consumo."}</p></div><button className="secondary" onClick={()=>setConsumptionSetupOpen(true)}>Ajustar hábitos</button></article><Habitos state={state}/></section>}
+   {view==="habitos"&&<section className="stack"><Habitos state={state} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
    {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
@@ -1471,146 +1468,48 @@ function RecipeNutrition({recipe,total=false}:{recipe:Recipe;total?:boolean}){
  return <div className="macro-row nutrition-estimate"><b>≈ {Math.round(data.calories)} kcal</b><span>{data.protein} g proteína</span><span>{data.carbs} g carbohidratos</span><span>{data.fat} g grasas</span><small>{total?"Total receta":"Por ración"} · {calculated.complete?"valores genéricos aproximados":"estimación del recetario; ingredientes sin recalcular"}</small>{calculated.complete&&calculated.assumptions.length>0&&<small>{calculated.assumptions.join(" · ")}</small>}</div>;
 }
 
-function Habitos({state}:{state:AppState}){
- const now=new Date();
- const dayMs=86400000;
- const daysAgo=(date:string)=>Math.floor((now.getTime()-new Date(date+"T12:00:00").getTime())/dayMs);
- const purchases=state.purchaseHistory.filter(x=>daysAgo(x.date)>=0&&daysAgo(x.date)<=28&& !["Limpieza y hogar","Higiene y cuidado","Suplementos"].includes(x.category));
- const provisional=state.inventory.filter(i=>i.purchasedAt&&daysAgo(i.purchasedAt)>=0&&daysAgo(i.purchasedAt)<=28&& !["Limpieza y hogar","Higiene y cuidado","Suplementos"].includes(i.category)).map(i=>({id:i.id,name:i.name,qty:i.qty,unit:i.unit,category:i.category,date:i.purchasedAt,supermarket:i.supermarket,requestedBy:"Casa"} as PurchaseRecord));
- const purchaseSource=purchases.length?purchases:provisional;
- const purchaseMode=purchases.length?"Compras reales":"Inventario reciente";
- const meals=state.mealHistory.filter(x=>daysAgo(x.date)>=0&&daysAgo(x.date)<=28);
- const recentPurchases=purchaseSource.filter(x=>daysAgo(x.date)<=14);
- const previousPurchases=purchaseSource.filter(x=>daysAgo(x.date)>14&&daysAgo(x.date)<=28);
- const recentMeals=meals.filter(x=>daysAgo(x.date)<=14);
- const previousMeals=meals.filter(x=>daysAgo(x.date)>14&&daysAgo(x.date)<=28);
-
- const isFruit=(n:string)=>/platano|banana|manzana|pera|naranja|mandarina|fresa|arandano|kiwi|uva|melon|sandia|melocoton|piña|mango|papaya|fruta/.test(norm(n));
- const isVeg=(n:string)=>/tomate|lechuga|brocoli|calabacin|berenjena|zanahoria|cebolla|pimiento|espinaca|pepino|verdura|aguacate|judia verde|coliflor|calabaza|puerro|apio|alcachofa|esparrago/.test(norm(n));
- const isProtein=(n:string,c:string)=>c==="Carne"||/pollo|carne|ternera|cerdo|pavo|pescado|salmon|atun|merluza|bacalao|huevo|legumbre|lenteja|garbanzo|alubia|proteina|tofu|seitan|tempeh/.test(norm(n));
- const isCarb=(n:string)=>/arroz|pasta|pan|patata|avena|cereal|harina|tortilla|cuscus|quinoa|bulgur/.test(norm(n));
- const isSnack=(n:string)=>/chocolate|galleta|chuche|gominola|snack|patatas fritas|bolleria|refresco|helado|caramelo|barrita de chocolate/.test(norm(n));
+function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;onOpenCasa:()=>void}){
+ const recent=(date:string)=>{const days=calendarDaysUntil(date);return days<=0&&days>=-28};
+ const purchases=state.purchaseHistory.filter(p=>recent(p.date));
+ const meals=state.mealHistory.filter(m=>recent(m.date));
  const defs=[
-  {key:"meat",name:"Carnes y pescados",icon:"🥩",test:(n:string)=>/pollo|carne|ternera|cerdo|pavo|pescado|salmon|atun|merluza|bacalao|jamon|dorada|lubina/.test(norm(n))},
-  {key:"dairy",name:"Huevos y lácteos",icon:"🥚",test:(n:string)=>/huevo|leche|yogur|queso|kefir/.test(norm(n))},
-  {key:"legume",name:"Legumbres y tofu",icon:"🫘",test:(n:string)=>/legumbre|lenteja|garbanzo|alubia|tofu|seitan|tempeh/.test(norm(n))},
-  {key:"veg",name:"Verduras",icon:"🥬",test:(n:string)=>isVeg(n)},
-  {key:"fruit",name:"Fruta",icon:"🍎",test:(n:string)=>isFruit(n)},
-  {key:"carb",name:"Cereales y patatas",icon:"🍚",test:(n:string)=>isCarb(n)&&!isSnack(n)},
-  {key:"fats",name:"Aceites y frutos secos",icon:"🫒",test:(n:string)=>/aceite|almendra|nuez|nueces|cacahuete|avellana|pistacho|semilla/.test(norm(n))},
-  {key:"snack",name:"Dulces y snacks",icon:"🍫",test:(n:string)=>isSnack(n)}
+  {key:"meat",name:"Carnes y pescados",icon:"🥩",pattern:/pollo|carne|ternera|cerdo|pavo|pescado|salmon|atun|merluza|bacalao|jamon|dorada|lubina/},
+  {key:"dairy",name:"Huevos y lácteos",icon:"🥚",pattern:/huevo|leche|yogur|queso|kefir/},
+  {key:"legume",name:"Legumbres y tofu",icon:"🫘",pattern:/legumbre|lenteja|garbanzo|alubia|tofu|seitan|tempeh/},
+  {key:"veg",name:"Verduras",icon:"🥬",pattern:/tomate|lechuga|brocoli|calabacin|berenjena|zanahoria|cebolla|pimiento|espinaca|pepino|verdura|aguacate|judia verde|coliflor|calabaza|puerro|apio|alcachofa|esparrago/},
+  {key:"fruit",name:"Fruta",icon:"🍎",pattern:/platano|banana|manzana|pera|naranja|mandarina|fresa|arandano|kiwi|uva|melon|sandia|melocoton|pina|mango|papaya|fruta/},
+  {key:"carb",name:"Arroz, pasta y patatas",icon:"🍚",pattern:/arroz|pasta|macarron|espagueti|pan|patata|avena|cereal|harina|cuscus|quinoa|bulgur/},
+  {key:"fats",name:"Aceites y frutos secos",icon:"",pattern:/aceite|almendra|nuez|nueces|cacahuete|avellana|pistacho|semilla/},
+  {key:"snack",name:"Dulces y snacks",icon:"🍫",pattern:/chocolate|galleta|chuche|gominola|snack|patatas fritas|bolleria|refresco|helado|caramelo/}
  ];
-
- const inventoryFood=planningInventory(state).filter(i=>usableInventoryItem(i)&& !["Limpieza y hogar","Higiene y cuidado","Suplementos"].includes(i.category));
- const groupOfIngredient=(x:{name:string;category:string},d:typeof defs[number])=>d.test(x.name);
- const mealGroupServings=(list:MealRecord[],d:typeof defs[number])=>list.reduce((sum,m)=>sum+(m.ingredients.some(i=>groupOfIngredient(i,d))?m.servings:0),0);
- const purchaseGroupCount=(list:PurchaseRecord[],d:typeof defs[number])=>list.filter(p=>d.test(p.name)).length;
- const groups=defs.map(d=>{
-  const bought=purchaseGroupCount(purchaseSource,d);
-  const eaten=mealGroupServings(meals,d);
-  const available=inventoryFood.filter(i=>d.test(i.name)).length;
-  const recentSignal=purchaseGroupCount(recentPurchases,d)+mealGroupServings(recentMeals,d)*1.25;
-  const previousSignal=purchaseGroupCount(previousPurchases,d)+mealGroupServings(previousMeals,d)*1.25;
-  let trend:"up"|"down"|"flat"|"new"="flat";
-  if(previousSignal===0&&recentSignal>0)trend="new";
-  else if(previousSignal>0&&recentSignal>=previousSignal*1.3)trend="up";
-  else if(previousSignal>0&&recentSignal<=previousSignal*.7)trend="down";
-  const evidence=bought+eaten;
-  let status="Aprendiendo",tone="learn";
-  if(evidence>=3){
-   if(available===0&&bought>0){status="Comprado, pero ya no parece quedar";tone="mid"}
-   else if(eaten>0&&available>0){status="Comprado, usado y aún disponible";tone="good"}
-   else if(eaten>0){status="Aparece en comidas registradas";tone="good"}
-   else if(available>0){status="Está presente en Casa";tone="good"}
-   else{status="Se compra, pero falta confirmar uso";tone="learn"}
-  }
-  const estimatedUse=state.inventory.filter(i=>d.test(i.name)&&i.stock!=="falta").filter(i=>{const e=estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks);return e.source!=="unknown"&&e.estimatedQty<i.qty}).length;
-  return {...d,bought,eaten,available,trend,status,tone,evidence,estimatedUse};
- });
-
- const totalPurchaseLines=Math.max(1,purchaseSource.length);
- const totalMealServings=Math.max(1,meals.reduce((n,m)=>n+m.servings,0));
- const purchaseCoverage=Math.min(45,Math.round(Math.min(1,purchaseSource.length/24)*45));
- const mealCoverage=Math.min(35,Math.round(Math.min(1,meals.length/12)*35));
- const inventoryCoverage=Math.min(20,Math.round(state.inventory.length?state.inventory.filter(i=>i.stock!=="incierto").length/state.inventory.length*20:0));
- const dataQuality=Math.min(100,purchaseCoverage+mealCoverage+inventoryCoverage);
- const trendLabel=(g:typeof groups[number])=>g.trend==="up"?"↑ sube":g.trend==="down"?"↓ baja":g.trend==="new"?"↑ aparece":"→ estable";
-
- const actuallyUsed=meals.length;
- const hasEnough=dataQuality>=45;
- const absentAfterBuying=groups.filter(g=>g.bought>=2&&g.available===0);
- const currentPresent=groups.filter(g=>g.available>0);
- let orientation="Aún estamos aprendiendo";
- let orientationText="HomeOS necesita varias compras y algunas comidas confirmadas para distinguir mejor entre lo comprado, lo usado y lo que todavía queda.";
- let orientationTone="learn";
- if(hasEnough&&actuallyUsed>=3){
-  orientation="Ya distinguimos compra, uso y disponibilidad";
-  orientationText="La lectura combina lo que entra en casa, recetas realmente marcadas como comidas y lo que HomeOS cree que aún está disponible.";
-  orientationTone="good";
- }else if(hasEnough){
-  orientation="La cesta está clara; falta observar más comidas";
-  orientationText="Sabemos bastante de lo que compráis, pero HomeOS aún no debe asumir que comprar equivale a comer.";
-  orientationTone="mid";
- }
-
- const insightCandidates:string[]=[];
- for(const g of absentAfterBuying.slice(0,2))insightCandidates.push(g.name+" se ha comprado varias veces y ahora no aparece disponible en Casa.");
- for(const g of groups.filter(g=>g.eaten>=3).sort((a,b)=>b.eaten-a.eaten).slice(0,2))insightCandidates.push(g.name+" aparece con frecuencia en comidas confirmadas.");
- if(!insightCandidates.length&&currentPresent.length)insightCandidates.push("Ahora mismo hay "+currentPresent.map(g=>g.name.toLowerCase()).slice(0,3).join(", ")+" disponibles en Casa.");
-
- const recentBoughtGone=purchaseSource.filter(p=>{
-  const canonical=norm(classifyProduct(p.name,p.category).canonical);
-  return !inventoryFood.some(i=>norm(classifyProduct(i.name,i.category).canonical)===canonical);
- }).slice().reverse().filter((p,idx,arr)=>arr.findIndex(x=>norm(classifyProduct(x.name,x.category).canonical)===norm(classifyProduct(p.name,p.category).canonical))===idx).slice(0,6);
-
- const memberDemand=state.members.slice(0,state.profile.householdSize).map(m=>{
-  const presence={casa:1,fuera_dia:.65,fines_semana:.38,variable:.65}[m.presence];
-  const appetite={poco:.82,normal:1,mucho:1.22}[m.appetite];
-  const score=presence*appetite;
-  const requested=purchaseSource.filter(p=>norm(p.requestedBy||"")===norm(m.name)).length;
-  return {m,score,requested,label:score>=1.05?"Demanda alta":score<=.55?"Demanda baja":"Demanda media"};
- });
-
- return <div className="habits-dashboard">
-  <article className={"habit-orientation "+orientationTone}>
-   <div><small>LECTURA DEL HOGAR · ÚLTIMOS 28 DÍAS</small><h3>{orientation}</h3><p>{orientationText}</p></div>
-   <div className="habit-confidence"><span>Historial disponible</span><strong>{purchaseSource.length} {purchases.length?"líneas de compra":"productos recientes"}</strong><small>{meals.length} comidas confirmadas · {purchaseMode}</small></div>
-  </article>
-
-  <article className="habit-source-note">
-   <span>ⓘ</span><p><b>Comprar no significa comer.</b> HomeOS separa tres señales: lo que compraste, lo que realmente marcaste como comido desde una receta y lo que probablemente sigue en Casa. Así evita inventarse hábitos.</p>
-  </article>
-
-  <div className="habit-balance-grid richer">
-   {groups.map(g=>{
-    const boughtPct=Math.round(g.bought/totalPurchaseLines*100);
-    const eatenPct=Math.round(g.eaten/totalMealServings*100);
-    return <article className={"habit-balance-card "+g.tone} key={g.key}>
-     <div className="habit-balance-top"><span>{g.icon}</span><div><strong>{g.name}</strong><small>{g.status}</small></div><b>{trendLabel(g)}</b></div>
-     <div className="habit-evidence-grid"><span><small>COMPRADO</small><b>{g.bought}</b><em>{boughtPct}% líneas</em></span><span><small>COMIDO CONFIRMADO</small><b>{g.eaten}</b><em>raciones registradas</em></span><span><small>AHORA EN CASA</small><b>{g.available}</b><em>productos probables</em></span></div><p className="habit-estimated-use">{g.estimatedUse?g.estimatedUse+" productos con uso estimado":"Sin uso estimado todavía"} · no se cuentan como comidos</p>
-    </article>
-   })}
-  </div>
-
-  <div className="habit-bottom-grid">
-   <article className="habit-insights">
-    <div><small>QUÉ ESTÁ CAMBIANDO</small><h3>Lectura rápida</h3></div>
-    {insightCandidates.length?<div className="habit-insight-list">{insightCandidates.slice(0,3).map((x,i)=><p key={i}><span>{i+1}</span>{x}</p>)}</div>:<p className="habit-empty-copy">Todavía no hay suficiente historial para sacar conclusiones útiles.</p>}
-   </article>
-   <article className="habit-direction">
-    <small>COMPRADO Y YA NO DISPONIBLE</small>
-    <h3>{recentBoughtGone.length?recentBoughtGone.length+" productos recientes":"Nada claro que revisar"}</h3>
-    <div>{recentBoughtGone.map(p=><span key={p.id}><b>{productIcon(p.name,p.category)} {p.name}</b><em>{new Date(p.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</em></span>)}</div>
-    <p>No significa necesariamente que se haya comido: puede haberse tirado, regalado o estar mal registrado. HomeOS solo indica que ya no consta disponible.</p>
-   </article>
-  </div>
-
-  <article className="habit-members">
-   <div><small>PERSONAS DEL HOGAR</small><h3>Demanda estimada, sin obligar a registrar cada plato</h3><p>La app usa presencia y consumo habitual para ajustar compras y stock. No atribuye una comida concreta a una persona si nadie lo ha confirmado.</p></div>
-   <div>{memberDemand.map(({m,label,requested})=><span key={m.id}><b>{m.name}</b><em>{label}</em><small>{presenceText(m.presence)} · {appetiteText(m.appetite)}{requested?" · "+requested+" compras atribuidas":""}{m.dislikes.trim()?" · evita "+m.dislikes:""}</small></span>)}</div>
-  </article>
+ const belongs=(name:string,key:string)=>{const n=norm(name);return defs.find(d=>d.key==="snack"&&d.pattern.test(n))?key==="snack":defs.find(d=>d.pattern.test(n))?.key===key};
+ const rows=state.inventory.filter(i=>i.qty>0&&i.stock!=="falta").map(item=>{const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks);return {item,estimate,notice:freshnessNotice(item,estimate.daysLeft),coverage:stockCoverage(estimate.daysLeft,estimate.source,state.profile.shoppingCycle==="quincenal"?14:state.profile.shoppingCycle==="mensual"?30:7)}});
+ const attention=rows.filter(r=>r.notice).sort((a,b)=>a.notice!.priority-b.notice!.priority);
+ const shortages=rows.filter(r=>r.coverage.tone==="low"&&!r.notice&&r.item.location!=="Congelador"&&r.item.storageMode!=="reserva");
+ const reserves=rows.filter(r=>r.coverage.tone==="plenty"&&!r.notice);
+ const reviewed=state.profile.consumptionReviewedAt;
+ const reminder=reviewed&&calendarDaysUntil(reviewed)<-14;
+ return <div className="habits-v3">
+  <div className="hv-heading"><div><span className="hv-period">Últimos 28 días</span><h2>Tu hogar, de un vistazo</h2><p>Qué queda, qué conviene usar y cómo va vuestro ritmo.</p></div><button className="secondary" onClick={onAdjust}>Ajustar ritmo</button></div>
+  <section className="hv-reading" aria-labelledby="hv-reading-title"><div className="hv-reading-heading"><h3 id="hv-reading-title">Lectura rápida</h3><button onClick={onOpenCasa}>Ver en Casa <span aria-hidden="true">↗</span></button></div><div className="hv-insights">
+   {attention.length>0&&<div className="hv-insight hv-warning"><span aria-hidden="true">⏳</span><div><strong>{attention[0].item.name}</strong><p>{attention[0].notice!.text}{attention.length>1?" · "+(attention.length-1)+" avisos más en Casa":""}</p></div></div>}
+   {shortages.length>0&&<div className="hv-insight"><span aria-hidden="true">🛒</span><div><strong>{shortages[0].item.name} puede escasear</strong><p>Según vuestro ritmo, podría quedar para {Math.max(0,Math.floor(shortages[0].estimate.daysLeft||0))} días. Es una estimación.</p></div></div>}
+   {reserves.length>0&&<div className="hv-insight"><span aria-hidden="true">🌿</span><div><strong>Hay margen con {reserves[0].item.name.toLowerCase()}</strong><p>El ritmo estimado apunta a más de dos ciclos de compra.</p></div></div>}
+   {!attention.length&&!shortages.length&&!reserves.length&&<div className="hv-insight"><span aria-hidden="true">🌱</span><div><strong>{rows.length?"Seguimos aprendiendo vuestro ritmo":"Empieza con tu próxima compra"}</strong><p>{rows.length?"Las compras y ajustes que registres nos ayudan a orientar las existencias.":"Al terminar la compra, sus productos aparecerán en Casa."}</p></div></div>}
+  </div></section>
+  <div className="hv-grid">{defs.map(d=>{
+   const items=rows.filter(r=>belongs(r.item.name,d.key));const warning=items.find(r=>r.notice);const low=items.find(r=>r.coverage.tone==="low");const plenty=items.find(r=>r.coverage.tone==="plenty");
+   const bought=purchases.filter(p=>belongs(p.name,d.key)).length;
+   const cooked=meals.filter(m=>m.ingredients.some(i=>belongs(i.name,d.key))).length;
+   const label=warning?"Conviene prestar atención":low?"Alguno puede escasear":plenty?"Hay margen en algún producto":items.length?"Registrado en Casa":"Sin existencias registradas";
+   return <article className="hv-card" key={d.key}><div className="hv-card-title"><span className="hv-food" aria-hidden="true">{d.key==="fats"?<svg viewBox="0 0 40 40"><path d="M15 5h10v6l4 5v18H11V16l4-5Z" fill="#a6bf72" stroke="#52663c" strokeWidth="1.5"/><path d="M15 5h10v5H15Z" fill="#617746"/><path d="M13 20h14v10H13Z" fill="#faf3cf"/><path d="M20 21c-5 4-4 7 0 7s5-3 0-7Z" fill="#d0ad38"/></svg>:d.icon}</span><h3>{d.name}</h3></div><strong className="hv-stock">{items.length} <span>{items.length===1?"producto":"productos"}</span></strong><p className={"hv-status "+(warning?"warning":low?"low":"")}>{label}</p><details className="hv-details"><summary>Ver detalle</summary><div><p>{bought} registros de compra · {cooked} comidas registradas en 28 días</p>{items.length?<ul>{items.map(r=><li key={r.item.id}><strong>{r.item.name}</strong><span>{r.item.qty} {r.item.unit} · {r.item.location}</span><small>{r.notice?.text||r.coverage.label}</small></li>)}</ul>:<p>No significa que no haya nada: puede faltar registrar algún producto.</p>}</div></details></article>
+  })}</div>
+  <p className="hv-footnote">Las cantidades son las registradas; el ritmo es orientativo. Comprar no confirma que se haya consumido. No sumamos paquetes, kilos y litros entre sí.</p>
+  {reminder&&<div className="hv-reminder"><span>¿Ha cambiado vuestro ritmo? Puedes actualizarlo cuando te venga bien.</span><button onClick={onAdjust}>Ajustar</button></div>}
+  <details className="hv-household"><summary>Tu hogar · {state.profile.householdSize} {state.profile.householdSize===1?"persona":"personas"}</summary><p>Estas preferencias describen el hogar; no demuestran cuánto ha comido cada persona. El ritmo se orienta con las compras y los ajustes registrados.</p><div>{state.members.slice(0,state.profile.householdSize).map(m=><span key={m.id}><strong>{m.name}</strong><small>{presenceText(m.presence)} · {appetiteText(m.appetite)}</small></span>)}</div></details>
  </div>
 }
+
 function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
  const [quick,setQuick]=useState("");
  const [suggestionsOpen,setSuggestionsOpen]=useState(false);
@@ -1976,7 +1875,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
  const [mealPrepDays,setMealPrepDays]=useState(7);
  useEffect(()=>{if(focus!=="all"){setLoc(focus==="reserve"?"Congelador":"Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
- const shown=state.inventory.slice().sort((a,b)=>daysUntil(a.expires||a.estimatedExpires||addDaysIso(a.purchasedAt,classifyProduct(a.name,a.category).rotation==="alta"?3:999))-daysUntil(b.expires||b.estimatedExpires||addDaysIso(b.purchasedAt,classifyProduct(b.name,b.category).rotation==="alta"?3:999))).filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?(i.expires||i.estimatedExpires?daysUntil(i.expires||i.estimatedExpires)<=3:classifyProduct(i.name,i.category).rotation==="alta"&&daysUntil(i.purchasedAt)<=-2)&&i.stock!=="falta"&&i.location!=="Congelador":focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
+ const shown=state.inventory.slice().sort((a,b)=>daysUntil(a.expires||a.estimatedExpires||addDaysIso(a.purchasedAt,classifyProduct(a.name,a.category).rotation==="alta"?3:999))-daysUntil(b.expires||b.estimatedExpires||addDaysIso(b.purchasedAt,classifyProduct(b.name,b.category).rotation==="alta"?3:999))).filter(i=>locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks).daysLeft):focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
  function setStock(id:string,stock:StockState){setState(s=>{const today=localDateIso(),item=s.inventory.find(i=>i.id===id);const inventory=s.inventory.map(i=>i.id===id?(stock==="falta"?emptyInventoryItem(i,today):{...i,stock}):i);return {...s,inventory,stockChecks:stock==="falta"&&item?appendConfirmedStockCheck(s.stockChecks,inventory,inventory.find(i=>i.id===id)!,today):s.stockChecks}})}
  function openStockForm(item?:InventoryItem){setStockEdit(item||null);setStockName(item?.name||"");setStockQty(item?String(item.qty):"");setStockUnit(item?.unit||"ud");setStockLocation(item?.location||"Despensa");setStockDate(item?.expires||"");setStockDateType(item?.dateType||"caducidad");setStockFormOpen(true)}
@@ -2085,7 +1984,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   <div className="page-intro"><div><span className="eyebrow">CASA</span><h2>Encuentra rápido lo que tienes</h2><p>Primero eliges dónde está; después, si quieres, filtras por tipo de producto.</p></div><div className="photo-actions"><button className="secondary" onClick={()=>openStockForm()}>＋ Ya está en casa</button><button className="prepared-button" onClick={()=>setPreparedOpen(true)}>＋ Añadir preparado</button></div></div>
 
   {stockFormOpen&&<div className="modal-backdrop"><section className="modal confirm-stock-modal"><div className="modal-head"><h2>{stockEdit?"Confirmar cantidad real":"Añadir lo que ya tienes"}</h2><button aria-label="Cerrar cantidad real" onClick={()=>setStockFormOpen(false)}>×</button></div><p>Sin ticket ni gasto. Cuenta solo lo que tienes en esta ubicación.</p><label>Producto<input value={stockName} onChange={e=>setStockName(e.target.value)} placeholder="Ej. leche, manzanas, pollo…"/></label><label>Cantidad real<input inputMode="decimal" value={stockQty} onChange={e=>setStockQty(e.target.value)} placeholder="0"/></label><label>Unidad<select value={stockUnit} onChange={e=>setStockUnit(e.target.value)}>{[...new Set([stockUnit,"ud","uds","g","kg","ml","L","bricks","pack","raciones"])].map(u=><option key={u}>{u}</option>)}</select></label><label>Ubicación<select value={stockLocation} onChange={e=>setStockLocation(e.target.value as Location)}><option>Despensa</option><option>Nevera</option><option>Congelador</option></select></label><label>Fecha del envase · opcional<input type="date" value={stockDate} onChange={e=>setStockDate(e.target.value)}/></label><label>Tipo de fecha<select value={stockDateType} onChange={e=>setStockDateType(e.target.value as "caducidad"|"preferente")}><option value="caducidad">Caducidad</option><option value="preferente">Consumo preferente</option></select></label><button className="primary" disabled={!stockName.trim()||!stockQty.trim()||!Number.isFinite(Number(stockQty.replace(",",".")))||Number(stockQty.replace(",","."))<0} onClick={saveStockCount}>Guardar cantidad real</button></section></div>}
-  {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":focus==="reserve"?"❄️":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que caducan pronto":focus==="reserve"?"Reservas del congelador":"Comida preparada"}</strong><p>{focus==="expiring"?"Primero fechas próximas y frescos que llevan días en casa. Sin fecha, pedimos revisar calidad sin inventar una caducidad.":focus==="reserve"?"Productos guardados a largo plazo. Los avisos son de revisión y calidad, no borrados automáticos.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
+  {focus!=="all"&&<div className={"inventory-focus "+focus}><div><span>{focus==="expiring"?"⏳":focus==="reserve"?"❄️":"🍱"}</span><div><small>VISTA RÁPIDA</small><strong>{focus==="expiring"?"Productos que merecen atención":focus==="reserve"?"Reservas del congelador":"Comida preparada"}</strong><p>{focus==="expiring"?"Primero fechas próximas y frescos que llevan días en casa. Sin fecha, pedimos revisar calidad sin inventar una caducidad.":focus==="reserve"?"Productos guardados a largo plazo. Los avisos son de revisión y calidad, no borrados automáticos.":"Solo mostramos raciones y preparados listos."}</p></div></div><button onClick={clearFocus}>Ver todo</button></div>}
   {!state.profile.consumptionSetupDone&&<article className="inventory-start-note"><strong>Primer mes de aprendizaje</strong><p>Durante cuatro semanas HomeOS ajustará vuestro ritmo con tickets, compras y cantidades confirmadas. No hace falta registrar los 300 productos de casa el primer día: empieza por los básicos y añade el resto por voz o foto cuando puedas.</p></article>}
   <div className="inventory-toolbar">
    <div className="inventory-filter-block"><small>DÓNDE ESTÁ</small><div className="visual-filter-row">{LOCATIONS.map(x=><button key={x} className={loc===x?"active":""} onClick={()=>setLoc(x)}><span>{LOCATION_ICONS[x]}</span><b>{x}</b></button>)}</div></div>
@@ -2097,11 +1996,13 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
    const displayLocation=i.location==="Suplementos"?"Despensa":i.location==="Sin ubicar"?"Revisar":i.location;
    const estimate=inventoryEstimate(state,i);
    const consumption=estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
+   const freshness=freshnessNotice(i,consumption.daysLeft);
    return <article className="inventory-card" key={i.id}>
     <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
     <div className="inventory-name-row"><h3>{i.name}</h3><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>
     <p className="inventory-qty">{i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}{density==="detail"&&<small className="estimate-basis">{estimate.basis}</small>}</p>
     <div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{!i.expires&&i.estimatedExpires&&<small className="date-alert estimate" title={i.estimateBasis}>≈ {i.estimatedDateType==="caducidad"?"Caducidad":"Consumo pref."} {new Date(i.estimatedExpires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · revisa envase</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>
+    {freshness&&<p className={"inventory-freshness "+freshness.kind}>{freshness.text}</p>}
     {i.category==="Preparados"&&<div className="prepared-meta"><span>🍱 {i.source==="mealprep"?"Meal prep":i.source==="receta"?"Receta":"Sobras / tupper"}</span>{i.preparedAt&&<span>Hecho {new Date(i.preparedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</span>}{i.source==="mealprep"&&i.mealPrepDays&&<span>Objetivo {i.mealPrepDays} días</span>}</div>}
     {i.source==="mealprep"&&i.stock!=="falta"&&<div className="mealprep-tracker"><div><small>RACIONES DE MEAL PREP</small><strong>{i.servings||i.qty||0} restantes</strong>{mealPrepExpectedRemaining(i)!==null&&<span>Según el ritmo previsto: ≈ {mealPrepExpectedRemaining(i)} hoy</span>}</div><div className="mealprep-stepper"><button onClick={()=>eatPrepared(i)} aria-label="Restar una ración">−</button><b>{i.servings||i.qty||0}</b><button onClick={()=>addMealPrepServing(i)} aria-label="Añadir una ración">+</button></div></div>}
     {i.category!=="Preparados"&&i.stock!=="falta"&&<small className="consumption-quantity">Registrado: {i.qty} {i.unit}{consumption.source!=="unknown"&&i.location!=="Congelador"?" · estimado hoy: ≈ "+consumption.estimatedQty+" "+i.unit:(i.lastConfirmedAt&&daysUntil(i.lastConfirmedAt)>=-1?" · confirmado por ti":" · pendiente de comprobar")}</small>}<div className="inventory-actions"><button onClick={()=>openStockForm(i)}>Confirmar cantidad</button>{i.stock!=="falta"&&<button className="action-out" onClick={()=>setStock(i.id,"falta")}><span>🔴</span> Se acabó</button>}{i.stock!=="falta"&&<button className="action-low" onClick={()=>setStock(i.id,"poco")}><span>🟡</span> Queda poco</button>}{estimate.tone==="incierto"&&i.stock!=="falta"&&<button className="action-confirm" onClick={()=>confirmStillHere(i.id)}>✓ Sigue aquí</button>}{i.location==="Nevera"&&i.dateType==="caducidad"&&<button className="action-freeze" onClick={()=>freeze(i.id)}>🧊 Congelar</button>}{i.stock==="falta"&&<button className="action-buy" onClick={()=>addToBuy(i)}>🛒 Comprar</button>}{i.category==="Preparados"&&i.source!=="mealprep"&&i.stock!=="falta"&&<button className="action-eat" onClick={()=>eatPrepared(i)}>🍽 Comer 1</button>}{i.stock!=="falta"&&<button className="recipe-from-product" onClick={()=>openRecipes(i.name)}>🍴 Hacer receta</button>}{density==="detail"&&i.stock!=="falta"&&<button className="discard-product" onClick={()=>discardProduct(i)}>Tirar</button>}</div>{density==="detail"&&<div className="learn-location"><label><span>Guardar este producto en</span><select value={i.location} onChange={e=>moveProduct(i,e.target.value as Location)}><option value="Nevera">Nevera</option><option value="Congelador">Congelador</option><option value="Despensa">Despensa</option>{i.category==="Suplementos"&&<option value="Suplementos">Suplementos</option>}</select></label>{i.location==="Congelador"&&<><label><span>Uso previsto</span><select value={i.storageMode||"normal"} onChange={e=>setStorageMode(i,e.target.value as "normal"|"reserva")}><option value="normal">Uso normal</option><option value="reserva">Reserva / largo plazo</option></select></label>{i.storageMode==="reserva"&&state.events.filter(e=>e.date>=localDateIso()).length>0&&<label><span>Reservado para</span><select value={i.reservedFor||""} onChange={e=>setReservedFor(i,e.target.value)}><option value="">Sin evento concreto</option>{state.events.filter(e=>e.date>=localDateIso()).sort((a,b)=>a.date.localeCompare(b.date)).map(e=><option key={e.id} value={e.id}>{new Date(e.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · {e.title}</option>)}</select></label>}</>}<small>HomeOS aprende vuestra forma de guardar productos, pero mantiene separadas las reglas de conservación y los avisos de calidad.</small></div>}
@@ -2231,3 +2132,4 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
   <div className="modal-actions sticky-actions"><button type="button" className="secondary" onClick={cancel}>Cancelar</button><button type="button" className="primary" disabled={!dirty} onClick={save}>{dirty?"Guardar cambios":"Sin cambios"}</button></div>
  </div></div>
 }
+
