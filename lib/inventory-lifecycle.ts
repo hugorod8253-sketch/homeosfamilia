@@ -18,7 +18,7 @@ export function appendConfirmedStockCheck(checks:StockCheck[],inventory:StockIte
 }
 
 export function emptyInventoryItem<T extends StockItem>(item:T,today:string):T{
- return {...item,stock:'falta',qty:0,servings:item.category==='Preparados'?0:item.servings,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorQty:0,estimateAnchorDate:today};
+ return {...item,stock:'falta',qty:0,servings:item.category==='Preparados'?0:item.servings,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorQty:0,estimateAnchorDate:today,quickLevel:undefined,quickObservedAt:undefined,mealPrepAuto:false,mealPrepAutoDepleted:false};
 }
 
 export function freezeInventoryItem<T extends StockItem>(item:T,today:string,estimatedQty:number):T{

@@ -389,6 +389,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.location!=="Congelador"&&item.expires&&item.dateType==="preferente"&&daysUntil(item.expires)<0)return {prob:.55,label:"Revisar calidad",tone:"review",basis:"El consumo preferente ha pasado; revisa calidad antes de usarlo"};
  if(item.mealPrepAutoDepleted)return {prob:.2,label:"Plan terminado",tone:"review",basis:"El plazo previsto ha terminado; puedes recuperar y corregir las raciones"};
  if(item.category==="Preparados"&&item.mealPrepAuto)return {prob:.6,label:"Previsión diaria",tone:"hay",basis:"Raciones estimadas según el plazo elegido"};
+ if(item.stock==="falta")return {prob:.03,label:"Se acabó",tone:"falta",basis:"Indicado por ti"};
  if(item.quickLevel&&item.quickObservedAt&&daysUntil(item.quickObservedAt)>=-2)return {prob:item.quickLevel==="poco"?.4:.8,label:item.quickLevel==="bastante"?"Queda bastante":item.quickLevel==="mitad"?"Queda la mitad":"Queda poco",tone:item.quickLevel==="poco"?"incierto":"hay",basis:"Indicado por ti · cantidad aproximada"};
  if(item.stock==="falta"||item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
  if(item.storageMode==="reserva"){
@@ -1910,7 +1911,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   setState(s=>{
    const same=s.inventory.find(i=>i.id===stockEdit?.id)||(!stockEdit?s.inventory.find(i=>norm(i.name)===norm(name)&&normalizedUnit(i.unit)===normalizedUnit(stockUnit)&&i.location===stockLocation):undefined);
    const item:InventoryItem={...same,id:same?.id||crypto.randomUUID(),name,qty,unit:stockUnit,location:stockLocation,category:same?.category==="Preparados"?"Preparados":p.category,servings:same?.category==="Preparados"?qty:same?.servings,subcategory:p.subcategory,stock:qty>0?"hay":"falta",purchasedAt:same?.purchasedAt||today,purchaseDateUnknown:same?.purchaseDateUnknown??!same,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:today,estimateAnchorQty:qty,quickLevel:undefined,quickObservedAt:undefined,mealPrepAutoDepleted:false,expires:stockDate||undefined,dateType:stockDate?stockDateType:undefined,estimatedExpires:stockDate?undefined:same?.estimatedExpires,estimatedDateType:stockDate?undefined:same?.estimatedDateType};
-   const saved=item.mealPrepAuto?startAutoPrepared(item,remainingAutoDays(item),today):item;
+   const saved=item.location==="Congelador"?{...item,mealPrepAuto:false}:item.mealPrepAuto?startAutoPrepared(item,remainingAutoDays(item),today):item;
    const inventory=same?s.inventory.map(i=>i.id===same.id?saved:i):[saved,...s.inventory];
    return {...s,inventory,stockChecks:appendConfirmedStockCheck(s.stockChecks,inventory,saved,today)};
   });setStockFormOpen(false);setToast("Cantidad real confirmada · no cuenta como compra");
