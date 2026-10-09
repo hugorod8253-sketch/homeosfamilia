@@ -2338,3 +2338,20 @@ main p,.modal p{font-size:16px!important}
 .freshness-overview>strong{font-size:17px}.freshness-overview>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .freshness-overview button{padding:8px 12px;border:1px solid #eadabe;border-radius:10px;background:white;text-align:left;cursor:pointer;flex:1 1 220px;min-width:0}
 .freshness-overview b,.freshness-overview span{display:block;font-size:15px;line-height:1.4;overflow-wrap:anywhere}.freshness-overview span{font-size:14px;color:#746045;margin-top:3px}
+@media(min-width:1200px) and (min-height:800px){
+ .home-final{gap:10px!important}.home-final .home-final-head{min-height:45px!important}.home-final .home-final-head p{display:none!important}
+ .home-final .home-final-ideas>button{min-height:50px!important;padding:4px 8px!important}
+ .home-final .home-final-menu,.home-final .home-theme-card{padding:10px!important}
+ .home-final .home-final-actions{padding:10px!important;grid-template-columns:180px minmax(0,1fr)!important}
+ .home-final .home-final-summary-grid button{min-height:104px!important}
+ .home-final .home-final-habit-grid>button>div{grid-template-columns:minmax(78px,auto) minmax(40px,1fr) auto!important}
+ .home-final .home-final-habit-grid strong{word-break:normal!important;overflow-wrap:normal!important}
+}
+@media(max-width:560px){
+ .shopping-row-icon{display:grid!important;grid-column:2!important;grid-row:1!important;align-self:start}
+ .shopping-pick{grid-column:1!important;grid-row:1!important}
+ .shopping-row-copy{grid-column:3!important;grid-row:1!important}
+ .shopping-row-controls{grid-column:3!important;grid-row:2!important}
+ .shopping-visible-actions{grid-column:2/-1!important;grid-row:3!important}
+ .home-final .home-final-summary .home-card-head strong{font-size:18px!important}
+}

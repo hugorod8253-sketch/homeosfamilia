@@ -1073,15 +1073,15 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
     <div className="home-card-head"><div><small>TU CASA HOY</small><strong>Resumen rápido</strong></div></div>
     <div className="home-final-summary-grid">
      <button onClick={()=>setView("comprar")}><span>🛒</span><small>COMPRA</small><strong>{pending}</strong><em>{pending===1?"pendiente":"pendientes"}</em></button>
-     <button className={expiring.some(i=>i.dateType==="caducidad"&&daysUntil(i.expires)<0)?"urgent":""} onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>🍃</span><small>USAR PRONTO</small><strong>{expiring.length}</strong><em>{expiring[0]?expiring[0].name+" · "+(expiring[0].expires?"fecha real":"fecha estimada"):"sin urgencias"}</em></button>
+     <button className={expiring.some(i=>i.dateType==="caducidad"&&daysUntil(i.expires)<0)?"urgent":""} onClick={()=>{setCasaFocus("expiring");setView("casa")}}><span>🍃</span><small>USAR PRONTO</small><strong>{expiring.length}</strong><em>{expiring.length?"Revisar fechas":"sin urgencias"}</em></button>
      <button onClick={()=>{setCasaFocus("prepared");setView("casa")}}><span><svg width="26" height="26" viewBox="0 0 32 32" role="img" aria-label="Comida preparada en táper"><rect x="4" y="10" width="24" height="5" rx="2.5" fill="#82b59c" stroke="#315c43" strokeWidth="1.5"/><path d="M6 15h20l-2 12H8Z" fill="#e9f3ec" stroke="#315c43" strokeWidth="1.5"/><path d="M11 20h10M12 23h8" stroke="#b58448" strokeWidth="2" strokeLinecap="round"/><path d="M12 7c-2-2 2-3 0-5M20 7c-2-2 2-3 0-5" fill="none" stroke="#648774" strokeWidth="1.5" strokeLinecap="round"/></svg></span><small>PREPARADO</small><strong>{readyServings}</strong><em>{readyServings===1?"ración":"raciones"}</em></button>
-     <button onClick={()=>setView("finanzas")}><span>↗</span><small>ESTE MES</small><strong>{monthSpent.toFixed(0)} €</strong><em>{state.budget>0?Math.max(0,state.budget-monthSpent).toFixed(0)+" € disponibles":"ver finanzas"}</em></button>
+     <button onClick={()=>setView("finanzas")}><span>↗</span><small>ESTE MES</small><strong>{monthSpent.toFixed(0)} €</strong><em>{state.budget>0?Math.max(0,state.budget-monthSpent).toFixed(0)+" € libres":"ver finanzas"}</em></button>
     </div>
    </div>
 
    {state.profile.nutrition!=="off"&&<article className="home-final-habits">
-    <div className="home-card-head"><div><small>HÁBITOS ALIMENTARIOS (7 DÍAS)</small><strong>{habitLearning?"Aprendiendo":"Equilibrio reciente"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
-    <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}>{habitIcon(x.key)}<div><strong>{x.label}</strong><span className="habit-meter" aria-label={x.tone==="learning"?"Aún faltan comidas registradas":Math.round(x.ratio*100)+"% de comidas registradas"}><i style={{width:Math.round(x.ratio*100)+"%"}}/></span><em>{x.status}</em></div></button>)}</div>
+    <div className="home-card-head"><div><small>HÁBITOS · 7 DÍAS</small><strong>{habitLearning?"Aprendiendo":"Equilibrio reciente"}</strong></div><button onClick={openHabits}>Ver detalle →</button></div>
+    <div className="home-final-habit-grid">{habitBalance.map(x=><button key={x.key} className={"tone-"+x.tone} onClick={openHabits}>{habitIcon(x.key)}<div><strong>{x.key==="carbs"?"Cereales":x.label}</strong><span className="habit-meter" aria-label={x.tone==="learning"?"Aún faltan comidas registradas":Math.round(x.ratio*100)+"% de comidas registradas"}><i style={{width:Math.round(x.ratio*100)+"%"}}/></span><em>{x.status}</em></div></button>)}</div>
    </article>}
   </section>
 
@@ -1616,7 +1616,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   let name=parsed.name;
   const corrections:Record<string,string>={pesacado:"pescado",pescao:"pescado",peix:"pescado",llet:"leche",ous:"huevos",pollastre:"pollo",fish:"pescado",ketchu:"ketchup",ketchupp:"ketchup"};
   const corrected=corrections[norm(name)];
-  const options=productSuggestions(corrected||name);
+  const options=norm(corrected||name)==="tomate"?["Tomate frito","Tomate triturado","Tomate entero pelado","Tomate cherry rojo","Tomate en rama","Tomate rosa","Tomate para ensalada"].map(n=>classifyProduct(n)):productSuggestions(corrected||name);
   if(!options.length&&classifyProduct(name).category==="Por clasificar"&&name.split(/\s+/).length<=3&&name.length>=4){
    const near=registeredProductNames().filter(x=>Math.abs(norm(x).length-norm(name).length)<=2).map(x=>({name:x,d:editDistance(norm(x),norm(name))})).filter(x=>x.d<=1).sort((a,b)=>a.d-b.d).slice(0,4);
    near.forEach(x=>options.push(classifyProduct(x.name)));
