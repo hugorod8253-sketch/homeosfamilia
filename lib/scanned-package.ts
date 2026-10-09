@@ -2,7 +2,7 @@ import type { BarcodeProduct } from './barcode-product';
 
 /** Total contents per commercial pack. Unknown packages stay packages, never invented grams. */
 export function scannedPackage(product: Pick<BarcodeProduct,'packageSize'>): { qty:number; unit:string } {
-  const text = product.packageSize?.trim().toLowerCase().replace(',', '.') ?? '';
+  const text = product.packageSize?.trim().toLowerCase().replace(',', '.').replace(/\s*[e℮]$/, '').trim() ?? '';
   const match = text.match(/^(?:(\d+)\s*[x×]\s*)?(\d+(?:\.\d+)?)\s*(kg|g|ml|cl|l)$/);
   if (!match) return { qty:1, unit:'paquete' };
   const qty = Number(match[1] ?? 1) * Number(match[2]);

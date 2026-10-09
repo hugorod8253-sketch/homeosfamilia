@@ -19,6 +19,8 @@ assert.equal(beauty.nutriScore, undefined); assert.deepEqual(beauty.nutritionPer
 assert.equal(parseBarcodeProduct(payload, '036000291452', 'food'), undefined);
 assert.equal(parseBarcodeProduct({ status: 0 }, '3560070791460', 'food'), undefined);
 assert.deepEqual(scannedPackage({packageSize:'6 x 125 g'}),{qty:750,unit:'g'});
+assert.deepEqual(scannedPackage({packageSize:'400 g e'}),{qty:400,unit:'g'});
+assert.deepEqual(scannedPackage({packageSize:'500 ml ℮'}),{qty:500,unit:'ml'});
 assert.deepEqual(scannedPackage({packageSize:'1,5 L'}),{qty:1.5,unit:'L'});
 assert.deepEqual(scannedPackage({packageSize:'33 cl'}),{qty:330,unit:'ml'});
 assert.deepEqual(scannedPackage({packageSize:'6 unidades'}),{qty:1,unit:'paquete'});
