@@ -391,7 +391,7 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.category==="Preparados"&&item.mealPrepAuto)return {prob:.6,label:"Previsión diaria",tone:"hay",basis:"Raciones estimadas según el plazo elegido"};
  if(item.stock==="falta")return {prob:.03,label:"Se acabó",tone:"falta",basis:"Indicado por ti"};
  if(item.quickLevel&&item.quickObservedAt&&daysUntil(item.quickObservedAt)>=-2)return {prob:item.quickLevel==="poco"?.4:.8,label:item.quickLevel==="bastante"?"Queda bastante":item.quickLevel==="mitad"?"Queda la mitad":"Queda poco",tone:item.quickLevel==="poco"?"incierto":"hay",basis:"Indicado por ti · cantidad aproximada"};
- if(item.stock==="falta"||item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
+ if(item.qty<=0)return {prob:.03,label:"Probablemente falta",tone:"falta",basis:"Confirmado como agotado"};
  if(item.storageMode==="reserva"){
   const reviewDue=item.qualityReviewAt&&daysUntil(item.qualityReviewAt)<=0;
   return {prob:.96,label:"Probablemente hay",tone:reviewDue?"review":"hay",basis:reviewDue?"Reserva registrada · conviene revisar calidad":"Reserva registrada · no se descuenta por rotación normal"};
