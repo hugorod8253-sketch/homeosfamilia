@@ -2359,4 +2359,6 @@ main p,.modal p{font-size:16px!important}
  main:has(.home-final){padding-top:16px!important;padding-bottom:0!important}
  .home-final section.home-final-top .home-final-menu .home-final-ideas>button{min-height:52px!important;padding:4px 8px!important}
  .home-final section.home-final-top .home-final-menu .home-final-ideas{gap:5px!important}
+ .home-final{gap:8px!important}
+ .home-final .home-mini-agenda{padding:4px 12px!important}
 }
