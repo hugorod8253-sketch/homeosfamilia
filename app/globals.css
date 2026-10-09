@@ -2305,3 +2305,4 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 @media(max-width:1200px){.hv-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:920px){.hv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hv-card{padding:16px}}
 @media(max-width:560px){.hv-heading{align-items:flex-start;flex-wrap:wrap}.hv-heading button{width:100%}.hv-grid{grid-template-columns:1fr}.hv-card-title{min-height:42px}.hv-status{min-height:0}.hv-card{padding:14px 16px}.hv-stock{margin:10px 0 5px}.hv-reminder{flex-wrap:wrap}.hv-reading{padding:14px}.hv-reading-heading h3{font-size:19px}}
+@media(min-width:1201px){.habits-v3{gap:14px}.hv-card{padding:14px 18px}.hv-card-title{min-height:48px}.hv-stock{margin:10px 0 6px;font-size:30px}.hv-status{min-height:32px}.hv-reading{padding:14px 18px}.hv-grid{gap:12px 14px}}
