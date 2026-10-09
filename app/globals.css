@@ -2389,3 +2389,8 @@ main p,.modal p{font-size:16px!important}
 @media(min-width:821px){.home-final .home-final-head{position:static!important}}
 .inventory-grid.compact .stock-badge{background:#eef2ec!important;color:#52634e!important;font-weight:600!important}
 .stock-review-illustration>.product-glyph,.stock-review-illustration .product-illustration{display:block!important;width:64px!important;height:64px!important;min-width:64px!important;max-width:64px!important;flex:none!important}
+
+/* Purchase history stays readable without adding another panel. */
+.shopping-row-copy .purchase-overlap{color:#695338!important;font-size:14px!important;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.inventory-card .purchase-age{font-size:14px!important;color:#65705f;margin:2px 0 4px!important}
+.stock-review-options{grid-template-columns:repeat(2,minmax(0,1fr))!important}

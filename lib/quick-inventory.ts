@@ -1,5 +1,5 @@
 import {calendarDaysUntil,isCalendarDate,localDateIso} from './local-date';
-export type QuickLevel='bastante'|'mitad'|'poco';
+export type QuickLevel='queda'|'bastante'|'mitad'|'poco';
 export type AutoPrepared={qty:number;servings?:number;stock:string;source?:string;location:string;mealPrepAuto?:boolean;mealPrepAutoStart?:string;mealPrepAutoQty?:number;mealPrepAutoDays?:number;mealPrepAutoApplied?:number;mealPrepAutoDepleted?:boolean};
 /** A qualitative observation never invents grams, pieces or a confirmed count. */
 export function observeStock<T extends {qty:number;stock:string;lastConfirmedAt?:string}>(item:T,level:QuickLevel,today=localDateIso()):T&{quickLevel:QuickLevel;quickObservedAt:string}{
