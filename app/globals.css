@@ -2355,3 +2355,8 @@ main p,.modal p{font-size:16px!important}
  .shopping-visible-actions{grid-column:2/-1!important;grid-row:3!important}
  .home-final .home-final-summary .home-card-head strong{font-size:18px!important}
 }
+@media(min-width:1200px) and (min-height:800px){
+ main:has(.home-final){padding-top:16px!important;padding-bottom:0!important}
+ .home-final section.home-final-top .home-final-menu .home-final-ideas>button{min-height:52px!important;padding:4px 8px!important}
+ .home-final section.home-final-top .home-final-menu .home-final-ideas{gap:5px!important}
+}
