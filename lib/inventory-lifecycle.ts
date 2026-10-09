@@ -2,7 +2,7 @@ import { classifyProduct, normalizeProductText } from './product-engine';
 import { normalizePlanUnit, planUnitFamily, planToBase, planFromBase } from './recipe-plan-engine';
 import type { StockCheck } from './consumption-engine';
 
-type StockItem={id:string;name:string;category:string;qty:number;unit:string;location:string;stock:string;lastConfirmedAt?:string;estimateAnchorQty?:number;estimateAnchorDate?:string;servings?:number;expires?:string;dateType?:string;estimatedExpires?:string;estimatedDateType?:string;estimateBasis?:string;frozenAt?:string;originalExpires?:string;qualityReviewAt?:string;storageMode?:string;reservedFor?:string};
+type StockItem={id:string;name:string;category:string;qty:number;lastKnownQty?:number;unit:string;location:string;stock:string;lastConfirmedAt?:string;estimateAnchorQty?:number;estimateAnchorDate?:string;servings?:number;expires?:string;dateType?:string;estimatedExpires?:string;estimatedDateType?:string;estimateBasis?:string;frozenAt?:string;originalExpires?:string;qualityReviewAt?:string;storageMode?:string;reservedFor?:string};
 function canonical(i:StockItem){return normalizeProductText(classifyProduct(i.name,i.category).canonical)}
 function compatible(a:string,b:string){const family=planUnitFamily(a);return family===planUnitFamily(b)&&(family==='mass'||family==='volume'||normalizePlanUnit(a)===normalizePlanUnit(b))}
 
@@ -18,7 +18,7 @@ export function appendConfirmedStockCheck(checks:StockCheck[],inventory:StockIte
 }
 
 export function emptyInventoryItem<T extends StockItem>(item:T,today:string):T{
- return {...item,stock:'falta',qty:0,servings:item.category==='Preparados'?0:item.servings,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorQty:0,estimateAnchorDate:today,quickLevel:undefined,quickObservedAt:undefined,mealPrepAuto:false,mealPrepAutoDepleted:false};
+ return {...item,stock:'falta',lastKnownQty:item.qty>0?item.qty:item.lastKnownQty,qty:0,servings:item.category==='Preparados'?0:item.servings,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorQty:0,estimateAnchorDate:today,quickLevel:undefined,quickObservedAt:undefined,mealPrepAuto:false,mealPrepAutoDepleted:false};
 }
 
 export function freezeInventoryItem<T extends StockItem>(item:T,today:string,estimatedQty:number):T{

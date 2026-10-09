@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import {normalizeState,completePurchase,attachReceiptToPurchase,consumeRecipeIngredients} from '../components/homeos';
 import {possibleExistingPurchase,replenishmentCandidates,comparePurchasePriority} from '../lib/inventory-advice';
+import {emptyInventoryItem} from '../lib/inventory-lifecycle';
 import {observeStock} from '../lib/quick-inventory';
 import {estimateConsumption,estimateInventoryConsumption} from '../lib/consumption-engine';
 import {mergeHouseholdState} from '../lib/sync-merge';
 const initial=normalizeState({profile:{onboardingDone:true},inventory:[{id:'old',name:'Leche',qty:1,unit:'L',category:'Lácteos',stock:'hay',location:'Despensa',purchasedAt:'2026-10-01'}]});
+assert.equal(emptyInventoryItem(initial.inventory[0],'2026-10-08').lastKnownQty,1);
 const pending={id:'new',name:'Leche',qty:1,unit:'L',category:'Lácteos',status:'carrito' as const,reason:'persona' as const,requestedBy:'Hugo'};
 const next=completePurchase({...initial,shopping:[pending]},['new'],2,'Lidl','2026-10-08');
 assert.equal(next.inventory.length,2);
