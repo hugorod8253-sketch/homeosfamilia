@@ -2369,7 +2369,7 @@ main p,.modal p{font-size:16px!important}
 .mealprep-auto-toggle{min-height:40px;flex-basis:100%;border:1px solid #dce3d5;border-radius:9px;background:white;font-size:15px;color:#3d5037;cursor:pointer}
 .hv-adjust-help{font-size:16px;line-height:1.45;background:#f2f5ef;padding:12px 16px;border-radius:12px;color:#4b6045}
 .hv-heading>.primary{font-size:16px;min-height:48px;padding:12px 16px;white-space:normal}
-@media(min-width:821px){.main:has(.home-final){position:relative}.home-final .home-weather{position:absolute!important;top:14px!important;right:120px!important;margin:0!important;padding:0!important;min-height:38px!important;background:transparent!important;box-shadow:none!important}.home-topbar{margin-bottom:0!important}}
+@media(min-width:821px){.main:has(.home-final){position:relative}.home-final .home-weather{position:absolute!important;top:14px!important;right:250px!important;margin:0!important;padding:0!important;min-height:38px!important;background:transparent!important;box-shadow:none!important}.home-topbar{margin-bottom:0!important}}
 @media(max-width:560px){
  .shopping-row-icon{display:grid!important;grid-column:2!important;grid-row:1!important;align-self:start}
  .shopping-pick{grid-column:1!important;grid-row:1!important}
