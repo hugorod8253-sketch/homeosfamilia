@@ -1,5 +1,5 @@
 import {normalizeProductText} from './product-engine';
-export const SPANISH_SUPERMARKETS=['Mercadona','Lidl','Aldi','Carrefour','Alcampo','Dia','Consum','BonÀrea','Bonpreu','Esclat','Bonpreu / Esclat','Caprabo','Eroski','Condis','Ametller Origen','Hipercor','Supercor','Ahorramás','Gadis','Froiz','BM','Covirán','Spar','HiperDino','Carnicería','Frutería','Otro supermercado'];
+export const SPANISH_SUPERMARKETS=['Mercadona','Lidl','Aldi','Carrefour','Costco','Makro','Alcampo','Dia','Consum','BonÀrea','Bonpreu','Esclat','Bonpreu / Esclat','Caprabo','Eroski','Condis','Ametller Origen','Hipercor','Supercor','Ahorramás','Gadis','Froiz','BM','Covirán','Spar','HiperDino','Carnicería','Frutería','Otro supermercado'];
 export function editDistance(a:string,b:string){
  let row=Array.from({length:b.length+1},(_,i)=>i);
  for(let i=1;i<=a.length;i++){const next=[i];for(let j=1;j<=b.length;j++)next[j]=Math.min(next[j-1]+1,row[j]+1,row[j-1]+(a[i-1]===b[j-1]?0:1));row=next}return row[b.length];

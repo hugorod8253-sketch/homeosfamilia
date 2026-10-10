@@ -1,4 +1,4 @@
-const CACHE="homeos-shell-v15-product-facts";
+const CACHE="homeos-shell-v16-household-language";
 const SHELL=["/","/manifest.webmanifest","/icon.svg?v=3"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}));

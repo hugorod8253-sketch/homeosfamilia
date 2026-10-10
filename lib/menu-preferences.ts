@@ -31,6 +31,6 @@ export function parseMenuBriefing(text:string,recipes:WeeklyMenuRecipe[]){
 }
 export function matchesMenuTerm(r:WeeklyMenuRecipe,term:string){
  const t=menuNorm(term),text=menuNorm([r.title,...r.ingredients.map(i=>i.name)].join(" "));
- const patterns:Record<string,RegExp>={pescado:/salmon|merluza|atun|bacalao|sardina|dorada|lubina|caballa|trucha/,marisco:/gamba|langostino|calamar|sepia|pulpo|mejillon/,legumbre:/garbanzo|lenteja|alubia|judia|guisante/,verdura:/espinaca|brocoli|zanahoria|calabacin|tomate|pimiento|lechuga|rucula|calabaza|esparrago|coliflor|berenjena|puerro/};
+ const patterns:Record<string,RegExp>={"frutos secos":/nuez|nueces|almendra|avellana|pistacho|anacardo|cacahuete/,pescado:/salmon|merluza|atun|bacalao|sardina|dorada|lubina|caballa|trucha/,marisco:/gamba|langostino|calamar|sepia|pulpo|mejillon/,legumbre:/garbanzo|lenteja|alubia|judia|guisante/,verdura:/espinaca|brocoli|zanahoria|calabacin|tomate|pimiento|lechuga|rucula|calabaza|esparrago|coliflor|berenjena|puerro/};
  return patterns[t]?patterns[t].test(text):text.split(" ").some(w=>w===t||w.startsWith(t));
 }

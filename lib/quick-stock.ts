@@ -6,6 +6,7 @@ export function quickStockChoices(name:string,unit:string):QuickStockChoice[]{
  const n=normalizeProductText(name),u=normalizePlanUnit(unit);
  if(u==='ud'&&/huevo|\bous\b/.test(n))return [6,12,24].map(qty=>({qty,unit:'uds',label:qty===6?'6 · media docena':qty===12?'12 · una docena':'24 · dos docenas'}));
  if(u==='ud'&&/platano|banana/.test(n))return [1,2,3].map(qty=>({qty,unit:'racimos',label:qty+' '+(qty===1?'racimo':'racimos')}));
+ if(/^(leche|llet)\b/.test(n)&&['ud','bricks','brick'].includes(u))return [1,2,4,6,12].map(qty=>({qty,unit:'bricks',label:qty+' '+(qty===1?'brick':'bricks')}));
  const numbers=u==='g'?[100,250,500,1000]:u==='ml'?[250,500,1000]:u==='kg'?[.5,1,2]:u==='L'?[1,2,4]:[1,2,3,4];
  return numbers.map(qty=>({qty,unit,label:qty+' '+unit}));
 }
