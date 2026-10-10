@@ -2408,3 +2408,15 @@ main p,.modal p{font-size:16px!important}
 .scanner-details{margin:18px 0;border-top:1px solid #dfe5ea;border-bottom:1px solid #dfe5ea;padding:14px 0}.scanner-details summary{font-size:17px;font-weight:650;cursor:pointer}.scanner-add-panel{padding:0 0 12px}.scanner-packs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scanner-packs input{width:74px}.scanner-add-panel select{width:100%}.scanner-add-actions{display:flex;gap:10px;margin-top:16px}.scanner-add-actions button{flex:1;min-height:48px;font-size:16px;white-space:normal;line-height:1.3}.scanner-feedback{padding:12px;background:#e7f1eb;color:#185b48;border-radius:10px}.scanner-source{border-top:1px solid #dfe5ea;padding-top:14px}.scanner-source a{text-decoration:underline;color:inherit}.product-scanner-modal button:focus-visible,.scanner-entry:focus-visible{outline:3px solid #557dad;outline-offset:2px}
 @media(max-width:600px){.product-scanner-modal{padding:18px;max-height:calc(100dvh - 24px)}.scanner-entry{padding:9px;gap:5px}.scanner-entry span{display:none}.scanner-kind button{flex:1;padding:10px 8px}.scanner-nutrition{grid-template-columns:repeat(2,minmax(0,1fr))}.scanner-add-actions{flex-direction:column}.scanner-product-heading{gap:8px}.scanner-code-row{flex-wrap:wrap}.scanner-code-row input{flex-basis:180px}.scanner-code-row button{flex-grow:1}}
 .product-scanner-modal .scanner-photo-button{display:block;width:100%;font-size:16px;min-height:44px;margin-top:8px}
+
+/* Nutrition colours belong to the labelled grade, never to stock status. */
+.scanner-nutriscore.grade-a,.product-rating.grade-a{background:#e2f0e9;color:#15543e}
+.scanner-nutriscore.grade-b,.product-rating.grade-b{background:#edf3df;color:#3d5b16}
+.scanner-nutriscore.grade-c,.product-rating.grade-c{background:#fff2cc;color:#70520a}
+.scanner-nutriscore.grade-d,.product-rating.grade-d{background:#ffead6;color:#854009}
+.scanner-nutriscore.grade-e,.product-rating.grade-e{background:#fbe5e4;color:#932b28}
+.product-rating{display:inline-flex;align-items:center;gap:5px;width:max-content;max-width:100%;min-height:36px;padding:6px 9px;border:1px solid transparent;border-radius:8px;font-size:14px;font-weight:650;line-height:1.3;text-align:left;white-space:normal;overflow-wrap:anywhere;margin:3px 0}
+.product-rating.unrated{background:#f1f3f4;color:#4e5b66;border-color:#dce1e5}
+.product-rating:focus-visible{outline:3px solid #557dad;outline-offset:2px}
+.inventory-name-row>small{font-size:14px;line-height:1.35;color:#59665d;overflow-wrap:anywhere}
+@media(max-width:600px){.product-rating{min-height:44px}}

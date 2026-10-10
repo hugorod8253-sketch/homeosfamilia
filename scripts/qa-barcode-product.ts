@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { lookupBarcode, normalizeBarcode, parseBarcodeProduct } from '../lib/barcode-product';
-import { scannedPackage } from '../lib/scanned-package';
-import { normalizeState, addScannedProduct, completePurchase } from '../components/homeos';
+import { scannedPackage, scannedPackCount, changeScannedQuantity } from '../lib/scanned-package';
+import { normalizeState, addScannedProduct, completePurchase, updateScannedFacts } from '../components/homeos';
+import { storedProductFacts, nutritionRating } from '../lib/product-facts';
+import { GET } from '../app/api/products/route';
 
 async function main() {
 assert.equal(normalizeBarcode(' 3560070791460 '), '3560070791460');
@@ -33,6 +35,29 @@ assert.equal(addScannedProduct(listed,commercial,'shopping',1).state,listed);
 const checked={...listed,shopping:listed.shopping.map(item=>({...item,status:'carrito' as const}))};
 const bought=completePurchase(checked,[checked.shopping[0].id],3,'Lidl','2026-10-10');
 assert.equal(bought.inventory[0].barcode,food.barcode);assert.equal(bought.inventory[0].purchasedAt,'2026-10-10');
+assert.equal(storedProductFacts(bought.inventory[0])?.nutriScore,'b');
+assert.equal(scannedPackCount(listed.shopping[0]),2);
+assert.equal(changeScannedQuantity(listed.shopping[0],1),2250);
+assert.equal(changeScannedQuantity({...listed.shopping[0],qty:750},-1),750);
+assert.equal(changeScannedQuantity({...listed.shopping[0],qty:400},1),undefined);
+assert.equal(scannedPackCount({...listed.shopping[0],barcode:undefined}),undefined);
+assert.equal(storedProductFacts({productInfo:food}),undefined);
+assert.equal(storedProductFacts({barcode:'036000291452',productInfo:food}),undefined);
+assert.equal(storedProductFacts({barcode:food.barcode,productInfo:{...food,source:{...food.source,url:'javascript:alert(1)'}}}),undefined);
+assert.equal(storedProductFacts({barcode:beauty.barcode,productInfo:{...beauty,nutriScore:'a'}})?.nutriScore,undefined);
+assert.equal(nutritionRating(food,Date.parse(food.source.fetchedAt)),'b');
+assert.equal(nutritionRating(food,Date.parse(food.source.fetchedAt)+31*86400000),undefined);
+assert.equal(nutritionRating(beauty),undefined);
+const restored=normalizeState(JSON.parse(JSON.stringify(bought)));
+assert.equal(storedProductFacts(restored.inventory[0])?.nutriScore,'b');
+assert.equal(storedProductFacts(restored.purchaseHistory[0])?.nutriScore,'b');
+const refreshed=updateScannedFacts(bought,{...commercial,nutriScore:'c'});
+assert.equal(refreshed.inventory[0].productInfo?.nutriScore,'c');
+assert.equal(refreshed.inventory[0].qty,bought.inventory[0].qty);
+assert.equal(refreshed.spent,bought.spent);
+assert.deepEqual(refreshed.purchaseSessions,bought.purchaseSessions);
+assert.equal(refreshed.inventory[0].purchasedAt,bought.inventory[0].purchasedAt);
+assert.equal(updateScannedFacts(initial,commercial),initial);
 const atHome=addScannedProduct(initial,commercial,'inventory',1,'Nevera').state;
 assert.equal(atHome.spent,0);assert.equal(atHome.purchaseHistory.length,0);assert.equal(atHome.inventory[0].qty,750);
 assert.equal(atHome.inventory[0].purchaseDateUnknown,true);assert.equal(atHome.inventory[0].expires,undefined);
@@ -41,6 +66,13 @@ assert.equal(addScannedProduct(atHome,commercial,'inventory',1,'',true).state.in
 const cosmetics=addScannedProduct(initial,beauty,'shopping',1).state;
 const cosmeticsBought=completePurchase({...cosmetics,shopping:cosmetics.shopping.map(item=>({...item,status:'carrito' as const}))},[cosmetics.shopping[0].id],undefined,'Lidl','2026-10-10');
 assert.equal(cosmeticsBought.inventory[0].category,'Higiene y cuidado');
+assert.equal(storedProductFacts(cosmeticsBought.inventory[0])?.kind,'beauty');
+assert.equal(nutritionRating(storedProductFacts(cosmeticsBought.inventory[0])),undefined);
+const otherBrand={...commercial,barcode:'036000291452',brand:'Otra marca',nutriScore:'e'};
+const distinct=addScannedProduct(listed,otherBrand,'shopping',1).state;
+assert.equal(distinct.shopping.length,2);
+assert.equal(distinct.shopping[0].productInfo?.nutriScore,'b');
+assert.equal(distinct.shopping[1].productInfo?.nutriScore,'e');
 let requests = 0;
 const fetcher: typeof fetch = async (url, init) => {
   requests++; assert.ok(String(url).includes('/api/v3/product/')); assert.equal(init?.credentials, 'omit');
@@ -51,6 +83,21 @@ assert.equal((await lookupBarcode('3560070791460', 'food', { fetcher })).status,
 assert.equal((await lookupBarcode('3560070791460', 'food', { fetcher: async () => new Response('', { status: 404 }) })).status, 'not-found');
 assert.equal((await lookupBarcode('3560070791460', 'food', { fetcher: async () => new Response('', { status: 429 }) })).status, 'unavailable');
 assert.equal((await lookupBarcode('3560070791460', 'food', { fetcher: async () => { throw new Error('offline'); } })).status, 'unavailable');
-console.log('PASS: barcode checksum, leading zeros, food/beauty separation, missing data, offline and rate-limit fallback');
+const originalFetch=globalThis.fetch;
+let apiRequests=0;
+try {
+ globalThis.fetch=async()=>{apiRequests++;return new Response(JSON.stringify(payload))};
+ assert.equal((await GET(new Request('https://homeos.test/api/products?code=invalid&kind=food'))).status,400);
+ assert.equal(apiRequests,0);
+ const same=()=>new Request('https://homeos.test/api/products?code=3560070791460&kind=food');
+ const responses=await Promise.all([GET(same()),GET(same())]);
+ assert.ok(responses.every(x=>x.status===200));assert.equal(apiRequests,1);
+ assert.equal((await GET(same())).status,200);assert.equal(apiRequests,1);
+ globalThis.fetch=async()=>{throw new Error('offline')};
+ const offline=await GET(new Request('https://homeos.test/api/products?code=3017620422003&kind=food'));
+ assert.equal(offline.status,503);assert.equal(offline.headers.get('cache-control'),'no-store');
+ assert.equal((await offline.json()).status,'unavailable');
+} finally {globalThis.fetch=originalFetch}
+console.log('PASS: barcode, food/beauty, package controls, exact identities, dated facts, storage/checkout, refresh without stock mutation, API cache and offline fallback');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

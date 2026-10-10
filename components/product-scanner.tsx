@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import { normalizeBarcode, type BarcodeProduct, type LookupResult, type ProductKind } from '../lib/barcode-product';
+import { nutritionRating } from "../lib/product-facts";
 import { allergenLabel } from '../lib/scanned-package';
 import type { IScannerControls } from '@zxing/browser';
 
-export default function ProductScanner({close,onAdd}:{close:()=>void;onAdd:(product:BarcodeProduct,target:'shopping'|'inventory',packs:number,location:string,extra:boolean)=>string}) {
-  const [kind,setKind] = useState<ProductKind>('food');
-  const [code,setCode] = useState('');
-  const [result,setResult] = useState<LookupResult|null>(null);
+export default function ProductScanner({close,onAdd,initialProduct,initialCode,onFacts}:{initialProduct?:BarcodeProduct;initialCode?:string;onFacts?:(product:BarcodeProduct)=>void;close:()=>void;onAdd:(product:BarcodeProduct,target:'shopping'|'inventory',packs:number,location:string,extra:boolean)=>string}) {
+  const [kind,setKind] = useState<ProductKind>(initialProduct?.kind||'food');
+  const [code,setCode] = useState(initialCode||initialProduct?.barcode||'');
+  const [result,setResult] = useState<LookupResult|null>(initialProduct?{status:'found',product:initialProduct}:null);
   const [busy,setBusy] = useState(false);
   const [camera,setCamera] = useState(false);
   const [cameraError,setCameraError] = useState('');
@@ -40,7 +41,7 @@ export default function ProductScanner({close,onAdd}:{close:()=>void;onAdd:(prod
         const { BrowserMultiFormatReader } = await import('@zxing/browser');
         const { BarcodeFormat, DecodeHintType } = await import('@zxing/library');
         if(cancelled || !video.current) return;
-        const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS,[BarcodeFormat.EAN_13,BarcodeFormat.EAN_8,BarcodeFormat.UPC_A,BarcodeFormat.UPC_E,BarcodeFormat.ITF]]]);
+        const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS,[BarcodeFormat.EAN_13,BarcodeFormat.EAN_8,BarcodeFormat.UPC_A,BarcodeFormat.ITF]]]);
         const reader = new BrowserMultiFormatReader(hints,{delayBetweenScanAttempts:300});
         const scanner = await reader.decodeFromConstraints({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280}}},video.current,(value,_error,handle)=>{
           if(cancelled || accepted || !value) return;
@@ -72,7 +73,7 @@ export default function ProductScanner({close,onAdd}:{close:()=>void;onAdd:(prod
     try {
       const response=await fetch(`/api/products?code=${barcode}&kind=${kind}`,{signal:controller.signal});
       const data = await response.json() as LookupResult;
-      if(id===sequence.current && mounted.current) setResult(data);
+      if(id===sequence.current && mounted.current) {setResult(data);if(data.status==='found')onFacts?.(data.product)}
     } catch {
       if(id===sequence.current && mounted.current) setResult({status:'unavailable',message:'No se puede consultar ahora. Puedes seguir usando la lista y Casa.'});
     } finally {if(id===sequence.current && mounted.current)setBusy(false)}
@@ -90,18 +91,19 @@ export default function ProductScanner({close,onAdd}:{close:()=>void;onAdd:(prod
       const barcode=normalizeBarcode(value.getText());
       if(id!==sequence.current||!mounted.current)return;
       if(!barcode)throw new Error('invalid');
-      setCode(barcode);void lookup(barcode);
+      setReadingPhoto(false);setCode(barcode);void lookup(barcode);
     } catch {
       if(id===sequence.current&&mounted.current)setCameraError('No se lee el código. Haz una foto más cerca y con buena luz, o escribe los números.');
-    } finally {URL.revokeObjectURL(url);if(mounted.current)setReadingPhoto(false)}
+    } finally {URL.revokeObjectURL(url);if(id===sequence.current&&mounted.current)setReadingPhoto(false)}
   }
   function changeKind(value:ProductKind) {
-    sequence.current++;abort.current?.abort();stopCamera();setCamera(false);setBusy(false);
+    sequence.current++;abort.current?.abort();stopCamera();setCamera(false);setBusy(false);setReadingPhoto(false);setExtra(false);
     setKind(value);setResult(null);setFeedback('');setCameraError('');
   }
   const product=result?.status==='found'?result.product:null;
+  const grade=nutritionRating(product||undefined);
   const nutritionLabels:Record<string,string>={'energy-kcal':'Energía','proteins':'Proteínas','carbohydrates':'Hidratos','sugars':'Azúcares','fat':'Grasas','saturated-fat':'Saturadas','fiber':'Fibra','salt':'Sal'};
-  return <div className="modal-backdrop"><section className="modal product-scanner-modal" aria-labelledby="product-scanner-title">
+  return <div className="modal-backdrop"><section className="modal product-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="product-scanner-title">
     <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Conoce lo que compras</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
     <div className="scanner-kind" role="group" aria-label="Tipo de producto"><button className={kind==='food'?'active':''} aria-pressed={kind==='food'} onClick={()=>changeKind('food')}>Alimentación</button><button className={kind==='beauty'?'active':''} aria-pressed={kind==='beauty'} onClick={()=>changeKind('beauty')}>Cosmética e higiene</button></div>
     <div className="scanner-input-panel">
@@ -110,15 +112,15 @@ export default function ProductScanner({close,onAdd}:{close:()=>void;onAdd:(prod
       <input ref={photoInput} hidden type="file" accept="image/*" onChange={event=>{void readPhoto(event.target.files?.[0]);event.currentTarget.value=''}}/>
       {camera&&<div className="scanner-camera"><video ref={video} autoPlay muted playsInline aria-label="Vista de cámara para leer el código de barras"/><span>Centra el código de barras</span></div>}
       {cameraError&&<p role="alert">{cameraError}</p>}
-      <form onSubmit={event=>{event.preventDefault();void lookup(code)}}><label htmlFor="scanner-code">También puedes escribir el código</label><div className="scanner-code-row"><input id="scanner-code" inputMode="numeric" autoComplete="off" maxLength={30} placeholder="Números bajo las barras" value={code} onChange={event=>setCode(event.target.value)}/><button className="secondary" disabled={busy||readingPhoto||!code.trim()}>{busy?'Consultando…':'Consultar'}</button></div></form>
+      <form onSubmit={event=>{event.preventDefault();void lookup(code)}}><label htmlFor="scanner-code">También puedes escribir el código</label><div className="scanner-code-row"><input id="scanner-code" inputMode="numeric" autoComplete="off" maxLength={30} placeholder="Números bajo las barras" value={code} onChange={event=>setCode(event.target.value)}/><button className="secondary" disabled={busy||readingPhoto||!code.trim()}>{busy?'Consultando…':initialCode&&product?'Actualizar ficha':'Consultar'}</button></div></form>
       <p>La cámara lee en tu dispositivo. Solo se consulta el código; no se envían fotos ni tu inventario.</p>
     </div>
     {busy&&<p role="status">Buscando el producto…</p>}
     {result&&result.status!=='found'&&<p className="scanner-notice" role="status">{result.message}</p>}
     {product&&<article className="scanner-product">
-      <div className="scanner-product-heading"><div><h3>{product.name}</h3><p>{[product.brand,product.packageSize].filter(Boolean).join(' · ')||'Presentación sin datos'}</p></div>{product.nutriScore?<div className={`scanner-nutriscore grade-${product.nutriScore}`}><span>Nutri-Score</span><strong>{product.nutriScore.toUpperCase()}</strong></div>:<span className="scanner-unrated">{product.kind==='food'?'Sin Nutri-Score':'Composición'}</span>}</div>
+      <div className="scanner-product-heading"><div><h3>{product.name}</h3><p>{[product.brand,product.packageSize].filter(Boolean).join(' · ')||'Presentación sin datos'}</p></div>{grade?<div className={`scanner-nutriscore grade-${grade}`}><span>Nutri-Score</span><strong>{grade.toUpperCase()}</strong></div>:<span className="scanner-unrated">{product.kind==='food'?(product.nutriScore?'Actualizar ficha':'Sin Nutri-Score'):'Composición'}</span>}</div>
       {product.kind==='food'&&<><p className="scanner-note">Nutri-Score orienta sobre el perfil nutricional; no es una nota de seguridad ni una puntuación de Yuka.</p><h4>Nutrición por {product.nutritionBasis}</h4>{Object.keys(product.nutritionPer100g).length?<dl className="scanner-nutrition">{Object.entries(product.nutritionPer100g).map(([key,value])=><div key={key}><dt>{nutritionLabels[key]||key}</dt><dd>{value.toLocaleString('es-ES',{maximumFractionDigits:2})} {key==='energy-kcal'?'kcal':'g'}</dd></div>)}</dl>:<p>Sin información nutricional disponible.</p>}{product.novaGroup&&<p>Procesamiento: grupo NOVA {product.novaGroup} de 4.</p>}<h4>Alérgenos declarados</h4><p>{product.allergens.length?product.allergens.map(allergenLabel).join(', '):'No hay información suficiente para asegurar su ausencia.'}</p><p className="scanner-note">Comprueba siempre el envase, especialmente si tienes alergias.</p></>}
-      <details className="scanner-details"><summary>Ingredientes{product.additives.length?' y aditivos':''}</summary><p>{product.ingredients||'Ingredientes sin datos.'}</p>{product.additives.length>0&&<p>Aditivos identificados: {product.additives.map(tag=>tag.replace(/^en:/,'').toUpperCase()).join(', ')}.</p>}{product.kind==='beauty'&&<p>Esta ficha no evalúa la seguridad ni la eficacia del cosmético. No conocemos la concentración de cada ingrediente.</p>}</details>
+      <details className="scanner-details"><summary>Ingredientes{product.additives.length?' y aditivos':''}</summary><p>{product.ingredients||'Ingredientes sin datos.'}</p>{product.additives.length>0&&<p>Aditivos declarados: {product.additives.map(tag=>tag.replace(/^en:/,'').toUpperCase()).join(', ')}.</p>}{product.kind==='food'&&product.additives.length>0&&<p className="scanner-note">Contener aditivos no significa que el producto sea peligroso. Su seguridad depende de las condiciones de uso y de la exposición. <a href="https://www.efsa.europa.eu/es/safe2eat/food-additives" target="_blank" rel="noopener noreferrer">Información de EFSA</a>.</p>}{product.kind==='beauty'&&<p>Esta ficha no evalúa la seguridad ni la eficacia del cosmético. No conocemos la concentración de cada ingrediente.</p>}</details>
       <div className="scanner-add-panel"><label htmlFor="scanner-packs">Envases de esta presentación</label><div className="scanner-packs">{[1,2,3,4].map(n=><button key={n} aria-pressed={packs===n} className={packs===n?'active':''} onClick={()=>setPacks(n)}>{n}</button>)}<input id="scanner-packs" aria-label="Número de envases" type="number" min={1} max={99} value={packs} onChange={event=>setPacks(Math.max(1,Math.min(99,Math.floor(Number(event.target.value)||1))))}/></div><label htmlFor="scanner-location">Para registrar en casa</label><select id="scanner-location" value={location} onChange={event=>setLocation(event.target.value)}><option value="">Ubicación recomendada</option><option>Nevera</option><option>Despensa</option><option>Congelador</option><option>Sin ubicar</option></select>
       <div className="scanner-add-actions"><button className="primary" onClick={()=>setFeedback(onAdd(product,'shopping',packs,location,false))}>Añadir a la compra</button><button className="secondary" onClick={()=>{const message=onAdd(product,'inventory',packs,location,extra);setFeedback(message);if(message.startsWith('Ya está registrado'))setExtra(true);else setExtra(false)}}>{extra?'Registrar envases adicionales':'Registrar en casa'}</button></div><p className="scanner-note">Añadir a la lista no marca una compra. Registrar en casa confirma existencias sin crear un gasto.</p></div>
       {feedback&&<p className="scanner-feedback" role="status">{feedback}</p>}

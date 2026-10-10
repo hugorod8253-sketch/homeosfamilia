@@ -9,7 +9,9 @@ import { estimateRecipeNutrition } from "../lib/recipe-nutrition";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { BarcodeProduct } from "../lib/barcode-product";
-import { scannedPackage } from "../lib/scanned-package";
+import { scannedPackage, scannedPackCount, changeScannedQuantity } from "../lib/scanned-package";
+import { storedProductFacts, type ProductFactsItem } from "../lib/product-facts";
+import ProductRating from "./product-rating";
 const ProductScanner = dynamic(()=>import("./product-scanner"),{ssr:false});
 import { localDateIso, calendarDaysUntil } from "../lib/local-date";
 import { readBrowserStorage, writeBrowserStorage, removeBrowserStorage } from "../lib/browser-storage";
@@ -43,15 +45,15 @@ type NutritionMode = "basica"|"detallada"|"off";
 type CookingStyle = "rapido"|"normal"|"cocinar"|"mealprep";
 
 type InventoryItem = {
-  id:string; purchaseSessionId?:string; barcode?:string; brand?:string; packageSize?:string; name:string; qty:number; lastKnownQty?:number; unit:string; location:Location; estimateAnchorDate?:string; estimateAnchorQty?:number; category:string; subcategory?:string;
+  id:string; purchaseSessionId?:string; barcode?:string; productInfo?:BarcodeProduct; brand?:string; packageSize?:string; name:string; qty:number; lastKnownQty?:number; unit:string; location:Location; estimateAnchorDate?:string; estimateAnchorQty?:number; category:string; subcategory?:string;
   quickLevel?:QuickLevel; quickObservedAt?:string; mealPrepAuto?:boolean; mealPrepAutoStart?:string; mealPrepAutoQty?:number; mealPrepAutoDays?:number; mealPrepAutoApplied?:number; mealPrepAutoDepleted?:boolean; stock:StockState; purchasedAt:string; expires?:string; dateType?:"caducidad"|"preferente";
   purchaseDateUnknown?:boolean; price?:number; servings?:number; preparedAt?:string; source?:"compra"|"receta"|"sobras"|"mealprep"; preparedRecipeId?:string; preparedPlanId?:string; preparedIngredients?:{name:string;key:string;category:string}[]; mealPrepInitialServings?:number; mealPrepDays?:number; mealPrepStart?:string; frozenAt?:string; originalExpires?:string; supermarket?:string; storageMode?:"normal"|"reserva"; reservedFor?:string; qualityReviewAt?:string; lastConfirmedAt?:string; lastStockCheckId?:string; estimatedExpires?:string; estimatedDateType?:"caducidad"|"preferente"; estimateBasis?:string; planReservations?:ShoppingSource[];
 };
 type ShoppingItem = {
-  id:string; barcode?:string; brand?:string; packageSize?:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
+  id:string; barcode?:string; productInfo?:BarcodeProduct; brand?:string; packageSize?:string; name:string; requestedName?:string; qty:number; unit:string; category:string; subcategory?:string; supermarket?:string; price?:number;
   requestedBy:string; reason:"persona"|"recomienda"|"receta"|"reposicion"; status:"pendiente"|"carrito"; reserve?:boolean; recipePlanId?:string; recipePlanIds?:string[]; recipeId?:string; sources?:ShoppingSource[]; boughtQty?:number;
 };
-type PurchaseRecord = {id:string;barcode?:string;brand?:string;packageSize?:string;purchaseSessionId?:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
+type PurchaseRecord = {id:string;barcode?:string;productInfo?:BarcodeProduct;brand?:string;packageSize?:string;purchaseSessionId?:string;name:string;qty:number;unit:string;category:string;subcategory?:string;date:string;supermarket?:string;requestedBy?:string;price?:number};
 type PurchaseSession = {id:string;date:string;total:number;totalKnown?:boolean;supermarket?:string};
 type MealRecord = {id:string;date:string;recipeId:string;title:string;servings:number;ingredients:{name:string;key:string;category:string}[]};
 type ProductPreference = {location?:Location;category?:string};
@@ -528,14 +530,14 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
     const estimated=!reserveAllowed?estimateShelfLifeFromReference(x.name,today):null;
     const planReservations=fulfilledSources.filter(src=>src.type==="recipe"&&Boolean(src.planId)&&src.qty>0);
     // Each checkout creates its own dated lot; old quantities and dates remain untouched.
-    inventory.unshift({id:crypto.randomUUID(),purchaseSessionId:sessionId,barcode:x.barcode,brand:x.brand,packageSize:x.packageSize,name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,source:"compra",price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
+    inventory.unshift({id:crypto.randomUUID(),purchaseSessionId:sessionId,barcode:x.barcode,productInfo:storedProductFacts(x),brand:x.brand,packageSize:x.packageSize,name:x.name,qty:buyQty,estimateAnchorQty:buyQty,estimateAnchorDate:today,unit:x.unit,location,category,subcategory:profile.subcategory,stock:"hay",purchasedAt:today,source:"compra",price:x.price,supermarket:x.supermarket||activeStore,planReservations:planReservations.length?planReservations:undefined,...(reserveAllowed?{storageMode:"reserva" as const,frozenAt,qualityReviewAt}:(estimated?{estimatedExpires:estimated.date,estimatedDateType:estimated.kind,estimateBasis:estimated.basis}:{}))});
    }
    const purchaseHistory=[...s.purchaseHistory,...cart.map(x=>{
     const p=classifyProduct(x.name,x.category);
     const pref=s.productPreferences[p.canonical]||{};
     return {
      id:crypto.randomUUID(),purchaseSessionId:sessionId,
-     name:x.name,barcode:x.barcode,brand:x.brand,packageSize:x.packageSize,
+     name:x.name,barcode:x.barcode,productInfo:storedProductFacts(x),brand:x.brand,packageSize:x.packageSize,
      qty:Math.max(.01,x.boughtQty??x.qty),
      unit:x.unit,
      category:pref.category||(x.barcode?x.category:p.category),
@@ -557,7 +559,7 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
    return reconcileWeeklyShopping(reconcileRecipeShopping(purchasedState));
 }
 
-/** Public product facts are displayed separately; only the user's chosen stock observation is stored. */
+/** Product facts remain separate from stock observations and retain their public source. */
 export function addScannedProduct(s:AppState,product:BarcodeProduct,target:'shopping'|'inventory',packs:number,chosenLocation='',extra=false):{state:AppState;message:string}{
  const count=Math.max(1,Math.min(99,Math.floor(packs)||1)), amount=scannedPackage(product), qty=amount.qty*count;
  const classified=classifyProduct(product.name);
@@ -566,11 +568,18 @@ export function addScannedProduct(s:AppState,product:BarcodeProduct,target:'shop
  const existing=target==='shopping'?s.shopping.find(matches):s.inventory.find(i=>matches(i)&&i.stock!=='falta');
  if(existing&&target==='shopping')return {state:s,message:'Ya está en la lista. Puedes ajustar su cantidad allí.'};
  if(existing&&target==='inventory'&&!extra)return {state:s,message:'Ya está registrado en casa. Si son otros envases, pulsa «Registrar envases adicionales».'};
- const base={id:crypto.randomUUID(),barcode:product.barcode,name:product.name,brand:product.brand,packageSize:product.packageSize,qty,unit:amount.unit,category,subcategory:classified.subcategory};
+ const base={id:crypto.randomUUID(),barcode:product.barcode,productInfo:product,name:product.name,brand:product.brand,packageSize:product.packageSize,qty,unit:amount.unit,category,subcategory:classified.subcategory};
  if(target==='shopping')return {state:{...s,shopping:[...s.shopping,{...base,requestedBy:'Escáner',reason:'persona',status:'pendiente'}]},message:'Añadido a la compra. Márcalo cuando lo cojas.'};
  const location=(["Nevera","Congelador","Despensa","Sin ubicar"].includes(chosenLocation)?chosenLocation:product.kind==='beauty'?'Sin ubicar':recommendedLocation(product.name,category)) as Location;
  const today=localDateIso();
  return {state:{...s,inventory:[{...base,location,stock:'hay',purchasedAt:'',purchaseDateUnknown:true,lastConfirmedAt:today,estimateAnchorDate:today,estimateAnchorQty:qty},...s.inventory]},message:'Registrado en casa. No se ha añadido ningún gasto ni inventado una fecha de compra.'};
+}
+
+/** Refresh matching exact barcodes without changing quantities, dates or expenses. */
+export function updateScannedFacts(s:AppState,product:BarcodeProduct):AppState {
+ const matches=(i:ProductFactsItem)=>Boolean(i.barcode&&i.barcode.padStart(14,'0')===product.barcode.padStart(14,'0'));
+ if(!s.shopping.some(matches)&&!s.inventory.some(matches))return s;
+ return {...s,shopping:s.shopping.map(i=>matches(i)?{...i,productInfo:product}:i),inventory:s.inventory.map(i=>matches(i)?{...i,productInfo:product}:i)};
 }
 
 export default function HomeOS(){
@@ -583,6 +592,8 @@ export default function HomeOS(){
  const [profileOpen,setProfileOpen]=useState(false);
  const [tourOpen,setTourOpen]=useState(false);
  const [scannerOpen,setScannerOpen]=useState(false);
+ const [scannerItem,setScannerItem]=useState<ProductFactsItem|null>(null);
+ function openProductFacts(item:ProductFactsItem){setScannerItem(item);setScannerOpen(true)}
  const [consumptionSetupOpen,setConsumptionSetupOpen]=useState(false);
  const [mobileMoreOpen,setMobileMoreOpen]=useState(false);
  const [demoMode,setDemoMode]=useState<"menu"|"ideas"|null>(null);
@@ -920,18 +931,18 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions"><button className="scanner-entry" onClick={()=>setScannerOpen(true)} aria-label="Escanear producto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Escanear</span></button>{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions"><button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Escanear producto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Escanear</span></button>{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
    {view==="habitos"&&<section className="stack"><Habitos state={state} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
-   {view==="comprar"&&<Comprar state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
-   {view==="casa"&&<Casa state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
+   {view==="comprar"&&<Comprar openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
+   {view==="casa"&&<Casa openProductFacts={openProductFacts} state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
 
   <nav className="bottom-nav">{nav.filter(n=>n.id!=="finanzas").map(n=><button key={n.id} className={view===n.id?"active":""} onClick={()=>{if(n.id==="casa")setCasaFocus("all");if(n.id==="comer"){setComerFocus("catalog");setMealSeed("")}setMobileMoreOpen(false);setView(n.id)}}>{navIcon(n.id,n.icon)}<small>{n.label}</small></button>)}<button className={mobileMoreOpen||view==="finanzas"||view==="habitos"?"active more-tab": "more-tab"} onClick={()=>setMobileMoreOpen(v=>!v)}><span className="more-dots">•••</span><small>Más</small></button></nav>
   {mobileMoreOpen&&<div className="mobile-more-backdrop" onMouseDown={()=>setMobileMoreOpen(false)}><div className="mobile-more-sheet" onMouseDown={e=>e.stopPropagation()}><div className="mobile-more-handle"/><button onClick={()=>{setView("finanzas");setMobileMoreOpen(false)}}><span className="more-icon finance">▥</span><div><strong>Finanzas</strong><small>Gasto, presupuesto y categorías</small></div><b>›</b></button>{state.profile.nutrition!=="off"&&<button onClick={()=>{setView("habitos");setMobileMoreOpen(false)}}><span className="more-icon habits">◴</span><div><strong>Hábitos</strong><small>Cómo está comiendo el hogar</small></div><b>›</b></button>}<button onClick={()=>{setProfileOpen(true);setMobileMoreOpen(false)}}><span className="more-icon settings">⚙</span><div><strong>Configuración</strong><small>Hogar, preferencias y sincronización</small></div><b>›</b></button></div></div>}
-  {scannerOpen&&<ProductScanner close={()=>setScannerOpen(false)} onAdd={(product,target,packs,location,extra)=>{const next=addScannedProduct(stateRef.current,product,target,packs,location,extra);if(next.state!==stateRef.current){stateRef.current=next.state;setState(next.state)}return next.message}}/>}
+  {scannerOpen&&<ProductScanner initialProduct={scannerItem?storedProductFacts(scannerItem):undefined} initialCode={scannerItem?.barcode} onFacts={product=>setState(s=>updateScannedFacts(s,product))} close={()=>setScannerOpen(false)} onAdd={(product,target,packs,location,extra)=>{const next=addScannedProduct(stateRef.current,product,target,packs,location,extra);if(next.state!==stateRef.current){stateRef.current=next.state;setState(next.state)}return next.message}}/>}
   {consumptionSetupOpen&&<div className="modal-backdrop"><section className="modal confirm-stock-modal"><div className="modal-head"><h2>Tu ritmo habitual</h2><button aria-label="Cerrar hábitos iniciales" onClick={()=>setConsumptionSetupOpen(false)}>×</button></div><ConsumptionSetup state={state} setState={setState} finish={()=>setConsumptionSetupOpen(false)}/></section></div>}
   {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
@@ -1566,7 +1577,7 @@ export function attachReceiptToPurchase(s:AppState,sessionId:string,items:Receip
  return next;
 }
 
-function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
+function Comprar({openProductFacts,state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
  const [quick,setQuick]=useState("");
  const [suggestionsOpen,setSuggestionsOpen]=useState(false);
  const [dismissedSuggestions,setDismissedSuggestions]=useState<string[]>([]);
@@ -1581,8 +1592,8 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   if(!alreadyHave)return;
   const product=alreadyHave;
   setState(s=>{
-   const match=possibleExistingPurchase(s.inventory,product)?.item;
-   const inventory=match?s.inventory.map(i=>i.id===match.id?observeStock(i,"queda"):i):[observeStock({id:crypto.randomUUID(),name:product.name,qty:0,unit:product.unit,category:product.category,location:haveLocation,stock:"incierto" as StockState,purchasedAt:localDateIso(),purchaseDateUnknown:true},"queda"),...s.inventory];
+   const match=product.barcode?s.inventory.find(i=>i.barcode?.padStart(14,'0')===product.barcode!.padStart(14,'0')&&i.stock!=="falta"):possibleExistingPurchase(s.inventory,product)?.item;
+   const inventory=match?s.inventory.map(i=>i.id===match.id?observeStock(i,"queda"):i):[observeStock({id:crypto.randomUUID(),barcode:product.barcode,productInfo:storedProductFacts(product),brand:product.brand,packageSize:product.packageSize,name:product.name,qty:0,unit:product.unit,category:product.category,location:haveLocation,stock:"incierto" as StockState,purchasedAt:localDateIso(),purchaseDateUnknown:true},"queda"),...s.inventory];
    return {...s,inventory,shopping:s.shopping.filter(i=>i.id!==product.id)};
   });setAlreadyHave(null);setToast("Queda en casa · quitado de la lista, sin contar unidades");
  }
@@ -1591,9 +1602,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
   const qty=Number(haveQty.replace(",","."));if(!alreadyHave||!Number.isFinite(qty)||qty<=0)return;
   const item={...alreadyHave,unit:haveUnit};const profile=classifyProduct(item.name,item.category);
   if(!canStoreAt(item.name,item.category,haveLocation)){setToast(storageWarning(item.name,item.category,haveLocation));return}
-  setState(s=>{const matches=s.inventory.filter(i=>norm(classifyProduct(i.name,i.category).canonical)===norm(profile.canonical)&&i.location===haveLocation);
+  setState(s=>{const matches=s.inventory.filter(i=>(item.barcode?i.barcode?.padStart(14,'0')===item.barcode.padStart(14,'0'):norm(classifyProduct(i.name,i.category).canonical)===norm(profile.canonical))&&i.location===haveLocation);
    const id=matches[0]?.id||crypto.randomUUID();
-   const inventory=[...s.inventory.filter(i=>!matches.some(x=>x.id===i.id)),{...matches[0],id,name:item.name,qty,unit:item.unit,location:haveLocation,category:item.category,subcategory:item.subcategory,stock:"hay" as const,purchasedAt:matches[0]?.purchasedAt||isoAfterDays(0),purchaseDateUnknown:!matches[0]||matches[0].purchaseDateUnknown,lastConfirmedAt:isoAfterDays(0),lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:isoAfterDays(0),estimateAnchorQty:qty}];
+   const inventory=[...s.inventory.filter(i=>!matches.some(x=>x.id===i.id)),{...matches[0],id,barcode:item.barcode||matches[0]?.barcode,productInfo:storedProductFacts(item)||storedProductFacts(matches[0]||{}),brand:item.brand||matches[0]?.brand,packageSize:item.packageSize||matches[0]?.packageSize,name:item.name,qty,unit:item.unit,location:haveLocation,category:item.category,subcategory:item.subcategory,stock:"hay" as const,purchasedAt:matches[0]?.purchasedAt||isoAfterDays(0),purchaseDateUnknown:!matches[0]||matches[0].purchaseDateUnknown,lastConfirmedAt:isoAfterDays(0),lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:isoAfterDays(0),estimateAnchorQty:qty}];
    const shopping=s.shopping.flatMap(i=>{if(i.id!==item.id)return [i];if(normalizedUnit(i.unit)!==normalizedUnit(item.unit))return [];const sources=remainingSourcesAfterPurchase(shoppingSources(i),qty,item.unit);const updated=withShoppingSources(i,sources);return updated?[updated]:[]});
    return reconcileWeeklyShopping({...s,inventory,shopping,stockChecks:appendConfirmedStockCheck(s.stockChecks,inventory,inventory.find(i=>i.id===id)!,isoAfterDays(0))});
   });setAlreadyHave(null);setToast("Cantidad confirmada en Casa · no se registra como compra");
@@ -1828,9 +1839,9 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  function changeShoppingQty(id:string,delta:number){
   setState(s=>({...s,shopping:s.shopping.map(i=>{
    if(i.id!==id)return i;
-   if(shoppingActive&&i.status==="carrito")return {...i,boughtQty:changeShoppingQuantity(i.boughtQty??i.qty,i.unit,delta)};
+   if(shoppingActive&&i.status==="carrito")return {...i,boughtQty:changeScannedQuantity({...i,qty:i.boughtQty??i.qty},delta)??changeShoppingQuantity(i.boughtQty??i.qty,i.unit,delta)};
    if(planLine(i))return i;
-   const qty=changeShoppingQuantity(i.qty,i.unit,delta);
+   const qty=changeScannedQuantity(i,delta)??changeShoppingQuantity(i.qty,i.unit,delta);
    const sources=resizeShoppingSources(shoppingSources(i),qty,i.unit);
    return {...i,qty,sources};
   })}));
@@ -1896,8 +1907,8 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
 
   {(!shoppingActive||activeStore)&&<div className="shopping-layout"><div className="category-list shopping-list-categories">{Object.keys(grouped).length===0&&<article className="friendly-empty"><span>✓</span><h3>Todo al día</h3><p>No hay productos en esta vista.</p></article>}{Object.entries(grouped).map(([cat,items])=><article className="list-card shopping-category" key={cat}><div className="list-title"><h3><span>{CATEGORY_ICONS[cat]||"🛍️"}</span>{CATEGORY_LABELS[cat]||cat}</h3><span>{items.filter(i=>i.status==="carrito").length} / {items.length} cogidos</span></div><div className="shopping-list-rows">{items.map(i=><div className={"shopping-list-row"+(i.status==="carrito"?" is-picked":"")} key={i.id}>
      <button className="shopping-pick" onClick={()=>cart(i.id)} aria-pressed={i.status==="carrito"} aria-label={(i.status==="carrito"?"Desmarcar ":"Marcar como cogido ")+i.name}><span className="shopping-checkbox">{i.status==="carrito"&&<svg className="shopping-check-animation" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16.5 13 23 25 9"/></svg>}</span></button>
-     <span className="shopping-row-icon" aria-hidden="true">{productIcon(i.name,i.category)}</span><div className="shopping-row-copy"><strong>{i.name}</strong>{i.status!=="carrito"&&possibleExistingPurchase(state.inventory,i)&&<small className="purchase-overlap">{possibleExistingPurchase(state.inventory,i)!.text}</small>}{(shoppingRecipeContext(i)||i.supermarket)&&<small>{[shoppingRecipeContext(i),i.supermarket].filter(Boolean).join(" · ")}</small>}</div>
-     <div className="shopping-row-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={()=>changeShoppingQty(i.id,-1)} aria-label={"Restar cantidad de "+i.name}>−</button><b>{i.status==="carrito"?(i.boughtQty??i.qty):i.qty} {i.unit}</b><button disabled={planLine(i)&&!shoppingActive} onClick={()=>changeShoppingQty(i.id,1)} aria-label={"Sumar cantidad de "+i.name}>+</button></div>
+     <span className="shopping-row-icon" aria-hidden="true">{productIcon(i.name,i.category)}</span><div className="shopping-row-copy"><strong>{i.name}</strong>{i.barcode&&<small>{[i.brand,i.packageSize].filter(Boolean).join(" · ")}</small>}<ProductRating item={i} onOpen={openProductFacts}/>{i.status!=="carrito"&&possibleExistingPurchase(state.inventory,i)&&<small className="purchase-overlap">{possibleExistingPurchase(state.inventory,i)!.text}</small>}{(shoppingRecipeContext(i)||i.supermarket)&&<small>{[shoppingRecipeContext(i),i.supermarket].filter(Boolean).join(" · ")}</small>}</div>
+     <div className="shopping-row-controls"><button disabled={planLine(i)&&!shoppingActive} onClick={()=>changeShoppingQty(i.id,-1)} aria-label={"Restar cantidad de "+i.name}>−</button><b>{scannedPackCount({...i,qty:i.status==="carrito"?(i.boughtQty??i.qty):i.qty})!==undefined?scannedPackCount({...i,qty:i.status==="carrito"?(i.boughtQty??i.qty):i.qty})+" envases":(i.status==="carrito"?(i.boughtQty??i.qty):i.qty)+" "+i.unit}</b><button disabled={planLine(i)&&!shoppingActive} onClick={()=>changeShoppingQty(i.id,1)} aria-label={"Sumar cantidad de "+i.name}>+</button></div>
      <div className="shopping-visible-actions"><button className="shopping-home" onClick={()=>{setAlreadyHave(i);setHaveQty("");setHaveUnit(i.unit);setHaveLocation(classifyProduct(i.name,i.category).location)}}>Ya está en casa</button><button className="shopping-remove" onClick={()=>removeShopping(i.id)}>Eliminar</button>{shoppingActive&&(Boolean(freezerQualityGuide(i.name,i.category,i.subcategory))||i.category==="Carne")&&<button onClick={()=>toggleReserve(i.id)}>{i.reserve?"Quitar reserva":"De reserva"}</button>}</div>
     </div>)}</div></article>)}</div>
 
@@ -1924,7 +1935,7 @@ function Comprar({state,setState,addFromRecipe,activeStore,setActiveStore,shoppi
  </section>
 }
 
-function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared"|"reserve";clearFocus:()=>void;openRecipes:(name:string)=>void}){
+function Casa({openProductFacts,state,setState,setToast,focus,clearFocus,openRecipes}:{openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;setToast:(s:string)=>void;focus:"all"|"expiring"|"prepared"|"reserve";clearFocus:()=>void;openRecipes:(name:string)=>void}){
  const [loc,setLoc]=useState("Todo"),[cat,setCat]=useState("Todos");
  const [stockEdit,setStockEdit]=useState<InventoryItem|null>(null);
  const [stockName,setStockName]=useState("");
@@ -1961,7 +1972,8 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   const today=localDateIso(),p=classifyProduct(stockName),name=stockName.trim();
   setState(s=>{
    const same=s.inventory.find(i=>i.id===stockEdit?.id)||(!stockEdit?s.inventory.find(i=>norm(i.name)===norm(name)&&normalizedUnit(i.unit)===normalizedUnit(stockUnit)&&i.location===stockLocation):undefined);
-   const item:InventoryItem={...same,id:same?.id||crypto.randomUUID(),name,qty,unit:stockUnit,location:stockLocation,category:same?.category==="Preparados"?"Preparados":p.category,servings:same?.category==="Preparados"?qty:same?.servings,subcategory:p.subcategory,stock:qty>0?"hay":"falta",purchasedAt:same?.purchasedAt||today,purchaseDateUnknown:same?.purchaseDateUnknown??!same,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:today,estimateAnchorQty:qty,quickLevel:undefined,quickObservedAt:undefined,mealPrepAutoDepleted:false,expires:stockDate||undefined,dateType:stockDate?stockDateType:undefined,estimatedExpires:stockDate?undefined:same?.estimatedExpires,estimatedDateType:stockDate?undefined:same?.estimatedDateType};
+   const keepIdentity=same&&norm(same.name)===norm(name);
+   const item:InventoryItem={...same,barcode:keepIdentity?same.barcode:undefined,productInfo:keepIdentity?storedProductFacts(same):undefined,brand:keepIdentity?same.brand:undefined,packageSize:keepIdentity?same.packageSize:undefined,id:same?.id||crypto.randomUUID(),name,qty,unit:stockUnit,location:stockLocation,category:same?.category==="Preparados"?"Preparados":p.category,servings:same?.category==="Preparados"?qty:same?.servings,subcategory:p.subcategory,stock:qty>0?"hay":"falta",purchasedAt:same?.purchasedAt||today,purchaseDateUnknown:same?.purchaseDateUnknown??!same,lastConfirmedAt:today,lastStockCheckId:crypto.randomUUID(),estimateAnchorDate:today,estimateAnchorQty:qty,quickLevel:undefined,quickObservedAt:undefined,mealPrepAutoDepleted:false,expires:stockDate||undefined,dateType:stockDate?stockDateType:undefined,estimatedExpires:stockDate?undefined:same?.estimatedExpires,estimatedDateType:stockDate?undefined:same?.estimatedDateType};
    const saved=item.location==="Congelador"?{...item,mealPrepAuto:false}:item.mealPrepAuto?startAutoPrepared(item,remainingAutoDays(item),today):item;
    const inventory=same?s.inventory.map(i=>i.id===same.id?saved:i):[saved,...s.inventory];
    return {...s,inventory,stockChecks:appendConfirmedStockCheck(s.stockChecks,inventory,saved,today)};
@@ -2004,7 +2016,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
   });
   setToast("Guardado en congelador · HomeOS lo recordará");
  }
- function addToBuy(i:InventoryItem){if(state.shopping.some(q=>norm(q.name)===norm(i.name)&&q.status==="pendiente")){setToast("Ya estaba en la lista de compra");return}setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),name:i.name,qty:1,unit:i.unit,category:i.category,subcategory:i.subcategory,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
+ function addToBuy(i:InventoryItem){if(state.shopping.some(q=>(i.barcode&&q.barcode?i.barcode.padStart(14,"0")===q.barcode.padStart(14,"0"):norm(q.name)===norm(i.name)))){setToast("Ya estaba en la lista de compra");return}const pack=i.barcode?scannedPackage(i):{qty:1,unit:i.unit};setState(s=>({...s,shopping:[...s.shopping,{id:crypto.randomUUID(),barcode:i.barcode,productInfo:storedProductFacts(i),brand:i.brand,packageSize:i.packageSize,name:i.name,qty:pack.qty,unit:pack.unit,category:i.category,subcategory:i.subcategory,requestedBy:"Casa",reason:"recomienda",status:"pendiente"}]}));setToast("Añadido a la compra")}
  function moveProduct(i:InventoryItem,next:Location){
   if(!canStoreAt(i.name,i.category,next)){setToast(storageWarning(i.name,i.category,next));return}
   if(next==="Congelador"){freeze(i.id);return}
@@ -2073,7 +2085,7 @@ function Casa({state,setState,setToast,focus,clearFocus,openRecipes}:{state:AppS
    const freshness=freshnessNotice(i,consumption.daysLeft);
    return <article className="inventory-card" key={i.id}>
     <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
-    <div className="inventory-name-row"><h3>{i.name}</h3><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>
+    <div className="inventory-name-row"><h3>{i.name}</h3>{i.barcode&&<small>{[i.brand,i.packageSize].filter(Boolean).join(" · ")}</small>}<ProductRating item={i} onOpen={openProductFacts}/><span className="location-mini">{LOCATION_ICONS[displayLocation]||"▦"} {displayLocation}</span></div>
     {i.category!=="Preparados"&&!i.purchaseDateUnknown&&<p className="purchase-age">Compra del {new Date(i.purchasedAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</p>}{(density==="detail"||i.source!=="mealprep")&&<p className="inventory-qty">{i.quickLevel&&i.quickObservedAt&&daysUntil(i.quickObservedAt)>=-2?(i.quickLevel==="queda"?"Queda · sin contar":"Cantidad aproximada"):i.stock==="incierto"?"Cantidad por revisar":String(i.qty)+" "+i.unit}{density==="detail"&&<small className="estimate-basis">{estimate.basis}</small>}</p>}
     {density==="detail"&&<div className="inventory-badges"><span className={"rotation-badge "+rotationBand(i.name,i.category,i.location).key}>{rotationBand(i.name,i.category,i.location).label.replace("Rotación ","")}</span>{i.expires&&<small className={i.dateType==="caducidad"?"date-alert expiry":"date-alert"}>{i.dateType==="caducidad"?"Caduca ":"Consumo pref. "}{new Date(i.expires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{!i.expires&&i.estimatedExpires&&<small className="date-alert estimate" title={i.estimateBasis}>≈ {i.estimatedDateType==="caducidad"?"Caducidad":"Consumo pref."} {new Date(i.estimatedExpires+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} · revisa envase</small>}{i.frozenAt&&<small className="date-alert">Congelado {new Date(i.frozenAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}{i.storageMode==="reserva"&&<small className="date-alert reserve">Reserva</small>}{i.qualityReviewAt&&<small className="date-alert quality">Revisar calidad desde {new Date(i.qualityReviewAt+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})}</small>}</div>}
     {freshness&&<p className={"inventory-freshness "+freshness.kind}>{freshness.text}</p>}

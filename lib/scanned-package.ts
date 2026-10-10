@@ -12,3 +12,14 @@ export function scannedPackage(product: Pick<BarcodeProduct,'packageSize'>): { q
 
 const allergens: Record<string,string> = {milk:'Leche',eggs:'Huevos',gluten:'Gluten',soybeans:'Soja',nuts:'Frutos de cáscara',peanuts:'Cacahuetes',fish:'Pescado',crustaceans:'Crustáceos',molluscs:'Moluscos',celery:'Apio',mustard:'Mostaza','sesame-seeds':'Sésamo','sulphur-dioxide-and-sulphites':'Sulfitos',lupin:'Altramuces'};
 export function allergenLabel(tag: string) { const key = tag.replace(/^[a-z]{2}:/,''); return allergens[key] ?? key.replace(/-/g,' '); }
+
+export function scannedPackCount(item:{barcode?:string;packageSize?:string;qty:number;unit:string}): number | undefined {
+  if(!item.barcode)return;
+  const pack=scannedPackage(item), count=item.qty/pack.qty;
+  return item.unit===pack.unit&&Number.isFinite(count)&&count>=1&&Math.abs(count-Math.round(count))<1e-8?Math.round(count):undefined;
+}
+
+export function changeScannedQuantity(item:{barcode?:string;packageSize?:string;qty:number;unit:string},delta:number):number | undefined {
+  const count=scannedPackCount(item);
+  return count===undefined?undefined:Math.max(1,count+delta)*scannedPackage(item).qty;
+}

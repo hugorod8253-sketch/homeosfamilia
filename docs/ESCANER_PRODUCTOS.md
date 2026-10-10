@@ -4,12 +4,13 @@ Implementado: acceso global «Escanear», alimentación/cosmética, cámara medi
 
 La ficha muestra nombre, marca, presentación, nutrientes y Nutri-Score publicado cuando existen, NOVA, ingredientes, aditivos y alérgenos declarados. Cosméticos muestran composición, sin inferir seguridad o eficacia. La ausencia de información nunca se presenta como ausencia de alérgenos. Fotos de envases no se envían al proveedor. La consulta transmite solo el código y tipo de producto, junto a los datos técnicos de conexión.
 
-«Añadir a la compra» crea una intención, no inventario ni gasto. «Registrar en casa» registra una observación con cantidad según los envases elegidos, sin inventar fecha de compra ni caducidad. Consulta o pulsación repetida no duplica productos de la lista; envases adicionales en casa requieren la acción explícita. Se conservan código, marca y presentación al terminar la compra. Una presentación desconocida permanece en paquetes, no en gramos supuestos.
+«Añadir a la compra» crea una intención, no inventario ni gasto. «Registrar en casa» registra una observación con cantidad según los envases elegidos, sin inventar fecha de compra ni caducidad. Consulta o pulsación repetida no duplica productos de la lista; envases adicionales en casa requieren la acción explícita. Se conservan código, marca, presentación y ficha pública fechada al terminar la compra. Compra y Casa muestran un botón compacto con Nutri-Score A–E cuando existe; se abre la ficha guardada sin red y se puede actualizar sin modificar cantidades, fechas ni gastos. Nunca se atribuye una ficha a un nombre genérico o a otro código. Después de 30 días, la etiqueta pide actualizar la ficha en lugar de mantener una nota posiblemente desactualizada. Los controles de productos escaneados ajustan envases completos cuando la cantidad corresponde a envases; los gramos siguen siendo la unidad interna para inventario y recetas. Una presentación desconocida permanece en paquetes, no en gramos supuestos.
 
-Los datos públicos consultados conservan fuente/licencia ODbL y no se convierten en el catálogo privado propio de HomeOS; inventario y cantidades del hogar son observaciones del usuario. No se redistribuyen imágenes del proveedor. Revisar las obligaciones de reutilización y registrar la aplicación en el formulario del proveedor antes de escalar comercialmente.
+Las fichas públicas guardadas conservan su fuente/licencia ODbL y se mantienen como información externa vinculada por código; inventario y cantidades del hogar son observaciones del usuario. No se redistribuyen imágenes del proveedor. Revisar las obligaciones de reutilización y registrar la aplicación en el formulario del proveedor antes de escalar comercialmente.
 
 ## Validación
 - Pruebas de checksum, ceros iniciales, unidades y multipacks, separación alimento/cosmético, campos ausentes, duplicados, compra→inventario y registro sin gasto.
+- Validación adicional: persistencia tras compra/restauración, códigos y marcas distintos, actualización sin tocar existencias, fichas antiguas, control por envases y API con caché, consultas simultáneas y fallo de conexión.
 - Respuestas reales: alimento 3017620422003, cosmético 3560070791460.
 - Pruebas generales de HomeOS y compilación.
 - La lectura de cámara física en iPhone/Android y la calidad con envases reales necesitan validación en esos dispositivos. La entrada manual funciona como alternativa.
@@ -24,3 +25,8 @@ Los datos públicos consultados conservan fuente/licencia ODbL y no se convierte
 - https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/scanning-cosmetics-pet-food-and-other-products/
 - https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/
 - https://github.com/zxing-js/browser
+
+## Interpretación de colores
+La letra y el color corresponden exclusivamente al Nutri-Score publicado del alimento: A verde oscuro, B verde claro, C amarillo, D naranja y E rojo. No indican seguridad, caducidad ni existencia en casa. Los productos sin datos quedan sin valoración. Cosméticos muestran composición, no Nutri-Score. Los aditivos declarados no reciben etiquetas de «bueno/malo» por su presencia; se incluye enlace a EFSA y una explicación de las condiciones de uso/exposición.
+
+Referencias: https://www.efsa.europa.eu/es/safe2eat/food-additives y https://www.santepubliquefrance.fr/index.php/nutrition-et-activite-physique/nutri-score
