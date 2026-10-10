@@ -969,15 +969,30 @@ function ConsumptionSetup({state,setState,finish}:{state:AppState;setState:React
   return home.length?home:basic;
  },[state.purchaseHistory,state.inventory,state.profile.consumptionHabits]);
  const [answers,setAnswers]=useState<Record<string,number|null>>({});
+ const [dailyRoutines,setDailyRoutines]=useState<string[]>([]);
+ const routinePresets:ConsumptionHabit[]=[
+  {id:"routine-coffee",name:"Café molido",qty:250,unit:"g",days:30},
+  {id:"routine-milk",name:"Leche",qty:1,unit:"L",days:7},
+  {id:"routine-protein",name:"Proteína en polvo",qty:30,unit:"g",days:1},
+  {id:"routine-energy",name:"Bebida energética",qty:1,unit:"uds",days:1},
+  {id:"routine-vitamins",name:"Vitaminas",qty:1,unit:"uds",days:1}
+ ];
  function save(){setState(s=>{
   let habits=[...(s.profile.consumptionHabits||[])];
   for(const c of choices){if(!(c.id in answers))continue;
    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==norm(classifyProduct(c.name).canonical));
    const days=answers[c.id];if(days)habits.push({...c,days});
   }
+  for(const preset of routinePresets.filter(p=>dailyRoutines.includes(p.id))){
+   const canonical=norm(classifyProduct(preset.name).canonical);
+   if(!choices.some(c=>norm(classifyProduct(c.name).canonical)===canonical&&c.id in answers)){
+    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==canonical);
+    habits.push(preset);
+   }
+  }
   return {...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso(),consumptionHabits:habits}};
  });finish()}
- return <section className="consumption-setup quick-consumption"><span className="eyebrow">OPCIONAL · HASTA 6 RESPUESTAS</span><h2>¿Cuánto suele durar esta compra?</h2><p>Responde de memoria. Usamos la cantidad comprada; no necesitas pesar ni contar nada. Incluye alimentos y productos del hogar.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit}{state.purchaseHistory.length?" en la última compra":" · punto de partida orientativo"}</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"Una semana"],[14,"Dos semanas"],[30,"Un mes"],[null,"No lo sé"]].map(([days,label])=><button key={String(days)} className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}<div className="meal-actions"><button className="primary" onClick={save}>Guardar respuestas</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div><p>Solo orienta las estimaciones. Las cantidades confirmadas tienen prioridad; el inventario no cambia al responder.</p></section>
+ return <section className="consumption-setup quick-consumption"><span className="eyebrow">OPCIONAL · HASTA 6 RESPUESTAS</span><h2>¿Cuánto suele durar esta compra?</h2><p>Responde de memoria. Usamos la cantidad comprada; no necesitas pesar ni contar nada. Incluye alimentos y productos del hogar.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit}{state.purchaseHistory.length?" en la última compra":" · punto de partida orientativo"}</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"Una semana"],[14,"Dos semanas"],[30,"Un mes"],[null,"No lo sé"]].map(([days,label])=><button key={String(days)} className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}<div className="meal-actions"><button className="primary" onClick={save}>Guardar respuestas</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div><div className="quick-habit-row"><div><strong>¿Qué tomas casi todos los días?</strong><small>Selecciona tus rutinas habituales. Son valores iniciales editables, no cantidades confirmadas.</small></div><div className="quick-habit-options">{routinePresets.map(p=><button type="button" key={p.id} className={dailyRoutines.includes(p.id)?"secondary active":"secondary"} aria-pressed={dailyRoutines.includes(p.id)} onClick={()=>setDailyRoutines(old=>old.includes(p.id)?old.filter(id=>id!==p.id):[...old,p.id])}>{p.name} · {p.qty} {p.unit}/{p.days===1?"día":p.days+" días"}</button>)}</div><small>Ejemplo: una taza de café no equivale siempre a 8 g. Ajusta gramos, tamaño del paquete y frecuencia en Hábitos para mejorar la previsión.</small></div><p>Solo orienta las estimaciones. Las cantidades confirmadas tienen prioridad; el inventario no cambia al responder.</p></section>
 }
 
 function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error"}){
