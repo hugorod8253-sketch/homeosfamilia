@@ -21,7 +21,7 @@ import { ProductGlyph } from "./product-glyph";
 import { REUSE_IDEAS, reuseIdeaMatchesProduct, type ReuseNeed } from "../lib/reuse-engine";
 import { RECIPES as BUILTIN_RECIPES } from "../lib/recipes";
 import { generateLocalRecipes, localAiSupported, localAiErrorMessage } from "../lib/local-ai";
-import { mergeReceiptCandidates, readReceiptImage, type ReceiptCandidate } from "../lib/receipt-local";
+import { mergeReceiptCandidates, readReceiptImage, receiptWarnings, type ReceiptCandidate } from "../lib/receipt-local";
 import { estimateShelfLifeFromReference, shelfLifeBandFromReference } from "../lib/shelf-life-calibration";
 import { DEFAULT_MENU_PREFERENCES, normalizeMenuPreferences, type MenuPreferences } from "../lib/menu-preferences";
 import { RECIPE_THEMES, themeForMonth, themeForPeriod, themeRecipes } from "../lib/recipe-themes";
@@ -1647,6 +1647,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
  const [receiptMatch,setReceiptMatch]=useState<string|null>(null);
  const [ocrStatus,setOcrStatus]=useState<"idle"|"reading"|"ready"|"error">("idle");
  const [ocrProgress,setOcrProgress]=useState(0);
+ const [ocrConfidence,setOcrConfidence]=useState<number|undefined>();
  const [ocrItems,setOcrItems]=useState<ReceiptCandidate[]>([]);
  const [ocrTotal,setOcrTotal]=useState<number|undefined>(undefined);
  const [ocrPhotoCount,setOcrPhotoCount]=useState(0);
@@ -1740,7 +1741,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
   if(!W){setToast("El reconocimiento de voz no está disponible en este navegador");return}
   const recognition=new W(); shoppingRecognitionRef.current=recognition;
   recognition.lang="es-ES";recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
-  setVoiceHelp("Habla con naturalidad. Al terminar, pulsa Terminar.");shoppingTranscriptRef.current="";shoppingInterimRef.current="";shoppingListeningRef.current=true;setShoppingListening(true);
+  setVoiceHelp("Habla con naturalidad y separa los productos con una pausa corta. Al terminar, pulsa Terminar.");shoppingTranscriptRef.current=quick.trim();shoppingInterimRef.current="";shoppingListeningRef.current=true;setShoppingListening(true);
   recognition.onresult=(e:any)=>{
    let interim="";
    for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)shoppingTranscriptRef.current+=(shoppingTranscriptRef.current?" ":"")+e.results[i][0].transcript;
@@ -1749,17 +1750,17 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
    setQuick((shoppingTranscriptRef.current+" "+interim).trim());
   };
   recognition.onerror=(event:any)=>{if(event.error==="aborted")return;shoppingListeningRef.current=false;setShoppingListening(false);const message=speechErrorMessage(event.error);setVoiceHelp(message);setToast(message)};
-  recognition.onend=()=>{const wasListening=shoppingListeningRef.current;shoppingListeningRef.current=false;setShoppingListening(false);const text=(shoppingTranscriptRef.current+" "+shoppingInterimRef.current).trim();if(text&&wasListening){setQuick(text);add(text);setVoiceHelp("Dictado recibido. Revisa las dudas y lo que quieras guardar en Casa.")}};
+  recognition.onend=()=>{const wasListening=shoppingListeningRef.current;shoppingListeningRef.current=false;setShoppingListening(false);const text=(shoppingTranscriptRef.current+" "+shoppingInterimRef.current).trim();if(text&&wasListening){setQuick(text);setVoiceHelp("El micrófono se ha detenido. Revisa el texto y pulsa Añadir, o pulsa Dictar para continuar. No se ha añadido nada todavía.")}};
   try{recognition.start()}catch{shoppingListeningRef.current=false;setShoppingListening(false);setToast("No se pudo activar el micrófono · puedes escribir la lista")}
  }
  async function ticketSelected(file?:File,append=false){
   if(!file)return;
   if(!file.type.startsWith("image/")){
    setOcrStatus("idle");
-   setToast("PDF seleccionado · el OCR local funciona con fotos; introduce el total manualmente");
+   setToast("El PDF no se ha leído: convierte el ticket en imagen o introduce los datos manualmente.");
    return;
   }
-  if(!append){setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0)}
+  if(!append){setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0);setOcrConfidence(undefined)}
   setOcrProgress(0);setOcrStatus("reading");
   setToast(append?"Leyendo otra foto del ticket…":"Leyendo el ticket en este dispositivo…");
   try{
@@ -1768,6 +1769,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
    setOcrPhotoCount(nextCount);
    setReceiptName(nextCount>1?nextCount+" fotos del ticket":file.name||"Foto del ticket");
    setOcrItems(prev=>append?mergeReceiptCandidates(prev,parsed.items):parsed.items);
+   setOcrConfidence(prev=>append&&typeof prev==="number"&&typeof parsed.confidence==="number"?Math.min(prev,parsed.confidence):parsed.confidence);
    setOcrTotal(prev=>parsed.total??(append?prev:undefined));
    setOcrStatus("ready");
    if(typeof parsed.total==="number")setPurchaseTotal(parsed.total.toFixed(2).replace(".",","));
@@ -1780,16 +1782,17 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
  async function ticketFilesSelected(files?:FileList|null){
   const images=[...(files?Array.from(files):[])].filter(file=>file.type.startsWith("image/")).slice(0,4);
   if(!images.length){const pdf=files?.[0];if(pdf)await ticketSelected(pdf,false);return}
-  setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0);setReceiptName(images.length+" fotos del ticket");setOcrStatus("reading");
-  let merged:ReceiptCandidate[]=[];let total:number|undefined;
+  setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0);setOcrConfidence(undefined);setReceiptName(images.length+" fotos del ticket");setOcrStatus("reading");
+  let merged:ReceiptCandidate[]=[];let total:number|undefined;let lowestConfidence:number|undefined;
   try{
    for(let i=0;i<images.length;i++){
     const parsed=await readReceiptImage(images[i],pct=>setOcrProgress(Math.round(((i+pct/100)/images.length)*100)));
     merged=mergeReceiptCandidates(merged,parsed.items);
     total=parsed.total??total;
+    if(typeof parsed.confidence==="number")lowestConfidence=Math.min(lowestConfidence??100,parsed.confidence);
     setOcrPhotoCount(i+1);
    }
-   setOcrItems(merged);setOcrTotal(total);setOcrStatus("ready");
+   setOcrItems(merged);setOcrTotal(total);setOcrConfidence(lowestConfidence);setOcrStatus("ready");
    if(typeof total==="number")setPurchaseTotal(total.toFixed(2).replace(".",","));
    setToast(images.length+" fotos leídas · "+merged.length+" productos detectados");
   }catch{
@@ -1812,7 +1815,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
      const current=shopping[existing];
      shopping[existing]={...current,qty:shoppingActive?current.qty:Math.max(current.qty,item.qty),price:item.price??current.price,status:shoppingActive?"carrito":current.status,boughtQty:shoppingActive?item.qty:current.boughtQty,supermarket:activeStore||current.supermarket};
     }else{
-     shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty||1,unit:inferUnit(item.name),category:p.category,subcategory:p.subcategory,supermarket:activeStore||undefined,requestedBy:"Ticket",reason:"persona",status:shoppingActive?"carrito":"pendiente",boughtQty:shoppingActive?(item.qty||1):undefined,price:item.price});
+     shopping.push({id:crypto.randomUUID(),name:item.name,qty:item.qty||1,unit:item.unit||inferUnit(item.name),category:p.category,subcategory:p.subcategory,supermarket:activeStore||undefined,requestedBy:"Ticket",reason:"persona",status:shoppingActive?"carrito":"pendiente",boughtQty:shoppingActive?(item.qty||1):undefined,price:item.price});
     }
    }
    return {...s,shopping};
@@ -1939,10 +1942,20 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
    <aside className="purchase-tools">
     <div className="ticket-actions">
      <button className="tool-action ticket-camera" onClick={()=>receiptCameraRef.current?.click()}><span>📷</span><div><strong>Hacer foto del ticket</strong><p>Abre la cámara directamente.</p></div></button>
-     <button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Elegir ticket</strong><p>{receiptName?"Seleccionado: "+receiptName:"Foto o PDF desde el dispositivo."}</p></div></button>
+     <button className="tool-action" onClick={()=>receiptRef.current?.click()}><span>🧾</span><div><strong>Elegir ticket</strong><p>{receiptName?"Seleccionado: "+receiptName:"Foto del ticket; los PDF todavía requieren entrada manual."}</p></div></button>
     </div>
     {ocrStatus==="reading"&&<div className="local-ocr-card"><div className="local-ocr-head"><span>⌁</span><div><strong>Leyendo ticket en el móvil</strong><small>Procesamiento local · sin API de pago</small></div><b>{ocrProgress}%</b></div><div className="local-ocr-progress"><span style={{width:ocrProgress+"%"}}/></div></div>}
-    {ocrStatus==="ready"&&<div className="local-ocr-card ready"><div className="local-ocr-head"><span>✓</span><div><strong>{ocrItems.length} productos detectados</strong><small>{ocrPhotoCount>1?ocrPhotoCount+" fotos combinadas · ":""}{typeof ocrTotal==="number"?"Total detectado: "+ocrTotal.toFixed(2)+" €":"Revisa el total antes de terminar"}</small></div></div>{ocrItems.length>0&&<div className="ocr-preview">{ocrItems.slice(0,6).map((x,idx)=><span key={idx}>{x.name}{typeof x.price==="number"?" · "+x.price.toFixed(2)+" €":""}</span>)}{ocrItems.length>6&&<small>+{ocrItems.length-6} más</small>}</div>}<div className="ocr-ready-actions"><button onClick={()=>applyOcrItems()} disabled={!ocrItems.length}>Usar productos detectados</button><button className="secondary" onClick={()=>receiptCameraRef.current?.click()}>＋ Otra foto</button><button className="secondary" onClick={()=>{setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0);setOcrStatus("idle");setReceiptName("")}}>Nuevo ticket</button></div><p>Las fotos se procesan en tu dispositivo. HomeOS no las envía a una IA de pago.</p></div>}
+    {ocrStatus==="ready"&&<div className="local-ocr-card ready"><div className="local-ocr-head"><span>✓</span><div><strong>{ocrItems.length} productos detectados</strong><small>{ocrPhotoCount>1?ocrPhotoCount+" fotos combinadas · ":""}{typeof ocrTotal==="number"?"Total detectado: "+ocrTotal.toFixed(2)+" €":"Revisa el total antes de terminar"}</small></div></div>{ocrItems.length>0&&<div className="ocr-preview">{ocrItems.slice(0,6).map((x,idx)=><span key={idx}>{x.name}{typeof x.price==="number"?" · "+x.price.toFixed(2)+" €":""}</span>)}{ocrItems.length>6&&<small>+{ocrItems.length-6} más</small>}</div>}
+     {receiptWarnings(ocrItems,ocrTotal,ocrConfidence).map((warning,i)=><p key={i} className="ocr-warning" role="status">{warning}</p>)}
+     <details className="ocr-review-editor"><summary>Revisar y corregir los {ocrItems.length} productos</summary>
+      <p>El escáner puede equivocarse. Revisa nombres, cantidades y precios antes de registrarlos.</p>
+      {ocrItems.map((item,index)=><div className="ocr-edit-row" key={index}>
+       <label>Producto<input aria-label={"Nombre del producto "+(index+1)} value={item.name} onChange={e=>setOcrItems(items=>items.map((x,j)=>j===index?{...x,name:e.target.value}:x))}/></label>
+       <label>Cantidad<input aria-label={"Cantidad del producto "+(index+1)} type="number" min="0.01" step="any" value={item.qty} onChange={e=>setOcrItems(items=>items.map((x,j)=>j===index?{...x,qty:Number(e.target.value)}:x))}/></label>
+       <label>Precio €<input aria-label={"Precio del producto "+(index+1)} type="number" min="0" step="0.01" value={item.price??""} onChange={e=>setOcrItems(items=>items.map((x,j)=>j===index?{...x,price:e.target.value===""?undefined:Number(e.target.value)}:x))}/></label>
+       <button className="secondary" aria-label={"Excluir producto "+(index+1)} onClick={()=>setOcrItems(items=>items.filter((_,j)=>j!==index))}>Quitar</button>
+      </div>)}
+     </details><div className="ocr-ready-actions"><button onClick={()=>applyOcrItems()} disabled={!ocrItems.length||ocrItems.some(x=>!x.name.trim()||!Number.isFinite(x.qty)||x.qty<=0||typeof x.price==="number"&&(!Number.isFinite(x.price)||x.price<0))}>Confirmar productos revisados</button><button className="secondary" onClick={()=>receiptCameraRef.current?.click()}>＋ Otra foto</button><button className="secondary" onClick={()=>{setOcrItems([]);setOcrTotal(undefined);setOcrPhotoCount(0);setOcrConfidence(undefined);setOcrStatus("idle");setReceiptName("")}}>Nuevo ticket</button></div><p>Las fotos se procesan en tu dispositivo. HomeOS no las envía a una IA de pago.</p></div>}
     {ocrStatus==="error"&&<div className="local-ocr-card error"><strong>No se pudo leer con suficiente claridad</strong><p>Haz otra foto más recta y con buena luz, o continúa con la lista y el total manual.</p></div>}
     <input ref={receiptCameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>{ticketSelected(e.target.files?.[0],ocrPhotoCount>0);e.currentTarget.value=""}}/>
     <input ref={receiptRef} hidden type="file" accept="image/*,.pdf" multiple onChange={e=>{ticketFilesSelected(e.target.files);e.currentTarget.value=""}}/>
