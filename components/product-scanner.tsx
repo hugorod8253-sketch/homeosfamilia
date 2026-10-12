@@ -10,6 +10,8 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   const [code,setCode] = useState(initialCode||initialProduct?.barcode||'');
   const [result,setResult] = useState<LookupResult|null>(initialProduct?{status:'found',product:initialProduct}:null);
   const [busy,setBusy] = useState(false);
+  const [alternativeBusy,setAlternativeBusy] = useState(false);
+  const [alternatives,setAlternatives] = useState<{items:{barcode:string;name:string;brand:string;size:string;grade:string;url:string}[];message:string}|null>(null);
   const [camera,setCamera] = useState(false);
   const [cameraError,setCameraError] = useState('');
   const [readingPhoto,setReadingPhoto] = useState(false);
@@ -66,7 +68,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     const barcode=normalizeBarcode(value);
     const id=++sequence.current;
     abort.current?.abort(); stopCamera(); setCamera(false); setFeedback(''); setExtra(false);
-    setResult(null);
+    setResult(null);setAlternatives(null);
     if(!barcode) {setBusy(false);setResult({status:'invalid',message:'Revisa los números del código de barras.'});return}
     const controller=new AbortController();abort.current=controller;
     setBusy(true);setPacks(1);setLocation('');
@@ -98,7 +100,20 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   }
   function changeKind(value:ProductKind) {
     sequence.current++;abort.current?.abort();stopCamera();setCamera(false);setBusy(false);setReadingPhoto(false);setExtra(false);
-    setKind(value);setResult(null);setFeedback('');setCameraError('');
+    setKind(value);setAlternatives(null);setResult(null);setFeedback('');setCameraError('');
+  }
+  async function findAlternatives(product:BarcodeProduct) {
+    const category=product.categoryTags?.at(-1);
+    const grade=nutritionRating(product);
+    if(!category||!grade)return;
+    setAlternativeBusy(true);setAlternatives(null);
+    try {
+      const response=await fetch('/api/alternatives?'+new URLSearchParams({code:product.barcode,category,grade}));
+      const data=await response.json();
+      if(response.ok && data && Array.isArray(data.items))setAlternatives(data);
+      else setAlternatives({items:[],message:'No se pueden consultar alternativas ahora.'});
+    } catch {setAlternatives({items:[],message:'Sin conexión para buscar alternativas.'});}
+    finally {setAlternativeBusy(false);}
   }
   const product=result?.status==='found'?result.product:null;
   const grade=nutritionRating(product||undefined);
@@ -121,6 +136,13 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
       <div className="scanner-product-heading"><div><h3>{product.name}</h3><p>{[product.brand,product.packageSize].filter(Boolean).join(' · ')||'Presentación sin datos'}</p></div>{grade?<div className={`scanner-nutriscore grade-${grade}`}><span>Nutri-Score</span><strong>{grade.toUpperCase()}</strong></div>:<span className="scanner-unrated">{product.kind==='food'?(product.nutriScore?'Actualizar ficha':'Sin Nutri-Score'):'Composición'}</span>}</div>
       {product.kind==='food'&&<><p className="scanner-note">Nutri-Score orienta sobre el perfil nutricional; no es una nota de seguridad ni una puntuación de Yuka.</p><h4>Nutrición por {product.nutritionBasis}</h4>{Object.keys(product.nutritionPer100g).length?<dl className="scanner-nutrition">{Object.entries(product.nutritionPer100g).map(([key,value])=><div key={key}><dt>{nutritionLabels[key]||key}</dt><dd>{value.toLocaleString('es-ES',{maximumFractionDigits:2})} {key==='energy-kcal'?'kcal':'g'}</dd></div>)}</dl>:<p>Sin información nutricional disponible.</p>}{product.novaGroup&&<p>Procesamiento: grupo NOVA {product.novaGroup} de 4.</p>}<h4>Alérgenos declarados</h4><p>{product.allergens.length?product.allergens.map(allergenLabel).join(', '):'No hay información suficiente para asegurar su ausencia.'}</p><p className="scanner-note">Comprueba siempre el envase, especialmente si tienes alergias.</p></>}
       <details className="scanner-details"><summary>Ingredientes{product.additives.length?' y aditivos':''}</summary><p>{product.ingredients||'Ingredientes sin datos.'}</p>{product.additives.length>0&&<p>Aditivos declarados: {product.additives.map(tag=>tag.replace(/^en:/,'').toUpperCase()).join(', ')}.</p>}{product.kind==='food'&&product.additives.length>0&&<p className="scanner-note">Contener aditivos no significa que el producto sea peligroso. Su seguridad depende de las condiciones de uso y de la exposición. <a href="https://www.efsa.europa.eu/es/safe2eat/food-additives" target="_blank" rel="noopener noreferrer">Información de EFSA</a>.</p>}{product.kind==='beauty'&&<p>Esta ficha no evalúa la seguridad ni la eficacia del cosmético. No conocemos la concentración de cada ingrediente.</p>}</details>
+      {product.kind==='food'&&<section aria-label="Comparar alternativas" style={{margin:'18px 0',padding:'16px',borderRadius:16,background:'var(--surface-secondary, #f1f5f9)'}}>
+        <h4 style={{margin:'0 0 8px'}}>¿Hay una opción con mejor perfil nutricional?</h4>
+        <p className="scanner-note">Comparamos el Nutri-Score publicado entre productos de la misma categoría; no inventamos notas de 0 a 100.</p>
+        {grade && product.categoryTags?.length ? <button type="button" className="primary" style={{width:'100%',padding:'14px',fontWeight:700}} disabled={alternativeBusy} onClick={()=>void findAlternatives(product)}>{alternativeBusy?'Buscando alternativas…':'Buscar una alternativa mejor →'}</button>:<p className="scanner-note">Faltan la categoría o el Nutri-Score: no es posible comparar de forma fiable.</p>}
+        {alternatives&&<div role="status" style={{marginTop:12}}><p className="scanner-note">{alternatives.message}</p>{alternatives.items.map(item=><div key={item.barcode} style={{padding:'12px 0',borderBottom:'1px solid #cbd5e1'}}><strong>{item.name}</strong><p style={{margin:'4px 0'}}>{[item.brand,item.size].filter(Boolean).join(' · ')} · Nutri-Score {item.grade.toUpperCase()}</p><a href={item.url} target="_blank" rel="noopener noreferrer">Ver ficha y datos de origen ↗</a></div>)}</div>}
+      </section>}
+      {product.kind==='beauty'&&<p className="scanner-note">La composición cosmética no permite establecer un ranking fiable sin evaluar fórmula, uso y exposición. No mostramos falsas alternativas «más seguras».</p>}
       <div className="scanner-add-panel"><label htmlFor="scanner-packs">Envases de esta presentación</label><div className="scanner-packs">{[1,2,3,4].map(n=><button key={n} aria-pressed={packs===n} className={packs===n?'active':''} onClick={()=>setPacks(n)}>{n}</button>)}<input id="scanner-packs" aria-label="Número de envases" type="number" min={1} max={99} value={packs} onChange={event=>setPacks(Math.max(1,Math.min(99,Math.floor(Number(event.target.value)||1))))}/></div><label htmlFor="scanner-location">Para registrar en casa</label><select id="scanner-location" value={location} onChange={event=>setLocation(event.target.value)}><option value="">Ubicación recomendada</option><option>Nevera</option><option>Despensa</option><option>Congelador</option><option>Sin ubicar</option></select>
       <div className="scanner-add-actions"><button className="primary" onClick={()=>setFeedback(onAdd(product,'shopping',packs,location,false))}>Añadir a la compra</button><button className="secondary" onClick={()=>{const message=onAdd(product,'inventory',packs,location,extra);setFeedback(message);if(message.startsWith('Ya está registrado'))setExtra(true);else setExtra(false)}}>{extra?'Registrar envases adicionales':'Registrar en casa'}</button></div><p className="scanner-note">Añadir a la lista no marca una compra. Registrar en casa confirma existencias sin crear un gasto.</p></div>
       {feedback&&<p className="scanner-feedback" role="status">{feedback}</p>}
