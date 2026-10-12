@@ -1,5 +1,5 @@
-const CACHE="homeos-shell-v17-unified-icons";
-const SHELL=["/","/manifest.webmanifest","/icon.svg?v=3"];
+const CACHE="homeos-shell-v18-pwa-png";
+const SHELL=["/","/manifest.webmanifest","/icon","/icon.svg?v=4"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}));
   self.skipWaiting();
