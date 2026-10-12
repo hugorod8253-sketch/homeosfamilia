@@ -3,7 +3,7 @@ export type ProductKind = 'food' | 'beauty';
 export type BarcodeProduct = {
   barcode: string; kind: ProductKind; name: string; brand?: string; packageSize?: string;
   ingredients?: string; allergens: string[]; nutritionPer100g: Record<string, number>;
-  categoryText?: string; nutritionBasis: '100 g' | '100 ml'; novaGroup?: number; additives: string[];
+  categoryText?: string; categoryTags?: string[]; nutritionBasis: '100 g' | '100 ml'; novaGroup?: number; additives: string[];
   nutriScore?: string; missing: string[];
   source: { name: string; url: string; license: 'ODbL-1.0'; fetchedAt: string };
 };
@@ -46,7 +46,7 @@ export function parseBarcodeProduct(payload: unknown, barcode: string, kind: Pro
   const grade = kind === 'food' ? str(p.nutriscore_grade)?.toLowerCase() : undefined;
   return {
     barcode, kind, name, brand: str(p.brands), packageSize: str(p.quantity), ingredients,
-    categoryText: str(p.categories), nutritionBasis: /^(ml|cl|l)$/i.test(String(p.product_quantity_unit)) ? '100 ml' : '100 g',
+    categoryText: str(p.categories), categoryTags: Array.isArray(p.categories_tags) ? p.categories_tags.filter((v): v is string => typeof v === 'string' && /^en:[a-z0-9-]+$/.test(v)).slice(-8) : [], nutritionBasis: /^(ml|cl|l)$/i.test(String(p.product_quantity_unit)) ? '100 ml' : '100 g',
     novaGroup: kind === 'food' && typeof p.nova_group === 'number' && [1,2,3,4].includes(p.nova_group) ? p.nova_group : undefined,
     additives: kind === 'food' && Array.isArray(p.additives_tags) ? p.additives_tags.filter((v): v is string => typeof v === 'string') : [],
     allergens: Array.isArray(p.allergens_tags) ? p.allergens_tags.filter((v): v is string => typeof v === 'string') : [],
@@ -67,7 +67,7 @@ export async function lookupBarcode(value: string, kind: ProductKind, options: {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), options.timeoutMs ?? 8000);
   try {
-    const fields = 'code,product_type,product_name,product_name_es,product_name_en,brands,quantity,product_quantity_unit,categories,ingredients_text,ingredients_text_es,ingredients_text_en,allergens_tags,nutriments,nutriscore_grade,nova_group,additives_tags';
+    const fields = 'code,product_type,product_name,product_name_es,product_name_en,brands,quantity,product_quantity_unit,categories,categories_tags,ingredients_text,ingredients_text_es,ingredients_text_en,allergens_tags,nutriments,nutriscore_grade,nova_group,additives_tags';
     const response = await (options.fetcher ?? fetch)(`https://${hosts[kind]}/api/v3/product/${barcode}.json?lc=es&cc=es&fields=${fields}`, {
       signal: abort.signal, credentials: 'omit', headers: { Accept: 'application/json', ...(options.userAgent ? {'User-Agent':options.userAgent} : {}) },
     });
