@@ -2437,3 +2437,17 @@ main p,.modal p{font-size:16px!important}
 .ocr-edit-row input{box-sizing:border-box;min-width:0;width:100%;font-size:14px;padding:8px 5px;border:1px solid #c7d0c9;border-radius:7px;background:white;color:#1b2720}
 .ocr-edit-row button{font-size:12px;padding:8px 6px;white-space:nowrap}
 @media(max-width:520px){.ocr-edit-row{grid-template-columns:minmax(0,1fr) 68px 72px}.ocr-edit-row label:first-child{grid-column:1/-1}.ocr-edit-row button{grid-column:3;justify-self:end;margin-top:2px}}
+
+
+/* Onboarding optional sections: clear CTA instead of subtle disclosure arrow. */
+.ob-panel details.onboarding-options > summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border:1.5px solid #a7c5b0;background:#f1f8f2;border-radius:14px;cursor:pointer;color:#183729}
+.ob-panel details.onboarding-options > summary::-webkit-details-marker{display:none}
+.ob-panel details.onboarding-options > summary::marker{content:""}
+.ob-panel details.onboarding-options > summary > span:first-child{display:grid;gap:3px;min-width:0}
+.ob-panel details.onboarding-options > summary strong{font-size:15px}
+.ob-panel details.onboarding-options > summary small{font-size:12px;font-weight:400;color:#4e6254;margin:0}
+.onboarding-expand-action{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:700;font-size:13px;color:#183729}
+.onboarding-plus{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;background:#183729;color:white;font-size:20px;line-height:1;transition:transform .2s}
+.ob-panel details.onboarding-options[open] .onboarding-plus{transform:rotate(45deg)}
+.ob-panel details.onboarding-options[open] > summary{border-radius:14px 14px 8px 8px;background:#e5f2e8}
+@media(max-width:420px){.ob-panel details.onboarding-options>summary{padding:12px;gap:7px}.onboarding-expand-action{font-size:12px}.ob-panel details.onboarding-options>summary strong{font-size:14px}}
