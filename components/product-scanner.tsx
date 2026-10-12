@@ -103,12 +103,13 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     setKind(value);setAlternatives(null);setResult(null);setFeedback('');setCameraError('');
   }
   async function findAlternatives(product:BarcodeProduct) {
-    const category=product.categoryTags?.at(-1);
+    const broad=new Set(['en:spreads','en:breakfasts','en:foods','en:snacks','en:desserts','en:sweet-spreads','en:plant-based-foods-and-beverages','en:confectioneries']);
+    const category=product.categoryTags?.filter(tag=>!broad.has(tag)).at(-1);
     const grade=nutritionRating(product);
     if(!category||!grade)return;
     setAlternativeBusy(true);setAlternatives(null);
     try {
-      const response=await fetch('/api/alternatives?'+new URLSearchParams({code:product.barcode,category,grade}));
+      const response=await fetch('/api/alternatives?'+new URLSearchParams({code:product.barcode,category,grade,name:product.name,categories:(product.categoryTags||[]).join(',')}));
       const data=await response.json();
       if(response.ok && data && Array.isArray(data.items))setAlternatives(data);
       else setAlternatives({items:[],message:'No se pueden consultar alternativas ahora.'});
@@ -139,7 +140,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
       {product.kind==='food'&&<section aria-label="Comparar alternativas" style={{margin:'18px 0',padding:'16px',borderRadius:16,background:'var(--surface-secondary, #f1f5f9)'}}>
         <h4 style={{margin:'0 0 8px'}}>¿Hay una opción con mejor perfil nutricional?</h4>
         <p className="scanner-note">Comparamos el Nutri-Score publicado entre productos de la misma categoría; no inventamos notas de 0 a 100.</p>
-        {grade && product.categoryTags?.length ? <button type="button" className="primary" style={{width:'100%',padding:'14px',fontWeight:700}} disabled={alternativeBusy} onClick={()=>void findAlternatives(product)}>{alternativeBusy?'Buscando alternativas…':'Buscar una alternativa mejor →'}</button>:<p className="scanner-note">Faltan la categoría o el Nutri-Score: no es posible comparar de forma fiable.</p>}
+        {grade && product.categoryTags?.some(tag=>!new Set(['en:spreads','en:breakfasts','en:foods','en:snacks','en:desserts','en:sweet-spreads','en:plant-based-foods-and-beverages','en:confectioneries']).has(tag)) ? <button type="button" className="primary" style={{width:'100%',padding:'14px',fontWeight:700}} disabled={alternativeBusy} onClick={()=>void findAlternatives(product)}>{alternativeBusy?'Buscando alternativas…':'Buscar una alternativa mejor →'}</button>:<p className="scanner-note">Faltan la categoría o el Nutri-Score: no es posible comparar de forma fiable.</p>}
         {alternatives&&<div role="status" style={{marginTop:12}}><p className="scanner-note">{alternatives.message}</p>{alternatives.items.map(item=><div key={item.barcode} style={{padding:'12px 0',borderBottom:'1px solid #cbd5e1'}}><strong>{item.name}</strong><p style={{margin:'4px 0'}}>{[item.brand,item.size].filter(Boolean).join(' · ')} · Nutri-Score {item.grade.toUpperCase()}</p><a href={item.url} target="_blank" rel="noopener noreferrer">Ver ficha y datos de origen ↗</a></div>)}</div>}
       </section>}
       {product.kind==='beauty'&&<p className="scanner-note">La composición cosmética no permite establecer un ranking fiable sin evaluar fórmula, uso y exposición. No mostramos falsas alternativas «más seguras».</p>}
