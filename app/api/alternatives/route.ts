@@ -18,12 +18,15 @@ export async function GET(request: Request) {
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7500);
   try {
-    const better=Object.keys(grades).filter(g=>grades[g]<grades[grade]).join(',');
-    const url=new URL('https://world.openfoodfacts.org/api/v2/search');
-    url.searchParams.set('categories_tags_en',category.slice(3));
-    url.searchParams.set('nutrition_grades_tags',better);
+    const url=new URL('https://world.openfoodfacts.org/cgi/search.pl');
+    url.searchParams.set('search_simple','1');
+    url.searchParams.set('action','process');
+    url.searchParams.set('json','1');
+    url.searchParams.set('tagtype_0','categories');
+    url.searchParams.set('tag_contains_0','contains');
+    url.searchParams.set('tag_0',category);
     url.searchParams.set('fields','code,product_name,product_name_es,brands,quantity,nutriscore_grade,categories_tags');
-    url.searchParams.set('page_size','45');
+    url.searchParams.set('page_size','100');
     url.searchParams.set('sort_by','popularity_key');
     const response=await fetch(url,{signal:controller.signal,headers:{'User-Agent':'HomeOS/2.0 (https://homeosfamilia.vercel.app)','Accept':'application/json'},cache:'no-store'});
     if(!response.ok) throw new Error('upstream');
