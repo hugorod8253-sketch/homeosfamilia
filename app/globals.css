@@ -2451,3 +2451,5 @@ main p,.modal p{font-size:16px!important}
 .ob-panel details.onboarding-options[open] .onboarding-plus{transform:rotate(45deg)}
 .ob-panel details.onboarding-options[open] > summary{border-radius:14px 14px 8px 8px;background:#e5f2e8}
 @media(max-width:420px){.ob-panel details.onboarding-options>summary{padding:12px;gap:7px}.onboarding-expand-action{font-size:12px}.ob-panel details.onboarding-options>summary strong{font-size:14px}}
+
+.onboarding-custom-label{display:block;margin:16px 0 7px;font-weight:700;font-size:14px}.onboarding-custom-row{display:flex;gap:8px}.onboarding-custom-row input{flex:1;min-width:0;border:1px solid #b9c8bd;border-radius:10px;padding:11px;font-size:14px}.onboarding-custom-row button{white-space:nowrap}.onboarding-custom-tags{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}.onboarding-custom-tags button{border:1px solid #afc9b8;background:#eef6f0;color:#234532;border-radius:18px;padding:6px 10px;font-size:13px}
