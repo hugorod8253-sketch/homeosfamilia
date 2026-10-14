@@ -2479,3 +2479,5 @@ main p,.modal p{font-size:16px!important}
 
 /* Scanner mobile visibility and clearer choices */
 .scanner-camera-button{min-height:58px!important;background:#174c9a!important;color:#fff!important;font-size:17px!important;font-weight:800!important;box-shadow:0 6px 18px #174c9a33!important}.scanner-kind{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:transparent!important}.scanner-kind button{min-width:0;min-height:52px;white-space:normal;border:2px solid #ccd7e4!important;background:#f1f5fa!important;border-radius:14px!important;font-weight:700}.scanner-kind button.active{background:#e5efff!important;border-color:#2463b7!important;color:#123f81!important}.scanner-code-row input{min-width:0}button:focus-visible{outline:3px solid #2463b7;outline-offset:3px}@media(max-width:700px){.scanner-kind{width:100%}.scanner-code-row input{flex:1 1 0;width:0;min-width:0}}
+
+.scanner-kind{grid-template-columns:repeat(3,minmax(0,1fr))!important}@media(max-width:450px){.scanner-kind button{font-size:12px!important;padding:9px 4px!important}}
