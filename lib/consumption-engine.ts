@@ -6,7 +6,15 @@ export type StockCheck={id:string;name:string;qty:number;unit:string;date:string
 export type ConsumptionExtra={id:string;name:string;qty:number;unit:string;date:string};
 type Purchase={name:string;category?:string;qty:number;unit:string;date:string};
 type Item=Purchase&{id?:string;purchasedAt?:string;lastConfirmedAt?:string;estimateAnchorDate?:string;estimateAnchorQty?:number;location?:string;storageMode?:string;quickLevel?:string;quickObservedAt?:string;expires?:string;estimatedExpires?:string};
-function key(name:string,category?:string){const n=normalizeProductText(name);if(/colacao|cola cao|nesquik|cacao soluble/.test(n))return 'cacao soluble';return normalizeProductText(classifyProduct(name,category).canonical)}
+function key(name:string,category?:string){
+ const n=normalizeProductText(name);
+ if(/colacao|cola cao|nesquik|cacao soluble/.test(n))return "cacao soluble";
+ if(/cafe\s*(en|de)\s*grano|cafe\s*grano/.test(n))return "cafe:grano";
+ if(/cafe\s*molido|cafe\s*en\s*polvo/.test(n))return "cafe:molido";
+ if(/cafe\s*soluble|nescafe/.test(n))return "cafe:soluble";
+ if(/capsulas?\s*(de\s*)?cafe|cafe\s*(en\s*)?capsulas?/.test(n))return "cafe:capsulas";
+ return normalizeProductText(classifyProduct(name,category).canonical);
+}
 function validDate(date:string){return isCalendarDate(date)}
 function compatible(a:string,b:string){const f=planUnitFamily(a);return f===planUnitFamily(b)&&(f==='mass'||f==='volume'||normalizePlanUnit(a)===normalizePlanUnit(b))}
 function median(xs:number[]){const s=xs.sort((a,b)=>a-b);return s.length%2?s[Math.floor(s.length/2)]:(s[s.length/2-1]+s[s.length/2])/2}
@@ -49,7 +57,8 @@ export function changeShoppingQuantity(qty:number,unit:string,delta:number){
 /** One household rate is consumed once, oldest lot first, between dated stock anchors. */
 export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Array<Omit<Item,'date'>&{stock?:string}>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso(),extras:ConsumptionExtra[]=[]){
  const result=estimateConsumption(item,purchases,habits,checks,today,1,extras);
- if(item.qty<=0||item.location==='Congelador'||item.storageMode==='reserva'||result.source==='unknown')return result;
+ const hasExtra=extras.some(e=>key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&validDate(e.date)&&e.date<=today);
+ if(item.qty<=0||item.location==='Congelador'||item.storageMode==='reserva'||(result.source==='unknown'&&!hasExtra))return result;
  const peers=inventory.filter(i=>i.stock!=='falta'&&i.qty>0&&i.location!=='Congelador'&&i.storageMode!=='reserva'&&key(i.name,i.category)===key(item.name,item.category)&&compatible(i.unit,item.unit));
  const ownIndex=peers.findIndex(i=>i===item||(item.id!==undefined&&i.id===item.id));
  if(ownIndex<0)return result;
@@ -57,7 +66,7 @@ export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Ar
  const ownLot=lots.find(x=>x.index===ownIndex);if(!ownLot)return result;
  // A presence correction may slow a provisional rate, but never confirms a count.
  const rate=Math.min(planToBase(result.dailyRate,item.unit),...peers.filter(i=>i.quickLevel==='queda'&&i.quickObservedAt).map(i=>planToBase(estimateConsumption(i,purchases,habits,checks,today).dailyRate,i.unit)).filter(x=>x>0));
- if(!Number.isFinite(rate)||rate<=0)return result;
+ if(!Number.isFinite(rate)||(rate<=0&&!hasExtra))return result;
  const ordered=[...lots].sort((a,b)=>(a.i.expires||a.i.estimatedExpires||'9999').localeCompare(b.i.expires||b.i.estimatedExpires||'9999')||(a.i.purchasedAt||a.date).localeCompare(b.i.purchasedAt||b.date)||a.index-b.index);
  const exceptional=extras.filter(e=>key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&Number.isFinite(e.qty)&&validDate(e.date)&&e.date<=today);
  const events=[...new Set([...lots.map(x=>x.date),...exceptional.map(x=>x.date),today])].sort();
@@ -73,5 +82,5 @@ export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Ar
   previous=date;
  }
  const before=ordered.slice(0,ordered.indexOf(ownLot)).reduce((n,x)=>n+x.remaining,0);
- return {...result,dailyRate:ordered.find(x=>x.remaining>0)===ownLot?planFromBase(rate,item.unit):0,estimatedQty:Math.round(planFromBase(ownLot.remaining,item.unit)*100)/100,daysLeft:ownLot.remaining>0?(before+ownLot.remaining)/rate:0};
+ return {...result,dailyRate:ordered.find(x=>x.remaining>0)===ownLot?planFromBase(rate,item.unit):0,estimatedQty:Math.round(planFromBase(ownLot.remaining,item.unit)*100)/100,daysLeft:rate>0?(ownLot.remaining>0?(before+ownLot.remaining)/rate:0):null};
 }
