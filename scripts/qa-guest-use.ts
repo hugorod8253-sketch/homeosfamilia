@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import {chargeVisitorUse} from "../lib/guest-use";
+import {chargeVisitorUse, type ForecastLot} from "../lib/guest-use";
 import {estimateInventoryConsumption,type ConsumptionExtra} from "../lib/consumption-engine";
 const today="2026-10-14";
 const routine=[{id:"coffee",name:"Café molido",qty:10,unit:"g",days:1}];
-const old={id:"old",name:"Café molido",category:"Despensa",qty:100,unit:"g",purchasedAt:"2026-10-10",stock:"hay"};
-const newer={...old,id:"new",qty:150,purchasedAt:today};
+const old:ForecastLot={id:"old",name:"Café molido",category:"Despensa",qty:100,unit:"g",purchasedAt:"2026-10-10",stock:"hay"};
+const newer:ForecastLot={...old,id:"new",qty:150,purchasedAt:today};
 const extra:ConsumptionExtra={id:"visitor-x",name:"Café molido",qty:30,unit:"g",date:today};
-const expected=(item:typeof old,inventory:typeof old[])=>estimateInventoryConsumption(item,inventory,[],routine,[],today,[]);
+const expected=(item:ForecastLot,inventory:ForecastLot[])=>estimateInventoryConsumption(item,inventory,[],routine,[],today,[]);
 const result=chargeVisitorUse([old,newer],[extra],today,item=>expected(item,[old,newer]),null);
 assert.equal(result.inventory[0].qty,100,"confirmed/recorded physical quantity stays intact");
 assert.equal(result.inventory[1].qty,150,"later purchase stays physically intact");
@@ -20,7 +20,7 @@ const big=chargeVisitorUse([old,newer],[{...extra,qty:80}],today,item=>expected(
 assert.equal(big.inventory[0].estimateAnchorQty,0);
 assert.equal(big.inventory[1].estimateAnchorQty,130,"a large visitor event may span two lots without duplication");
 assert.equal(estimateInventoryConsumption(big.inventory[1],big.inventory,[],routine,[],today,big.events).estimatedQty,130);
-const milk={id:"milk",name:"Leche",qty:2,unit:"bricks",purchasedAt:today,stock:"hay"};
+const milk:ForecastLot={id:"milk",name:"Leche",qty:2,unit:"bricks",purchasedAt:today,stock:"hay"};
 const milkExtra:ConsumptionExtra={id:"milk1",name:"Leche",qty:.24,unit:"L",date:today};
 const milkCharged=chargeVisitorUse([milk],[milkExtra],today,item=>({estimatedQty:item.qty}),1);
 assert.equal(milkCharged.inventory[0].estimateAnchorQty,1.76,"known 1 L carton enables measured milk use");
