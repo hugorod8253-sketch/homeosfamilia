@@ -2546,3 +2546,12 @@ main p,.modal p{font-size:16px!important}
  .quick-add.smart .meal-mic.homeos-voice{min-width:94px!important}
 }
 @media(prefers-reduced-motion:reduce){.routine-options button,.homeos-voice{transition:none!important}}
+
+
+.routine-milk-size{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:4px 0 16px;padding:17px 19px;border:1px solid #d7e4ec;border-radius:17px;background:#f2f7fb}
+.routine-milk-size>div:first-child{min-width:0;flex:1 1 200px}
+.routine-milk-size strong{font-size:17px;color:#173e5d}
+.routine-milk-size p{font-size:14px!important;max-width:540px;margin:5px 0 0;color:#536f80}
+.routine-milk-size>.routine-options{flex:0 1 auto}
+.routine-milk-size>small{flex-basis:100%;font-size:13px;color:#735c2c}
+@media(max-width:700px){.routine-milk-size{padding:15px}.routine-milk-size>.routine-options{width:100%}}
