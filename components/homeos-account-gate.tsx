@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useState,type FormEvent,type ReactNode} from "react";
 import HomeOS from "./homeos";
 import {readBrowserStorage,writeBrowserStorage} from "../lib/browser-storage";
 import {
@@ -9,7 +9,7 @@ import {
  type HomeAccount,type HomeAccountMember,type HomeAccountSession
 } from "../lib/homeos-account";
 
-function Badge({children}:{children:React.ReactNode}){return <span className="ha-badge">{children}</span>}
+function Badge({children}:{children:ReactNode}){return <span className="ha-badge">{children}</span>}
 function InlineError({message}:{message:string}){return message?<p role="alert" className="ha-error">{message}</p>:null}
 const homeKey=(id:string)=>"homeos:account:selected:"+id;
 const errorMessage=(err:unknown)=>err instanceof Error?err.message:"Ha ocurrido un problema. Inténtalo de nuevo.";
@@ -60,7 +60,7 @@ export default function HomeAccountGateway(){
  useEffect(()=>{if(!selected||!manageOpen)return;void listAccountMembers(selected).then(setMembers).catch(err=>setError(errorMessage(err)))},[selected,manageOpen]);
  const current=houses.find(h=>h.householdId===selected);
  async function run(task:()=>Promise<void>){if(busy)return;setBusy(true);setError("");setSuccess("");try{await task()}catch(err){setError(errorMessage(err))}finally{setBusy(false)}}
- async function submitAuth(event:React.FormEvent){
+ async function submitAuth(event:FormEvent){
   event.preventDefault();
   await run(async()=>{
    if(mode==="signup"){
@@ -132,7 +132,7 @@ export default function HomeAccountGateway(){
  if(current&&!manageOpen)return <HomeOS key={current.householdId+"-"+session?.user.id} account={{
   householdId:current.householdId,userId:session!.user.id,
   memberName:current.memberName||"Tú",role:current.role,onManage:()=>{void openManager()},
-  onAccessDenied:()=>{setSelected(null);setError("Tu cuenta ya no tiene acceso a este hogar.");void session&&loadHomes(session,false)}
+  onAccessDenied:()=>{setSelected(null);setError("Tu cuenta ya no tiene acceso a este hogar.");if(session)void loadHomes(session,false)}
  }}/>;
  return <main className="ha-page">
   <header className="ha-header"><div className="ha-logo" aria-hidden="true">H</div><div><strong>HomeOS</strong><span>Un hogar, cada persona con su cuenta.</span></div></header>
