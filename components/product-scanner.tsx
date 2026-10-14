@@ -120,10 +120,10 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   const grade=nutritionRating(product||undefined);
   const nutritionLabels:Record<string,string>={'energy-kcal':'Energía','proteins':'Proteínas','carbohydrates':'Hidratos','sugars':'Azúcares','fat':'Grasas','saturated-fat':'Saturadas','fiber':'Fibra','salt':'Sal'};
   return <div className="modal-backdrop"><section className="modal product-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="product-scanner-title">
-    <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Conoce lo que compras</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
+    <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Escanea tu producto</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
     <div className="scanner-kind" role="group" aria-label="Tipo de producto"><button className={kind==='food'?'active':''} aria-pressed={kind==='food'} onClick={()=>changeKind('food')}>Alimentación</button><button className={kind==='beauty'?'active':''} aria-pressed={kind==='beauty'} onClick={()=>changeKind('beauty')}>Cosmética e higiene</button></div>
     <div className="scanner-input-panel">
-      <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Abrir cámara'}</button>
+      <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Escanear código de barras'}</button>
       <button className="secondary scanner-photo-button" disabled={busy||readingPhoto} onClick={()=>photoInput.current?.click()}>{readingPhoto?'Leyendo foto…':'Leer una foto del código'}</button>
       <input ref={photoInput} hidden type="file" accept="image/*" onChange={event=>{void readPhoto(event.target.files?.[0]);event.currentTarget.value=''}}/>
       {camera&&<div className="scanner-camera"><video ref={video} autoPlay muted playsInline aria-label="Vista de cámara para leer el código de barras"/><span>Centra el código de barras</span></div>}
