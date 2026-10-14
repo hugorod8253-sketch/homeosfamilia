@@ -14,6 +14,6 @@ export function speechErrorMessage(error:string){
  if(error==='not-allowed'||error==='service-not-allowed')return 'El navegador ha bloqueado el micrófono. Permítelo o usa el dictado del teclado.';
  if(error==='audio-capture')return 'No se encuentra un micrófono. Comprueba que esté conectado.';
  if(error==='network')return 'El servicio de dictado del navegador no conecta. Puedes usar el micrófono del teclado o escribir la misma frase.';
- if(error==='no-speech')return 'No se ha recibido voz. Pulsa Dictar y habla cerca del micrófono.';
+ if(error==='no-speech')return 'No se ha recibido voz. Pulsa Hablar y habla cerca del micrófono.';
  return 'El dictado se ha interrumpido. El texto recibido queda disponible para añadirlo.';
 }

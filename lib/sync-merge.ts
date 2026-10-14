@@ -1,4 +1,5 @@
 import { classifyProduct, normalizeProductText } from './product-engine';
+import {consumptionKey,estimateInventoryConsumption} from './consumption-engine';
 function stable(v:unknown){try{return JSON.stringify(v)}catch{return String(v)}}
 function same(a:unknown,b:unknown){return stable(a)===stable(b)}
 function isRecord(v:unknown):v is Record<string,unknown>{return Boolean(v)&&typeof v==="object"&&!Array.isArray(v)}
@@ -103,6 +104,26 @@ export function mergeHouseholdState(base:any,local:any,remote:any){
    if(!b||!l||!r||l.unit!==b.unit||r.unit!==b.unit||l.location!==b.location||r.location!==b.location)return item;
    const manualL=l.lastStockCheckId!==b.lastStockCheckId,manualR=r.lastStockCheckId!==b.lastStockCheckId;
    if(manualL||manualR){const count=manualL?l:r;return {...item,qty:count.qty,stock:count.stock,estimateAnchorQty:count.estimateAnchorQty,estimateAnchorDate:count.estimateAnchorDate,lastConfirmedAt:count.lastConfirmedAt,lastStockCheckId:count.lastStockCheckId}}
+   // Concurrent one-off guest consumption changes forecast anchors, not physical quantities.
+   // Combine independent events instead of silently selecting one device's anchor.
+   const seenExtras=new Set((base.profile?.consumptionExtras||[]).map((e:any)=>e.id));
+   const newlyCharged=(side:any)=>(side.profile?.consumptionExtras||[]).filter((e:any)=>
+     e&&e.charged===true&&!seenExtras.has(e.id)&&consumptionKey(e.name)===consumptionKey(item.name,item.category));
+   const localExtras=newlyCharged(local),remoteExtras=newlyCharged(remote);
+   const independent=localExtras.length>0&&remoteExtras.length>0&&
+     !localExtras.some((e:any)=>remoteExtras.some((other:any)=>other.id===e.id));
+   if(independent&&l.qty===b.qty&&r.qty===b.qty&&
+     l.stock===b.stock&&r.stock===b.stock&&
+     l.lastStockCheckId===b.lastStockCheckId&&r.lastStockCheckId===b.lastStockCheckId&&
+     typeof l.estimateAnchorQty==="number"&&typeof r.estimateAnchorQty==="number"&&
+     l.estimateAnchorDate&&r.estimateAnchorDate&&l.estimateAnchorDate===r.estimateAnchorDate&&
+     [...localExtras,...remoteExtras].every((e:any)=>e.date===l.estimateAnchorDate)){
+    const day=l.estimateAnchorDate;
+    const baseline=estimateInventoryConsumption(b,base.inventory,base.purchaseHistory||[],
+      base.profile?.consumptionHabits||[],base.stockChecks||[],day,base.profile?.consumptionExtras||[]).estimatedQty;
+    const combined=Math.max(0,Math.round((l.estimateAnchorQty+r.estimateAnchorQty-baseline)*1000)/1000);
+    return {...item,estimateAnchorQty:combined,estimateAnchorDate:day};
+   }
    const dl=l.qty-b.qty,dr=r.qty-b.qty;
    if(!dl||!dr)return item;
    const la=actions(local,b,dl),ra=actions(remote,b,dr);

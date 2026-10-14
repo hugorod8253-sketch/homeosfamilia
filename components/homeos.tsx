@@ -36,7 +36,9 @@ import { interpretHouseholdNote, weeklyBudgetToMonthly } from "../lib/household-
 import { matchesRecipeSearch, recipeCountryLabel } from "../lib/catalog-search";
 import { SPANISH_SUPERMARKETS, normalizeSupermarket, editDistance } from "../lib/supermarkets";
 import { appendConfirmedStockCheck, emptyInventoryItem, freezeInventoryItem, thawInventoryItem } from "../lib/inventory-lifecycle";
-import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type StockCheck } from "../lib/consumption-engine";
+import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type ConsumptionExtra, type StockCheck } from "../lib/consumption-engine";
+import { DEFAULT_DRINK_ROUTINE, normalizeDrinkRoutine, drinkRoutineHabits, visitExtras, coffeeProduct, type DrinkRoutine } from "../lib/household-routines";
+import { chargeVisitorUse } from "../lib/guest-use";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -71,7 +73,7 @@ type RecipePlan = {id:string;recipe:Recipe;createdAt:string;plannedFor?:string;s
 type Profile = {
   householdSize:number; supermarkets:string[]; mainSupermarket:string; goals:Goal[];
   nutrition:NutritionMode; cooking:CookingStyle; shoppingCycle:"diaria"|"semanal"|"quincenal"|"mensual"|"mixta";
-  consumptionHabits?:ConsumptionHabit[]; consumptionSetupDone?:boolean; consumptionReviewedAt?:string; notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
+  consumptionHabits?:ConsumptionHabit[]; drinkRoutine?:DrinkRoutine; consumptionExtras?:ConsumptionExtra[]; consumptionSetupDone?:boolean; consumptionReviewedAt?:string; notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 export type AppState = {
   stockChecks:StockCheck[]; retiredWeeklyMenu?:WeeklyMenuPlan; menuPreferences:MenuPreferences; inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; mealHistory:MealRecord[]; weeklyMenu:WeeklyMenuPlan|null; recipePlans:RecipePlan[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
@@ -112,6 +114,8 @@ export function normalizeState(x:any):AppState{
  profile.householdSize=Math.max(1,Math.min(12,Math.round(Number(profile.householdSize)||1)));
  profile.supermarkets=Array.isArray(profile.supermarkets)?[...new Set(profile.supermarkets.filter((v:any)=>typeof v==="string"&&v.trim()).map(normalizeSupermarket))].slice(0,30):[];
  profile.consumptionHabits=Array.isArray(profile.consumptionHabits)?profile.consumptionHabits.filter((h:any)=>h&&typeof h.name==="string"&&h.qty>0&&Number.isFinite(h.qty)&&h.days>0&&typeof h.unit==="string").slice(0,30):[];
+ profile.drinkRoutine=normalizeDrinkRoutine(profile.drinkRoutine||DEFAULT_DRINK_ROUTINE);
+ profile.consumptionExtras=Array.isArray(profile.consumptionExtras)?profile.consumptionExtras.filter((e:any)=>e&&typeof e.id==="string"&&typeof e.name==="string"&&typeof e.unit==="string"&&Number.isFinite(e.qty)&&e.qty>0&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)).slice(-250):[];
  profile.kitchenTools=Array.isArray(profile.kitchenTools)?profile.kitchenTools.filter((v:any)=>typeof v==="string").slice(0,20):[];
  profile.goals=Array.isArray(profile.goals)?profile.goals.filter((v:any)=>["organizar","ahorrar","desperdicio","equilibrio"].includes(v)):DEFAULT.profile.goals;
  profile.mainSupermarket=typeof profile.mainSupermarket==="string"?normalizeSupermarket(profile.mainSupermarket):"";
@@ -344,7 +348,7 @@ function consumeNeed(inv:InventoryItem[],need:{key:string;amount:number;unit:str
 }
 export function consumeRecipeIngredients(inv:InventoryItem[],ingredients:RecipeIngredient[],context?:AppState,today=localDateIso()){
  const result=consumePlanIngredients(inv,ingredients,usableInventoryItem);
- return {...result,inventory:result.inventory.map(i=>{const before=inv.find(x=>x.id===i.id);return before?.estimateAnchorQty!==undefined&&before.qty!==i.qty?{...i,estimateAnchorQty:Math.max(0,(context?estimateInventoryConsumption(before,inv,context.purchaseHistory,context.profile.consumptionHabits,context.stockChecks,today).estimatedQty:before.estimateAnchorQty)-(before.qty-i.qty)),estimateAnchorDate:context?today:before.estimateAnchorDate}:i})};
+ return {...result,inventory:result.inventory.map(i=>{const before=inv.find(x=>x.id===i.id);return before?.estimateAnchorQty!==undefined&&before.qty!==i.qty?{...i,estimateAnchorQty:Math.max(0,(context?estimateInventoryConsumption(before,inv,context.purchaseHistory,context.profile.consumptionHabits,context.stockChecks,today,context.profile.consumptionExtras||[]).estimatedQty:before.estimateAnchorQty)-(before.qty-i.qty)),estimateAnchorDate:context?today:before.estimateAnchorDate}:i})};
 }
 
 function ensureMembers(members:Member[],count:number){
@@ -413,10 +417,17 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  if(item.stock!=="poco"&&item.lastConfirmedAt&&daysUntil(item.lastConfirmedAt)>=-1)return {prob:.99,label:"Cantidad confirmada",tone:"hay",basis:"Cantidad real confirmada por ti; el ritmo de consumo se estima por separado"};
  if(item.stock==="incierto")return {prob:.5,label:"Revisar",tone:"incierto",basis:"Cantidad o estado pendiente de confirmar"};
  if(item.category==="Preparados")return {prob:item.stock==="poco"?.42:.9,label:"Raciones registradas",tone:item.stock==="poco"?"incierto":"hay",basis:"Cantidad de comida preparada registrada; el paso de los días no confirma que se haya comido"};
- const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
+ const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]);
  // A product without history is not a task for the user: show a neutral
  // initial estimate and let the purchase cycle learn it automatically.
- if(estimate.source==="unknown")return {prob:item.stock==="poco"?.4:.55,label:item.stock==="poco"?"Queda poco":"Probablemente hay",tone:item.stock==="poco"?"incierto":"review",basis:item.stock==="poco"?"Indicado por ti":"Todavía no hay historial suficiente; se ajustará con las próximas compras"};
+ if(estimate.source==="unknown"){
+  const forecastWasAdjusted=item.estimateAnchorQty!==undefined&&item.estimateAnchorQty<item.qty-.00001;
+  if(forecastWasAdjusted){
+   const ratio=Math.max(0,estimate.estimatedQty/Math.max(item.qty,.00001));
+   return {prob:ratio>.5?.7:ratio>.1?.45:.2,label:ratio>.5?"Queda, según cálculo":ratio>.1?"Revisar cantidad":"Podría faltar",tone:ratio>.1?"review":"falta",basis:"Consumo extraordinario registrado: ≈ "+estimate.estimatedQty+" "+item.unit+" estimados. Es una previsión; confirma el stock cuando puedas."};
+  }
+  return {prob:item.stock==="poco"?.4:.55,label:item.stock==="poco"?"Queda poco":"Probablemente hay",tone:item.stock==="poco"?"incierto":"review",basis:item.stock==="poco"?"Indicado por ti":"Todavía no hay historial suficiente; se ajustará con las próximas compras"};
+ }
  const recorded=Math.max(.01,item.estimateAnchorQty??item.qty);
  const ratio=estimate.estimatedQty/recorded;
  const fresh=daysUntil(item.lastConfirmedAt||item.purchasedAt)>=-1;
@@ -856,7 +867,7 @@ export default function HomeOS(){
   }finally{syncWritingRef.current=false;if(saved&&JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current)setSyncWriteTick(n=>n+1)}
  }
 
- const expiring=useMemo(()=>state.inventory.filter(i=>!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks).daysLeft)).sort((a,b)=>(freshnessNotice(a)?.priority??2)-(freshnessNotice(b)?.priority??2)),[state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks]);
+ const expiring=useMemo(()=>state.inventory.filter(i=>!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]).daysLeft)).sort((a,b)=>(freshnessNotice(a)?.priority??2)-(freshnessNotice(b)?.priority??2)),[state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks]);
  const monthKey=localDateIso().slice(0,7);
  const monthlySpent=state.purchaseSessions.length?state.purchaseSessions.filter(x=>x.date.startsWith(monthKey)).reduce((n,x)=>n+x.total,0):state.spent;
  const available=state.budget-monthlySpent;
@@ -933,11 +944,11 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions"><button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Escanear producto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Escanear</span></button>{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{view!=="inicio"&&view!=="comprar"&&<button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Abrir Lente HomeOS"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Lente</span></button>}{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
    {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
-   {view==="habitos"&&<section className="stack"><Habitos state={state} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
+   {view==="habitos"&&<section className="stack"><Habitos state={state} setState={setState} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
-   {(view==="inicio"||view==="comprar")&&<section className="homeos-scan-feature" aria-label="Escanear y analizar productos"><div className="homeos-scan-feature-icon" aria-hidden="true">▥</div><div className="homeos-scan-feature-copy"><strong>Escanea antes de comprar</strong><span>Descubre qué lleva, compara su valoración y añádelo a tu compra o inventario.</span></div><button type="button" className="homeos-scan-feature-action" onClick={()=>{setScannerItem(null);setScannerOpen(true)}}>Escanear producto →</button></section>}
+   {(view==="inicio"||view==="comprar")&&<section className="homeos-scan-feature" aria-label="Escanear y analizar productos"><div className="homeos-scan-feature-icon" aria-hidden="true">▥</div><div className="homeos-scan-feature-copy"><strong>Lente HomeOS</strong><span>Apunta a un producto y descubre qué es, qué contiene y dónde guardarlo. Una sola cámara para todo.</span></div><button type="button" className="homeos-scan-feature-action" onClick={()=>{setScannerItem(null);setScannerOpen(true)}}>Abrir Lente →</button></section>}
    {view==="comprar"&&<Comprar reviewHome={(command)=>{setCasaCommand(command);setCasaFocus("all");setView("casa")}} openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
    {view==="casa"&&<Casa initialCommand={casaCommand} clearCommand={()=>setCasaCommand(null)} openProductFacts={openProductFacts} state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
@@ -956,44 +967,85 @@ export default function HomeOS(){
 
 function ConsumptionSetup({state,setState,finish}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;finish:()=>void}){
  const choices=useMemo(()=>{
-  const latest=new Map<string,ConsumptionHabit>();
-  const dates=new Map<string,string>();
+  const latest=new Map<string,ConsumptionHabit>(),dates=new Map<string,string>();
   for(const p of [...state.purchaseHistory].sort((a,b)=>b.date.localeCompare(a.date))){
-   const canonical=norm(classifyProduct(p.name,p.category).canonical);
    if(p.qty<=0)continue;
+   const canonical=norm(classifyProduct(p.name,p.category).canonical);
    if(!latest.has(canonical)){latest.set(canonical,{id:"habit-"+canonical,name:p.name,qty:p.qty,unit:p.unit,days:7});dates.set(canonical,p.date)}
    else if(dates.get(canonical)===p.date){const c=latest.get(canonical)!;if(planUnitFamily(c.unit)===planUnitFamily(p.unit)&&(["mass","volume"].includes(planUnitFamily(c.unit))||c.unit===p.unit))c.qty=planFromBase(planToBase(c.qty,c.unit)+planToBase(p.qty,p.unit),c.unit)}
   }
-  if(latest.size)return [...latest.values()].sort((a,b)=>Number((state.profile.consumptionHabits||[]).some(h=>norm(h.name)===norm(a.name)))-Number((state.profile.consumptionHabits||[]).some(h=>norm(h.name)===norm(b.name)))).slice(0,6);
-  const basic=[{id:"habit-leche",name:"Leche",qty:1,unit:"L",days:7},{id:"habit-huevos",name:"Huevos",qty:12,unit:"uds",days:7},{id:"habit-pan",name:"Pan",qty:1,unit:"barra",days:7},{id:"habit-yogur",name:"Yogur natural",qty:6,unit:"uds",days:7},{id:"habit-papel",name:"Papel higiénico",qty:6,unit:"rollos",days:7},{id:"habit-pasta",name:"Macarrones",qty:1,unit:"pack",days:7}];
-  const home=state.inventory.filter(i=>i.category!=="Preparados"&&i.qty>0&&i.stock!=="falta").slice(0,6).map(i=>({id:"habit-"+norm(classifyProduct(i.name,i.category).canonical),name:i.name,qty:i.qty,unit:i.unit,days:7}));
-  return home.length?home:basic;
- },[state.purchaseHistory,state.inventory,state.profile.consumptionHabits]);
+  if(latest.size)return [...latest.values()].filter(h=>!/^routine-/.test(h.id)).slice(0,6);
+  return [
+   {id:"habit-leche",name:"Leche",qty:1,unit:"L",days:7},
+   {id:"habit-huevos",name:"Huevos",qty:12,unit:"uds",days:7},
+   {id:"habit-pan",name:"Pan",qty:1,unit:"barra",days:7},
+   {id:"habit-yogur",name:"Yogur natural",qty:6,unit:"uds",days:7},
+   {id:"habit-papel",name:"Papel higiénico",qty:6,unit:"rollos",days:7}
+  ];
+ },[state.purchaseHistory]);
  const [answers,setAnswers]=useState<Record<string,number|null>>({});
- const [dailyRoutines,setDailyRoutines]=useState<string[]>([]);
- const routinePresets:ConsumptionHabit[]=[
-  {id:"routine-coffee",name:"Café molido",qty:250,unit:"g",days:30},
-  {id:"routine-milk",name:"Leche",qty:1,unit:"L",days:7},
-  {id:"routine-protein",name:"Proteína en polvo",qty:30,unit:"g",days:1},
-  {id:"routine-energy",name:"Bebida energética",qty:1,unit:"uds",days:1},
-  {id:"routine-vitamins",name:"Vitaminas",qty:1,unit:"uds",days:1}
- ];
- function save(){setState(s=>{
-  let habits=[...(s.profile.consumptionHabits||[])];
-  for(const c of choices){if(!(c.id in answers))continue;
-   habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==norm(classifyProduct(c.name).canonical));
-   const days=answers[c.id];if(days)habits.push({...c,days});
-  }
-  for(const preset of routinePresets.filter(p=>dailyRoutines.includes(p.id))){
-   const canonical=norm(classifyProduct(preset.name).canonical);
-   if(!choices.some(c=>norm(classifyProduct(c.name).canonical)===canonical&&c.id in answers)){
-    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==canonical);
-    habits.push(preset);
+ const [drink,setDrink]=useState<DrinkRoutine>(()=>normalizeDrinkRoutine(state.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE));
+ const [drinkEdited,setDrinkEdited]=useState(false);
+ const editDrink=(patch:Partial<DrinkRoutine>)=>{setDrink(old=>normalizeDrinkRoutine({...old,...patch}));setDrinkEdited(true)};
+ const predicted=drinkRoutineHabits(drink);
+ function save(){
+  setState(s=>{
+   let habits=[...(s.profile.consumptionHabits||[])];
+   for(const c of choices){
+    if(!(c.id in answers))continue;
+    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==norm(classifyProduct(c.name).canonical));
+    const days=answers[c.id];
+    if(days)habits.push({...c,days});
    }
-  }
-  return {...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso(),consumptionHabits:habits}};
- });finish()}
- return <section className="consumption-setup quick-consumption"><span className="eyebrow">OPCIONAL · HASTA 6 RESPUESTAS</span><h2>¿Cuánto suele durar esta compra?</h2><p>Responde de memoria. Usamos la cantidad comprada; no necesitas pesar ni contar nada. Incluye alimentos y productos del hogar.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit}{state.purchaseHistory.length?" en la última compra":" · punto de partida orientativo"}</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"Una semana"],[14,"Dos semanas"],[30,"Un mes"],[null,"No lo sé"]].map(([days,label])=><button key={String(days)} className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}<div className="meal-actions"><button className="primary" onClick={save}>Guardar respuestas</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div><div className="quick-habit-row"><div><strong>¿Qué tomas casi todos los días?</strong><small>Selecciona tus rutinas habituales. Son valores iniciales editables, no cantidades confirmadas.</small></div><div className="quick-habit-options">{routinePresets.map(p=><button type="button" key={p.id} className={dailyRoutines.includes(p.id)?"secondary active":"secondary"} aria-pressed={dailyRoutines.includes(p.id)} onClick={()=>setDailyRoutines(old=>old.includes(p.id)?old.filter(id=>id!==p.id):[...old,p.id])}>{p.name} · {p.qty} {p.unit}/{p.days===1?"día":p.days+" días"}</button>)}</div><small>Ejemplo: una taza de café no equivale siempre a 8 g. Ajusta gramos, tamaño del paquete y frecuencia en Hábitos para mejorar la previsión.</small></div><p>Solo orienta las estimaciones. Las cantidades confirmadas tienen prioridad; el inventario no cambia al responder.</p></section>
+   if(drinkEdited){
+    const managedNames=new Set(["cafe en grano","cafe molido","cafe soluble","capsulas de cafe","cacao soluble"]);
+    const upcoming=drinkRoutineHabits(drink);
+    const milkRoutine=upcoming.some(h=>h.id==="routine-milk");
+    habits=habits.filter(h=>!h.id.startsWith("routine-")&&!managedNames.has(norm(h.name))&&!(milkRoutine&&norm(h.name)==="leche"));
+    habits=[...habits,...upcoming];
+   }
+   return {...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso(),drinkRoutine:drinkEdited?drink:s.profile.drinkRoutine,consumptionHabits:habits}};
+  });
+  finish();
+ }
+ const cupChoices=[0,1,2,3,4,5,6,8,10];
+ const milkChoices=[...new Set([0,1,2,3,drink.coffeeCupsPerDay])].filter(n=>n<=drink.coffeeCupsPerDay);
+ return <section className="consumption-setup quick-consumption">
+  <span className="eyebrow">TU CASA · SOLO AL EMPEZAR, LUEGO APRENDEMOS</span>
+  <h2>¿Qué se consume realmente en casa?</h2>
+  <p>Cuenta el total del hogar, no por persona. Basta con elegir lo habitual. Los días con visitas no cambiarán esta rutina.</p>
+  <div className="routine-form-grid">
+   <article className="routine-card coffee-routine">
+    <div className="routine-card-title"><span aria-hidden="true">☕</span><div><strong>Café de toda la casa</strong><small>Entre todos, un día normal</small></div></div>
+    <label className="routine-label">¿Qué tipo de café utilizáis?</label>
+    <div className="routine-options">{([["none","No tomamos"],["beans","En grano"],["ground","Molido"],["pods","Cápsulas"],["instant","Soluble"]] as [DrinkRoutine["coffeeFormat"],string][]).map(([value,label])=><button type="button" className={drink.coffeeFormat===value?"active":""} aria-pressed={drink.coffeeFormat===value} key={value} onClick={()=>editDrink({coffeeFormat:value})}>{label}</button>)}</div>
+    {drink.coffeeFormat!=="none"&&<>
+     <label className="routine-label">¿Cuántos cafés tomáis en total al día?</label>
+     <div className="routine-options">{cupChoices.map(n=><button type="button" key={n} aria-pressed={drink.coffeeCupsPerDay===n} className={drink.coffeeCupsPerDay===n?"active":""} onClick={()=>editDrink({coffeeCupsPerDay:n})}>{n}</button>)}</div>
+     {drink.coffeeCupsPerDay>0&&<>
+      <label className="routine-label">¿Cuántos llevan leche?</label>
+      <div className="routine-options">{milkChoices.map(n=><button type="button" key={n} aria-pressed={drink.coffeeMilkCupsPerDay===n} className={drink.coffeeMilkCupsPerDay===n?"active":""} onClick={()=>editDrink({coffeeMilkCupsPerDay:n})}>{n===drink.coffeeCupsPerDay?"Todos ("+n+")":n}</button>)}</div>
+      <details className="routine-dose"><summary>Ajustar cantidad por café · opcional</summary><label>{drink.coffeeFormat==="pods"?"1 cápsula por café": "Gramos de café por taza"}{drink.coffeeFormat!=="pods"&&<input type="number" min="1" max="25" step="1" value={drink.coffeeGramsPerCup} onChange={e=>editDrink({coffeeGramsPerCup:Number(e.target.value)})}/>}</label><label>Leche por café con leche (ml)<input type="number" min="0" max="400" step="10" value={drink.milkMlPerCoffee} onChange={e=>editDrink({milkMlPerCoffee:Number(e.target.value)})}/></label></details>
+     </>}
+    </>}
+   </article>
+   <article className="routine-card cocoa-routine">
+    <div className="routine-card-title"><span aria-hidden="true">🥛</span><div><strong>ColaCao o cacao soluble</strong><small>Por ejemplo, el desayuno de los niños</small></div></div>
+    <label className="routine-label">¿Cuántos vasos tomáis al día entre todos?</label>
+    <div className="routine-options">{[0,1,2,3,4,5,6,8].map(n=><button type="button" key={n} className={drink.cocoaCupsPerDay===n?"active":""} aria-pressed={drink.cocoaCupsPerDay===n} onClick={()=>editDrink({cocoaCupsPerDay:n})}>{n}</button>)}</div>
+    {drink.cocoaCupsPerDay>0&&<details className="routine-dose"><summary>Ajustar cada vaso · opcional</summary><label>Cacao soluble (g)<input type="number" min="1" max="50" value={drink.cocoaGramsPerCup} onChange={e=>editDrink({cocoaGramsPerCup:Number(e.target.value)})}/></label><label>Leche (ml)<input type="number" min="0" max="500" step="10" value={drink.cocoaMilkMlPerCup} onChange={e=>editDrink({cocoaMilkMlPerCup:Number(e.target.value)})}/></label></details>}
+   </article>
+  </div>
+  {(drink.coffeeMilkCupsPerDay*drink.milkMlPerCoffee+drink.cocoaCupsPerDay*drink.cocoaMilkMlPerCup)>0&&<section className="routine-milk-size">
+   <div><strong>¿De qué tamaño son los bricks de leche?</strong><p>Solo si la compráis en bricks. Así entendemos «2 bricks» sin inventar los litros.</p></div>
+   <div className="routine-options">{([.5,1,1.5,2] as const).map(n=><button type="button" key={n} className={drink.milkPackLiters===n?"active":""} aria-pressed={drink.milkPackLiters===n} onClick={()=>editDrink({milkPackLiters:n})}>{String(n).replace(".",",")} L</button>)}<button type="button" className={drink.milkPackLiters===null?"active":""} aria-pressed={drink.milkPackLiters===null} onClick={()=>editDrink({milkPackLiters:null})}>No lo sé</button></div>
+   {drink.milkPackLiters===null&&<small>Sin este dato, solo usaremos una cantidad de leche expresada en litros. No se estimará la duración de los bricks.</small>}
+  </section>}
+  <div className="routine-forecast" role="status"><strong>Lo que HomeOS tendrá en cuenta</strong>{predicted.length?<div>{predicted.filter(h=>h.id!=="routine-milk-bricks").map(h=><span key={h.id}>{h.name}: <b>{h.qty} {h.unit}/día</b></span>)}</div>:<p>No asignaremos un consumo de café, leche ni cacao sin tus respuestas.</p>}{predicted.some(h=>h.id==="routine-milk-bricks")&&<small>Equivalencia orientativa: {predicted.find(h=>h.id==="routine-milk-bricks")?.qty} bricks/día, suponiendo envases de {drink.milkPackLiters} L.</small>}<small>Son aproximaciones iniciales, no cantidades confirmadas. Se ajustan con compras y revisiones de stock.</small></div>
+  <details className="routine-other"><summary>Otros productos habituales · opcional</summary><p>Si recuerdas cuánto suele durar un envase, puedes indicarlo. Si no lo sabes, no inventamos una cantidad.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit} · ¿cuánto suelen durar?</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"1 semana"],[14,"2 semanas"],[30,"1 mes"],[null,"No sé"]] .map(([days,label])=><button key={String(days)} type="button" className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}</details>
+  <p className="routine-honesty"><strong>¿Y si vienen visitas?</strong> En Hábitos podrás indicar los cafés extra de ese día. Se descontarán del stock estimado una sola vez, sin multiplicar el consumo diario del hogar.</p>
+  <div className="meal-actions"><button className="primary" onClick={save}>Guardar hábitos del hogar</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div>
+ </section>;
 }
 
 function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error"}){
@@ -1534,7 +1586,39 @@ function RecipeNutrition({recipe,total=false}:{recipe:Recipe;total?:boolean}){
  return <div className="macro-row nutrition-estimate"><b>≈ {Math.round(data.calories)} kcal</b><span>{data.protein} g proteína</span><span>{data.carbs} g carbohidratos</span><span>{data.fat} g grasas</span><small>{total?"Total receta":"Por ración"} · {calculated.complete?"valores genéricos aproximados":"estimación del recetario; ingredientes sin recalcular"}</small>{calculated.complete&&calculated.assumptions.length>0&&<small>{calculated.assumptions.join(" · ")}</small>}</div>;
 }
 
-function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;onOpenCasa:()=>void}){
+function Habitos({state,setState,onAdjust,onOpenCasa}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;onAdjust:()=>void;onOpenCasa:()=>void}){
+ const drinkRoutine=normalizeDrinkRoutine(state.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE);
+ const [visitorCups,setVisitorCups]=useState(2);
+ const [visitorMilk,setVisitorMilk]=useState(false);
+ const [visitorSaved,setVisitorSaved]=useState("");
+ const [visitorUndoIssue,setVisitorUndoIssue]=useState(false);
+ const guestUndoRef=useRef<{batch:string;before:AppState;after:AppState;unmatched:string[]}|null>(null);
+ function recordVisitorCoffee(){
+  if(visitorSaved)return;
+  const batch=crypto.randomUUID(),today=localDateIso();
+  const entries=visitExtras(drinkRoutine,visitorCups,visitorMilk,today,batch);
+  if(!entries.length)return;
+  setState(old=>{
+   const charged=chargeVisitorUse(old.inventory,entries,today,item=>
+    estimateInventoryConsumption(item,old.inventory,old.purchaseHistory,old.profile.consumptionHabits||[],old.stockChecks,today,old.profile.consumptionExtras||[]),
+    normalizeDrinkRoutine(old.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE).milkPackLiters);
+   const next:AppState={...old,inventory:charged.inventory,profile:{...old.profile,consumptionExtras:[...(old.profile.consumptionExtras||[]),...charged.events].slice(-250)}};
+   guestUndoRef.current={batch,before:old,after:next,unmatched:charged.unmatched};
+   return next;
+  });
+  setVisitorSaved(batch);
+  setVisitorUndoIssue(false);
+ }
+ function undoVisitorCoffee(){
+  const previous=guestUndoRef.current;
+  if(!previous||previous.batch!==visitorSaved||state!==previous.after){
+   setVisitorUndoIssue(true);
+   return;
+  }
+  setState(current=>current===previous.after?previous.before:current);
+  setVisitorSaved("");
+  guestUndoRef.current=null;
+ }
  const recent=(date:string)=>{const days=calendarDaysUntil(date);return days<=0&&days>=-28};
  const purchases=state.purchaseHistory.filter(p=>recent(p.date));
  const meals=state.mealHistory.filter(m=>recent(m.date));
@@ -1549,7 +1633,7 @@ function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;o
   {key:"snack",name:"Dulces y snacks",icon:"🍫",pattern:/chocolate|galleta|chuche|gominola|snack|patatas fritas|bolleria|refresco|helado|caramelo/}
  ];
  const belongs=(name:string,key:string)=>{const n=norm(name);return defs.find(d=>d.key==="snack"&&d.pattern.test(n))?key==="snack":defs.find(d=>d.pattern.test(n))?.key===key};
- const rows=state.inventory.filter(i=>i.qty>0&&i.stock!=="falta").map(item=>{const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks);return {item,estimate,notice:freshnessNotice(item,estimate.daysLeft),coverage:stockCoverage(estimate.daysLeft,estimate.source,state.profile.shoppingCycle==="quincenal"?14:state.profile.shoppingCycle==="mensual"?30:7)}});
+ const rows=state.inventory.filter(i=>i.qty>0&&i.stock!=="falta").map(item=>{const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]);return {item,estimate,notice:freshnessNotice(item,estimate.daysLeft),coverage:stockCoverage(estimate.daysLeft,estimate.source,state.profile.shoppingCycle==="quincenal"?14:state.profile.shoppingCycle==="mensual"?30:7)}});
  const attention=rows.filter(r=>r.notice).sort((a,b)=>a.notice!.priority-b.notice!.priority);
  const shortages=rows.filter(r=>r.coverage.tone==="low"&&!r.notice&&r.item.location!=="Congelador"&&r.item.storageMode!=="reserva");
  const reserves=rows.filter(r=>r.coverage.tone==="plenty"&&!r.notice);
@@ -1557,7 +1641,15 @@ function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;o
  const reminder=reviewed&&calendarDaysUntil(reviewed)<-14;
  return <div className="habits-v3">
   <div className="hv-heading"><div><span className="hv-period">Últimos 28 días</span><h2>Así estáis comprando y comiendo</h2><p>Una mirada a los registros para elegir con más variedad.</p></div><button className="primary" onClick={onAdjust}>Mejorar previsiones · 1 min</button></div>
-  <div className="hv-adjust-help">Indica cuánto duran algunas compras. Ayuda a prever qué puede faltar, sin contar ni pesar.</div>
+  <div className="hv-adjust-help">El ritmo habitual se basa en vuestras respuestas; una visita no debería multiplicar el consumo de cada día. Las cantidades siguen siendo estimadas hasta que se comprueban.</div>
+   <section className="routine-guest" aria-label="Consumo excepcional de visitas">
+    <div className="routine-guest-info"><span className="routine-guest-mark" aria-hidden="true">☕</span><div><strong>¿Hoy hubo visitas?</strong><p>Registra solo los cafés extra que se han tomado. No cambia la rutina diaria.</p></div></div>
+    {drinkRoutine.coffeeFormat!=="none"?
+     <><div className="routine-guest-controls"><div className="routine-options">{[1,2,3,4,6].map(n=><button type="button" key={n} className={visitorCups===n?"active":""} aria-pressed={visitorCups===n} disabled={Boolean(visitorSaved)} onClick={()=>setVisitorCups(n)}>{n} {n===1?"café":"cafés"}</button>)}</div><button type="button" className={visitorMilk?"routine-guest-milk selected":"routine-guest-milk"} aria-pressed={visitorMilk} disabled={Boolean(visitorSaved)} onClick={()=>setVisitorMilk(v=>!v)}>{visitorMilk?"✓ Con leche":"¿Con leche?"}</button><button type="button" className="primary" disabled={Boolean(visitorSaved)} onClick={recordVisitorCoffee}>Registrar extra</button></div>
+     {visitorSaved&&<div className="routine-guest-saved" role="status">Consumo extra guardado. El ritmo diario no ha cambiado. <button type="button" onClick={undoVisitorCoffee}>Deshacer</button><button type="button" onClick={()=>setVisitorSaved("")}>Registrar otro consumo</button></div>}{visitorSaved&&!!guestUndoRef.current?.unmatched.length&&<small className="routine-guest-warning">No hemos supuesto el tamaño de {guestUndoRef.current.unmatched.join(", ")}. Revisa la cantidad desde Casa para asegurar la previsión.</small>}{visitorUndoIssue&&<small className="routine-guest-warning">El hogar ha cambiado desde entonces. Para evitar borrar otros cambios, corrige la cantidad desde Casa.</small>}
+     <small>Usamos la cantidad por taza que definiste. Si hay dudas sobre el stock, confirma lo que queda desde Casa.</small></>:
+     <div className="routine-guest-empty"><span>Primero elige qué tipo de café tenéis. No vamos a suponerlo.</span><button type="button" className="secondary" onClick={onAdjust}>Configurar café</button></div>}
+   </section>
   <section className="hv-reading" aria-labelledby="hv-reading-title"><div className="hv-reading-heading"><h3 id="hv-reading-title">Lectura rápida</h3></div><div className="hv-insights">
    {purchases.length>0&&<div className="hv-insight"><span aria-hidden="true">🛒</span><div><strong>Lo que más aparece en tus compras</strong><p>{defs.map(d=>({name:d.name,count:purchases.filter(p=>belongs(p.name,d.key)).length})).sort((a,b)=>b.count-a.count).filter(d=>d.count>0).slice(0,2).map(d=>d.name+" · "+d.count+" registros").join(" / ")||"Aún faltan compras de alimentos"}</p></div></div>}
    {purchases.filter(p=>belongs(p.name,"snack")).length>0&&<div className="hv-insight"><span aria-hidden="true">🍫</span><div><strong>Dulces y snacks en tus compras</strong><p>{purchases.filter(p=>belongs(p.name,"snack")).length} registros. Puedes alternarlos con fruta, yogur natural o frutos secos.</p></div></div>}
@@ -1755,7 +1847,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
    setQuick((shoppingTranscriptRef.current+" "+interim).trim());
   };
   recognition.onerror=(event:any)=>{if(event.error==="aborted")return;shoppingListeningRef.current=false;setShoppingListening(false);const message=speechErrorMessage(event.error);setVoiceHelp(message);setToast(message)};
-  recognition.onend=()=>{const wasListening=shoppingListeningRef.current;shoppingListeningRef.current=false;setShoppingListening(false);const text=(shoppingTranscriptRef.current+" "+shoppingInterimRef.current).trim();if(text&&wasListening){setQuick(text);setVoiceHelp("El micrófono se ha detenido. Revisa el texto y pulsa Añadir, o pulsa Dictar para continuar. No se ha añadido nada todavía.")}};
+  recognition.onend=()=>{const wasListening=shoppingListeningRef.current;shoppingListeningRef.current=false;setShoppingListening(false);const text=(shoppingTranscriptRef.current+" "+shoppingInterimRef.current).trim();if(text&&wasListening){setQuick(text);setVoiceHelp("El micrófono se ha detenido. Revisa el texto y pulsa Añadir, o pulsa Hablar para continuar. No se ha añadido nada todavía.")}};
   try{recognition.start()}catch{shoppingListeningRef.current=false;setShoppingListening(false);setToast("No se pudo activar el micrófono · puedes escribir la lista")}
  }
  async function ticketSelected(file?:File,append=false){
@@ -1925,7 +2017,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
   <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Marca la casilla cuando cojas un producto. Al terminar la compra, lo cogido pasa a Casa.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));if(purchaseTotal.trim()&&(!Number.isFinite(n)||n<0)){setToast("Introduce un total válido, igual o mayor que cero");return}const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
 
   {pendingRecipePlans.length>0&&<section className="shopping-recipe-memory-list"><h3>Compra para tus recetas</h3>{pendingRecipePlans.map(p=><article className="shopping-recipe-memory" key={p.id}><img src={RECIPES.find(r=>r.id===p.recipe.id)?.image||p.recipe.image||"/recipe-placeholder.svg"} alt=""/><div><strong>{p.recipe.title}</strong><p>{p.missing.length} ingredientes por completar{p.shoppingLinked?" · vinculados a la compra":""}</p></div><button onClick={()=>addFromRecipe(p.recipe,p.plannedFor)}>Añadir faltantes</button></article>)}</section>}
-  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. 2 bricks de leche, huevos y macarrones…"/><button className={shoppingListening?"meal-mic listening":"meal-mic"} onClick={startShoppingVoice} aria-label={shoppingListening?"Terminar dictado":"Añadir por voz"}>{micIcon()}<span>{shoppingListening?"Terminar":"Dictar"}</span></button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
+  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. 2 bricks de leche, huevos y macarrones…"/><button type="button" className={shoppingListening?"meal-mic homeos-voice listening":"meal-mic homeos-voice"} onClick={startShoppingVoice} aria-label={shoppingListening?"Terminar voz y añadir los productos":"Hablar para añadir productos"}>{micIcon()}<span>{shoppingListening?"Listo":"Hablar"}</span></button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
   {voiceHelp&&<p className="voice-help" role="status">{voiceHelp}</p>}
   {homeStatements.length>0&&<section className="intent-review"><h3>Esto es para Casa</h3><p>No lo he añadido a la compra. Revisa qué vas a guardar.</p>{homeStatements.map((command,index)=><div key={index}><strong>{command.name}</strong><span>{command.kind==="prepared"?"Comida preparada":"Existencias"} · {command.location}</span><button className="secondary" disabled={Boolean(productChoice)} onClick={()=>reviewHome(command)}>Revisar en Casa</button><button className="secondary" onClick={()=>setHomeStatements(xs=>xs.filter((_,j)=>j!==index))}>Omitir</button></div>)}</section>}
   {shoppingActive&&/costco|makro/i.test(activeStore)&&!bulkHelpDismissed&&<section className="intent-review"><h3>¿Parte de esta compra es para más adelante?</h3><p>En carne y productos aptos para congelar, usa «Congelar como reserva». El resto seguirá su uso habitual; la tienda no cambia el consumo por sí sola.</p><button className="secondary" onClick={()=>setBulkHelpDismissed(true)}>Entendido</button></section>}
@@ -2008,9 +2100,9 @@ function Casa({initialCommand,clearCommand,openProductFacts,state,setState,setTo
   clearCommand();
  },[initialCommand,clearCommand]);
  useEffect(()=>{if(focus!=="all"){setLoc(focus==="reserve"?"Congelador":"Todo");setCat(focus==="prepared"?"Preparados":"Todos")}},[focus]);
- const freshnessAlerts=state.inventory.map(item=>({item,notice:freshnessNotice(item,estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks).daysLeft)})).filter(r=>r.notice).sort((a,b)=>a.notice!.priority-b.notice!.priority);
+ const freshnessAlerts=state.inventory.map(item=>({item,notice:freshnessNotice(item,estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]).daysLeft)})).filter(r=>r.notice).sort((a,b)=>a.notice!.priority-b.notice!.priority);
  const locationMatch=(i:InventoryItem)=>loc==="Todo"||(loc==="Revisar"?i.location==="Sin ubicar":loc==="Despensa"?(i.location==="Despensa"||i.location==="Suplementos"):i.location===loc);
- const shown=state.inventory.slice().sort(comparePurchasePriority).filter(i=>(showFinished||(!i.mealPrepAutoDepleted&&i.stock!=="falta"&&(focus==="expiring"||!["Probablemente falta","Podría faltar"].includes(inventoryEstimate(state,i).label))))&&locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks).daysLeft):focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
+ const shown=state.inventory.slice().sort(comparePurchasePriority).filter(i=>(showFinished||(!i.mealPrepAutoDepleted&&i.stock!=="falta"&&(focus==="expiring"||!["Probablemente falta","Podría faltar"].includes(inventoryEstimate(state,i).label))))&&locationMatch(i)&&(cat==="Todos"||i.category===cat)&&(focus==="expiring"?!!freshnessNotice(i,estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits||[],state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]).daysLeft):focus==="prepared"?i.category==="Preparados"&&i.stock!=="falta":focus==="reserve"?i.storageMode==="reserva":true));
 
  function setStock(id:string,stock:StockState){setState(s=>{const today=localDateIso(),item=s.inventory.find(i=>i.id===id);const inventory=s.inventory.map(i=>i.id===id?(stock==="falta"?{...emptyInventoryItem(i,today),quickLevel:undefined,quickObservedAt:undefined,mealPrepAuto:false,mealPrepAutoDepleted:false}:{...i,stock}):i);return {...s,inventory,stockChecks:stock==="falta"&&item?appendConfirmedStockCheck(s.stockChecks,inventory,inventory.find(i=>i.id===id)!,today):s.stockChecks}})}
  function quickReview(item:InventoryItem,level:QuickLevel){setState(s=>({...s,inventory:s.inventory.map(i=>i.id===item.id?observeStock(i,level):i)}));setStockFormOpen(false);setToast("Estado actualizado · sin contar unidades")}
@@ -2061,7 +2153,7 @@ function Casa({initialCommand,clearCommand,openProductFacts,state,setState,setTo
    const qualityReviewAt=guide?addMonthsIso(frozenAt,guide.minMonths):undefined;
    return {...s,
     productPreferences:{...s.productPreferences,[key]:{...(s.productPreferences[key]||{}),location:"Congelador"}},
-    inventory:s.inventory.map(i=>i.id===id?{...freezeInventoryItem(i,frozenAt,estimateInventoryConsumption(i,s.inventory,s.purchaseHistory,s.profile.consumptionHabits,s.stockChecks,frozenAt).estimatedQty),qualityReviewAt,mealPrepAuto:false}:i)
+    inventory:s.inventory.map(i=>i.id===id?{...freezeInventoryItem(i,frozenAt,estimateInventoryConsumption(i,s.inventory,s.purchaseHistory,s.profile.consumptionHabits,s.stockChecks,frozenAt,s.profile.consumptionExtras||[]).estimatedQty),qualityReviewAt,mealPrepAuto:false}:i)
    };
   });
   setToast("Guardado en congelador · HomeOS lo recordará");
@@ -2131,7 +2223,7 @@ function Casa({initialCommand,clearCommand,openProductFacts,state,setState,setTo
   <div className={"inventory-grid "+density}>{shown.length===0&&<article className="friendly-empty inventory-empty"><span>⌂</span><h3>No hay productos aquí</h3><p>Prueba otro filtro o registra una compra.</p></article>}{shown.map(i=>{
    const displayLocation=i.location==="Suplementos"?"Despensa":i.location==="Sin ubicar"?"Revisar":i.location;
    const estimate=inventoryEstimate(state,i);
-   const consumption=estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks);
+   const consumption=estimateInventoryConsumption(i,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]);
    const freshness=freshnessNotice(i,consumption.daysLeft);
    return <article className="inventory-card" key={i.id}>
     <div className="inventory-top"><span className="inventory-product-icon">{productIcon(i.name,i.category)}</span><span className={"stock-badge "+estimate.tone} title={estimate.basis}>{estimate.label}</span></div>
