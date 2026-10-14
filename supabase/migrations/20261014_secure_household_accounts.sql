@@ -126,10 +126,10 @@ begin
  if pg_column_size(coalesce(p_data,'{}'::jsonb))>1048576 then
   return jsonb_build_object('ok',false,'error','state_too_large');
  end if;
- if not exists(select 1 from public.homeos_account_members
-               where household_id=p_household_id and user_id=uid) then
-  return jsonb_build_object('ok',false,'error','not_member');
- end if;
+ -- Hold the membership lock until the write commits. Revocation cannot race a permitted write.
+ perform 1 from public.homeos_account_members
+ where household_id=p_household_id and user_id=uid for share;
+ if not found then return jsonb_build_object('ok',false,'error','not_member');end if;
  update public.homeos_households_v2 set data=coalesce(p_data,'{}'::jsonb),
    revision=revision+1,updated_at=now()
  where id=p_household_id and revision=p_expected_revision
@@ -151,6 +151,10 @@ begin
  end if;
  if (select count(*) from public.homeos_account_members where household_id=p_household_id)>=12 then
   return jsonb_build_object('ok',false,'error','household_full');
+ end if;
+ if (select count(*) from public.homeos_account_invites
+     where household_id=p_household_id and expires_at>now() and redeemed_at is null and revoked_at is null)>=12 then
+  return jsonb_build_object('ok',false,'error','too_many_invites');
  end if;
  token:=encode(extensions.gen_random_bytes(32),'hex');
  insert into public.homeos_account_invites(household_id,token_hash,created_by,expires_at)
