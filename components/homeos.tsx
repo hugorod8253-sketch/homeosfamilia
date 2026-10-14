@@ -420,7 +420,14 @@ function inventoryEstimate(state:AppState,item:InventoryItem){
  const estimate=estimateInventoryConsumption(item,state.inventory,state.purchaseHistory,state.profile.consumptionHabits,state.stockChecks,localDateIso(),state.profile.consumptionExtras||[]);
  // A product without history is not a task for the user: show a neutral
  // initial estimate and let the purchase cycle learn it automatically.
- if(estimate.source==="unknown")return {prob:item.stock==="poco"?.4:.55,label:item.stock==="poco"?"Queda poco":"Probablemente hay",tone:item.stock==="poco"?"incierto":"review",basis:item.stock==="poco"?"Indicado por ti":"Todavía no hay historial suficiente; se ajustará con las próximas compras"};
+ if(estimate.source==="unknown"){
+  const forecastWasAdjusted=item.estimateAnchorQty!==undefined&&item.estimateAnchorQty<item.qty-.00001;
+  if(forecastWasAdjusted){
+   const ratio=Math.max(0,estimate.estimatedQty/Math.max(item.qty,.00001));
+   return {prob:ratio>.5?.7:ratio>.1?.45:.2,label:ratio>.5?"Queda, según cálculo":ratio>.1?"Revisar cantidad":"Podría faltar",tone:ratio>.1?"review":"falta",basis:"Consumo extraordinario registrado: ≈ "+estimate.estimatedQty+" "+item.unit+" estimados. Es una previsión; confirma el stock cuando puedas."};
+  }
+  return {prob:item.stock==="poco"?.4:.55,label:item.stock==="poco"?"Queda poco":"Probablemente hay",tone:item.stock==="poco"?"incierto":"review",basis:item.stock==="poco"?"Indicado por ti":"Todavía no hay historial suficiente; se ajustará con las próximas compras"};
+ }
  const recorded=Math.max(.01,item.estimateAnchorQty??item.qty);
  const ratio=estimate.estimatedQty/recorded;
  const fresh=daysUntil(item.lastConfirmedAt||item.purchasedAt)>=-1;
