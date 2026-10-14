@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {estimateConsumption} from "../lib/consumption-engine";
 import {DEFAULT_DRINK_ROUTINE,normalizeDrinkRoutine,drinkRoutineHabits,visitExtras} from "../lib/household-routines";
 const ground={...DEFAULT_DRINK_ROUTINE,coffeeFormat:"ground" as const,coffeeCupsPerDay:3,coffeeGramsPerCup:9,coffeeMilkCupsPerDay:2,cocoaCupsPerDay:1};
 const habits=drinkRoutineHabits(ground);
@@ -16,4 +17,17 @@ assert.equal(visitExtras({...ground,coffeeFormat:"none"},3,true,"2026-10-14","vi
 assert.equal(normalizeDrinkRoutine({...ground,coffeeMilkCupsPerDay:99}).coffeeMilkCupsPerDay,3);
 assert.equal(normalizeDrinkRoutine({coffeeFormat:"pods",coffeeCupsPerDay:-5}).coffeeCupsPerDay,0);
 assert.equal(drinkRoutineHabits(DEFAULT_DRINK_ROUTINE).length,0);
-console.log("PASS: 12 household drink routine and visitor checks");
+const known=drinkRoutineHabits({...ground,milkPackLiters:1});
+const liters=known.find(h=>h.id==="routine-milk"),bricks=known.find(h=>h.id==="routine-milk-bricks");
+assert.equal(liters?.qty,.32);
+assert.equal(bricks?.qty,.32);
+assert.equal(bricks?.unit,"bricks");
+assert.equal(drinkRoutineHabits({...ground,milkPackLiters:.5}).find(h=>h.id==="routine-milk-bricks")?.qty,.64);
+assert.equal(drinkRoutineHabits({...ground,milkPackLiters:null}).some(h=>h.id==="routine-milk-bricks"),false);
+assert.equal(normalizeDrinkRoutine({...ground,milkPackLiters:10}).milkPackLiters,null);
+const carton={name:"Leche",qty:2,unit:"bricks",purchasedAt:"2026-10-10"};
+const today="2026-10-12";
+assert.equal(estimateConsumption(carton,[],known,[],today).dailyRate,.32,"known 1 L bricks must use the daily milk routine");
+assert.equal(estimateConsumption(carton,[],drinkRoutineHabits({...ground,milkPackLiters:null}),[],today).source,"unknown","unknown carton capacity must not be invented");
+assert.equal(estimateConsumption({...carton,unit:"L"},[],known,[],today).dailyRate,.32,"litre purchases must still use the same milk consumption");
+console.log("PASS: 21 household drink routine, carton size and visitor checks");
