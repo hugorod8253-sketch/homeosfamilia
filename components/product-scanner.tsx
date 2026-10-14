@@ -1,12 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
-import { normalizeBarcode, type BarcodeProduct, type LookupResult, type ProductKind } from '../lib/barcode-product';
+import { normalizeBarcode, type BarcodeProduct, type LookupResult } from '../lib/barcode-product';
 import { nutritionRating } from "../lib/product-facts";
 import { allergenLabel } from '../lib/scanned-package';
 import type { IScannerControls } from '@zxing/browser';
 
 export default function ProductScanner({close,onAdd,initialProduct,initialCode,onFacts}:{initialProduct?:BarcodeProduct;initialCode?:string;onFacts?:(product:BarcodeProduct)=>void;close:()=>void;onAdd:(product:BarcodeProduct,target:'shopping'|'inventory',packs:number,location:string,extra:boolean)=>string}) {
-  const [kind,setKind] = useState<ProductKind>(initialProduct?.kind||'food');
   const [code,setCode] = useState(initialCode||initialProduct?.barcode||'');
   const [result,setResult] = useState<LookupResult|null>(initialProduct?{status:'found',product:initialProduct}:null);
   const [busy,setBusy] = useState(false);
@@ -73,7 +72,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     const controller=new AbortController();abort.current=controller;
     setBusy(true);setPacks(1);setLocation('');
     try {
-      const response=await fetch(`/api/products?code=${barcode}&kind=${kind}`,{signal:controller.signal});
+      const response=await fetch(`/api/products?code=${barcode}&kind=food`,{signal:controller.signal});
       const data = await response.json() as LookupResult;
       if(id===sequence.current && mounted.current) {setResult(data);if(data.status==='found')onFacts?.(data.product)}
     } catch {
@@ -97,10 +96,6 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     } catch {
       if(id===sequence.current&&mounted.current)setCameraError('No se lee el código. Haz una foto más cerca y con buena luz, o escribe los números.');
     } finally {URL.revokeObjectURL(url);if(id===sequence.current&&mounted.current)setReadingPhoto(false)}
-  }
-  function changeKind(value:ProductKind) {
-    sequence.current++;abort.current?.abort();stopCamera();setCamera(false);setBusy(false);setReadingPhoto(false);setExtra(false);
-    setKind(value);setAlternatives(null);setResult(null);setFeedback('');setCameraError('');
   }
   async function findAlternatives(product:BarcodeProduct) {
     const broad=new Set(['en:spreads','en:breakfasts','en:foods','en:snacks','en:desserts','en:sweet-spreads','en:plant-based-foods-and-beverages','en:confectioneries']);
@@ -140,10 +135,10 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   ];
   const nutritionLabels:Record<string,string>={'energy-kcal':'Energía','proteins':'Proteínas','carbohydrates':'Hidratos','sugars':'Azúcares','fat':'Grasas','saturated-fat':'Saturadas','fiber':'Fibra','salt':'Sal'};
   return <div className="modal-backdrop"><section className="modal product-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="product-scanner-title">
-    <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Escanea tu producto</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
-    <div className="scanner-kind" role="group" aria-label="Tipo de producto"><button className={kind==='food'?'active':''} aria-pressed={kind==='food'} onClick={()=>changeKind('food')}>Alimentación</button><button className={kind==='beauty'?'active':''} aria-pressed={kind==='beauty'} onClick={()=>changeKind('beauty')}>Cosmética e higiene</button><button className={kind==='household'?'active':''} aria-pressed={kind==='household'} onClick={()=>changeKind('household')}>Hogar y otros</button></div>
+    <div className="modal-head"><div><span className="eyebrow">LENTE HOMEOS</span><h2 id="product-scanner-title">Apunta. Descubre. Añade.</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
+    <p className="scanner-auto-label"><strong>Un solo escáner.</strong> Detectamos automáticamente si es alimentación, higiene o un producto del hogar. Si la ficha no es fiable, lo indicaremos.</p>
     <div className="scanner-input-panel">
-      <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Escanear código de barras'}</button>
+      <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Abrir cámara'}</button>
       <button className="secondary scanner-photo-button" disabled={busy||readingPhoto} onClick={()=>photoInput.current?.click()}>{readingPhoto?'Leyendo foto…':'Leer una foto del código'}</button>
       <input ref={photoInput} hidden type="file" accept="image/*" onChange={event=>{void readPhoto(event.target.files?.[0]);event.currentTarget.value=''}}/>
       {camera&&<div className="scanner-camera"><video ref={video} autoPlay muted playsInline aria-label="Vista de cámara para leer el código de barras"/><span>Centra el código de barras</span></div>}
