@@ -2478,9 +2478,21 @@ main p,.modal p{font-size:16px!important}
 }
 
 /* Scanner mobile visibility and clearer choices */
-.scanner-camera-button{min-height:58px!important;background:#174c9a!important;color:#fff!important;font-size:17px!important;font-weight:800!important;box-shadow:0 6px 18px #174c9a33!important}.scanner-kind{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:transparent!important}.scanner-kind button{min-width:0;min-height:52px;white-space:normal;border:2px solid #ccd7e4!important;background:#f1f5fa!important;border-radius:14px!important;font-weight:700}.scanner-kind button.active{background:#e5efff!important;border-color:#2463b7!important;color:#123f81!important}.scanner-code-row input{min-width:0}button:focus-visible{outline:3px solid #2463b7;outline-offset:3px}@media(max-width:700px){.scanner-kind{width:100%}.scanner-code-row input{flex:1 1 0;width:0;min-width:0}}
+.scanner-camera-button{min-height:58px!important;background:#174c9a!important;color:#fff!important;font-size:17px!important;font-weight:800!important;box-shadow:0 6px 18px #174c9a33!important}.scanner-code-row input{min-width:0}button:focus-visible{outline:3px solid #2463b7;outline-offset:3px}@media(max-width:700px){.scanner-kind{width:100%}.scanner-code-row input{flex:1 1 0;width:0;min-width:0}}
 
-.scanner-kind{grid-template-columns:repeat(3,minmax(0,1fr))!important}@media(max-width:450px){.scanner-kind button{font-size:12px!important;padding:9px 4px!important}}
+/* Category identity remains visible in both selected and unselected states. */
+.scanner-kind{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.scanner-kind .scanner-category{--category-ink:#215740;--category-tint:#edf6ee;--category-border:#99bfa5;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-width:0;min-height:134px;padding:18px 8px 12px;border:2px solid var(--category-border);border-radius:16px;background:var(--category-tint);color:var(--category-ink);white-space:normal;text-align:center;line-height:1.3;gap:5px}
+.scanner-kind .scanner-category-beauty{--category-ink:#633d7b;--category-tint:#f5eef9;--category-border:#c7afd6}
+.scanner-kind .scanner-category-household{--category-ink:#255775;--category-tint:#edf5fa;--category-border:#9fbfd2}
+.scanner-kind .scanner-category.active{border-color:var(--category-ink);background:var(--category-tint);color:var(--category-ink);box-shadow:inset 0 0 0 1px var(--category-ink)}
+.scanner-category-icon{font-size:36px;line-height:1.2}
+.scanner-category strong{font-size:16px;overflow-wrap:anywhere}
+.scanner-category small{font-size:12px;line-height:1.35;color:inherit}
+.scanner-category-check{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:13px;font-weight:800}
+.scanner-category.active .scanner-category-check{background:var(--category-ink);color:white}
+@media(max-width:380px){.scanner-kind{gap:6px}.scanner-kind .scanner-category{padding-inline:5px}.scanner-category strong{font-size:14px}.scanner-category small{font-size:11px}}
+@media(forced-colors:active){.scanner-kind .scanner-category.active{outline:3px solid Highlight;outline-offset:2px}}
 
 /* Independent nutrition dashboard: visual categories and high contrast */
 .homeos-health-evaluation{background:#f7f8fb;border:1px solid #d7deea;border-radius:20px;padding:18px;margin:18px 0}.homeos-health-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.homeos-health-header>div{display:grid;gap:4px}.homeos-health-header>div>strong{font-size:19px}.homeos-health-header small{font-size:12px;color:#586579}.homeos-health-score{font-size:23px;border-radius:14px;padding:10px 13px;white-space:nowrap;background:#e2e8f0;color:#334155}.homeos-health-score.good{background:#dcfce7;color:#166534}.homeos-health-score.medium{background:#fef3c7;color:#92400e}.homeos-health-score.bad{background:#fee2e2;color:#991b1b}.homeos-health-signals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.homeos-health-signal{display:grid;gap:5px;border-radius:14px;border-left:5px solid #64748b;background:white;padding:12px;min-width:0}.homeos-health-signal.good{border-left-color:#15803d;background:#f0fdf4}.homeos-health-signal.medium{border-left-color:#d97706;background:#fffbeb}.homeos-health-signal.bad{border-left-color:#dc2626;background:#fef2f2}.homeos-health-signal>span{font-weight:750}.homeos-health-signal>strong{font-size:18px}.homeos-health-signal small{font-size:12px;line-height:1.4;color:#475569}@media(max-width:430px){.homeos-health-signals{grid-template-columns:1fr}.homeos-health-header{align-items:flex-start}.homeos-health-score{font-size:20px}}

@@ -564,14 +564,14 @@ export function completePurchase(s:AppState,cartIds:string[],total?:number,activ
 export function addScannedProduct(s:AppState,product:BarcodeProduct,target:'shopping'|'inventory',packs:number,chosenLocation='',extra=false):{state:AppState;message:string}{
  const count=Math.max(1,Math.min(99,Math.floor(packs)||1)), amount=scannedPackage(product), qty=amount.qty*count;
  const classified=classifyProduct(product.name);
- const category=product.kind==='beauty'?'Higiene y cuidado':classified.category==='Por clasificar'?'Despensa':classified.category;
+ const category=product.kind==='beauty'?'Higiene y cuidado':product.kind==='household'?'Limpieza y hogar':classified.category==='Por clasificar'?'Despensa':classified.category;
  const matches=(i:{barcode?:string;name:string})=>i.barcode?i.barcode.padStart(14,'0')===product.barcode.padStart(14,'0'):norm(i.name)===norm(product.name);
  const existing=target==='shopping'?s.shopping.find(matches):s.inventory.find(i=>matches(i)&&i.stock!=='falta');
  if(existing&&target==='shopping')return {state:s,message:'Ya está en la lista. Puedes ajustar su cantidad allí.'};
  if(existing&&target==='inventory'&&!extra)return {state:s,message:'Ya está registrado en casa. Si son otros envases, pulsa «Registrar envases adicionales».'};
  const base={id:crypto.randomUUID(),barcode:product.barcode,productInfo:product,name:product.name,brand:product.brand,packageSize:product.packageSize,qty,unit:amount.unit,category,subcategory:classified.subcategory};
  if(target==='shopping')return {state:{...s,shopping:[...s.shopping,{...base,requestedBy:'Escáner',reason:'persona',status:'pendiente'}]},message:'Añadido a la compra. Márcalo cuando lo cojas.'};
- const location=(["Nevera","Congelador","Despensa","Sin ubicar"].includes(chosenLocation)?chosenLocation:product.kind==='beauty'?'Sin ubicar':recommendedLocation(product.name,category)) as Location;
+ const location=(["Nevera","Congelador","Despensa","Sin ubicar"].includes(chosenLocation)?chosenLocation:product.kind!=='food'?'Sin ubicar':recommendedLocation(product.name,category)) as Location;
  const today=localDateIso();
  return {state:{...s,inventory:[{...base,location,stock:'hay',purchasedAt:'',purchaseDateUnknown:true,lastConfirmedAt:today,estimateAnchorDate:today,estimateAnchorQty:qty},...s.inventory]},message:'Registrado en casa. No se ha añadido ningún gasto ni inventado una fecha de compra.'};
 }
