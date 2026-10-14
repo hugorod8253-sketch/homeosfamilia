@@ -151,7 +151,7 @@ export async function signOutAccount(){
   try{await request("/auth/v1/logout",{},previous.access_token)}catch{}
   // Clear cached household contents for this user so another login cannot inherit them.
   try{const prefix="homeos:account:"+previous.user.id+":";
-   for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k?.startsWith(prefix))localStorage.removeItem(k)}
+   for(let i=window.localStorage.length-1;i>=0;i--){const k=window.localStorage.key(i);if(k?.startsWith(prefix))window.localStorage.removeItem(k)}
   }catch{}
  }
 }
