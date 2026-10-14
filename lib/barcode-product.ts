@@ -1,5 +1,5 @@
 /** Read-only product lookup. Never writes to the user's inventory or shared catalog. */
-export type ProductKind = 'food' | 'beauty';
+export type ProductKind = 'food' | 'beauty' | 'household';
 export type BarcodeProduct = {
   barcode: string; kind: ProductKind; name: string; brand?: string; packageSize?: string;
   ingredients?: string; allergens: string[]; nutritionPer100g: Record<string, number>;
@@ -24,7 +24,7 @@ export function normalizeBarcode(value: string): string | undefined {
 type Obj = Record<string, unknown>;
 const obj = (v: unknown): Obj => v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {};
 const str = (v: unknown): string | undefined => typeof v === 'string' && v.trim() ? v.trim() : undefined;
-const hosts = { food: 'world.openfoodfacts.org', beauty: 'world.openbeautyfacts.org' };
+const hosts = { food: 'world.openfoodfacts.org', beauty: 'world.openbeautyfacts.org', household: 'world.openproductsfacts.org' };
 
 export function parseBarcodeProduct(payload: unknown, barcode: string, kind: ProductKind, now = new Date()): BarcodeProduct | undefined {
   const root = obj(payload), p = obj(root.product);
@@ -53,7 +53,7 @@ export function parseBarcodeProduct(payload: unknown, barcode: string, kind: Pro
     nutritionPer100g, nutriScore: grade && /^[a-e]$/.test(grade) ? grade : undefined,
     missing: [!ingredients ? 'ingredients' : '', kind === 'food' && !Object.keys(nutritionPer100g).length ? 'nutrition' : '',
       !Array.isArray(p.allergens_tags) ? 'allergens' : ''].filter(Boolean),
-    source: { name: kind === 'food' ? 'Open Food Facts' : 'Open Beauty Facts',
+    source: { name: kind === 'food' ? 'Open Food Facts' : kind === 'beauty' ? 'Open Beauty Facts' : 'Open Products Facts',
       url: `https://${hosts[kind]}/product/${barcode}`, license: 'ODbL-1.0', fetchedAt: now.toISOString() },
   };
 }
