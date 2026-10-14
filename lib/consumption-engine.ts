@@ -3,10 +3,10 @@ import {planToBase,planFromBase,planUnitFamily,normalizePlanUnit} from './recipe
 import {calendarDaysUntil,localDateIso,isCalendarDate} from './local-date';
 export type ConsumptionHabit={id:string;name:string;qty:number;unit:string;days:number};
 export type StockCheck={id:string;name:string;qty:number;unit:string;date:string;location:string};
-export type ConsumptionExtra={id:string;name:string;qty:number;unit:string;date:string};
+export type ConsumptionExtra={id:string;name:string;qty:number;unit:string;date:string;charged?:boolean};
 type Purchase={name:string;category?:string;qty:number;unit:string;date:string};
 type Item=Purchase&{id?:string;purchasedAt?:string;lastConfirmedAt?:string;estimateAnchorDate?:string;estimateAnchorQty?:number;location?:string;storageMode?:string;quickLevel?:string;quickObservedAt?:string;expires?:string;estimatedExpires?:string};
-function key(name:string,category?:string){
+export function consumptionKey(name:string,category?:string){
  const n=normalizeProductText(name);
  if(/colacao|cola cao|nesquik|cacao soluble/.test(n))return "cacao soluble";
  if(/cafe\s*(en|de)\s*grano|cafe\s*grano/.test(n))return "cafe:grano";
@@ -15,6 +15,7 @@ function key(name:string,category?:string){
  if(/capsulas?\s*(de\s*)?cafe|cafe\s*(en\s*)?capsulas?/.test(n))return "cafe:capsulas";
  return normalizeProductText(classifyProduct(name,category).canonical);
 }
+const key=consumptionKey;
 function validDate(date:string){return isCalendarDate(date)}
 function compatible(a:string,b:string){const f=planUnitFamily(a);return f===planUnitFamily(b)&&(f==='mass'||f==='volume'||normalizePlanUnit(a)===normalizePlanUnit(b))}
 function median(xs:number[]){const s=xs.sort((a,b)=>a-b);return s.length%2?s[Math.floor(s.length/2)]:(s[s.length/2-1]+s[s.length/2])/2}
@@ -24,6 +25,7 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
  const matches=(p:{name:string;category?:string;unit:string})=>key(p.name,p.category)===canonical&&compatible(p.unit,item.unit);
  const buys=purchases.filter(p=>matches(p)&&p.qty>0&&Number.isFinite(p.qty)&&validDate(p.date)&&p.date<=today);
  const exceptional=extras.filter(e=>matches(e)&&e.qty>0&&Number.isFinite(e.qty)&&validDate(e.date)&&e.date<=today);
+ const uncharged=exceptional.filter(e=>!e.charged);
  const daily=new Map<string,number>();for(const p of buys)daily.set(p.date,(daily.get(p.date)||0)+planToBase(p.qty,p.unit));
  const dates=[...daily.keys()].sort(),rates:number[]=[];
  for(let i=1;i<dates.length;i++){const days=calendarDaysUntil(dates[i],new Date(dates[i-1]+'T12:00:00'));if(days>=2)rates.push((daily.get(dates[i-1])||0)/days)}
@@ -43,7 +45,7 @@ export function estimateConsumption(item:Omit<Item,'date'>,purchases:Purchase[],
   const observedAge=Math.max(0,-calendarDaysUntil(anchor,new Date(item.quickObservedAt+'T12:00:00')));
   allocatedRate=Math.min(allocatedRate,base/(observedAge+1));
  }
- const extraordinary=anchor&&validDate(anchor)&&item.storageMode!=='reserva'&&item.location!=='Congelador'?exceptional.filter(e=>e.date>=anchor).reduce((sum,e)=>sum+planToBase(e.qty,e.unit),0):0;
+ const extraordinary=anchor&&validDate(anchor)&&item.storageMode!=='reserva'&&item.location!=='Congelador'?uncharged.filter(e=>e.date>=anchor).reduce((sum,e)=>sum+planToBase(e.qty,e.unit),0):0;
  const remaining=Math.max(0,(item.storageMode==='reserva'||item.location==='Congelador'||!rate?base:Math.max(0,base-allocatedRate*age))-extraordinary);
  return {source,dailyRate:planFromBase(allocatedRate,item.unit),estimatedQty:Math.round(planFromBase(remaining,item.unit)*100)/100,daysLeft:allocatedRate?remaining/allocatedRate:null,confidence:source==='confirmed'?'media':source==='unknown'?'sin datos':'baja',basis:source==='confirmed'?'Ritmo ajustado con cantidades confirmadas y compras':source==='purchases'?'Ritmo provisional de recompra; comprar no demuestra que se haya acabado':source==='habit'?'Ritmo inicial indicado por ti; todavía sin comprobar':'Aún no hay datos suficientes de consumo'};
 }
@@ -57,7 +59,7 @@ export function changeShoppingQuantity(qty:number,unit:string,delta:number){
 /** One household rate is consumed once, oldest lot first, between dated stock anchors. */
 export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Array<Omit<Item,'date'>&{stock?:string}>,purchases:Purchase[],habits:ConsumptionHabit[]=[],checks:StockCheck[]=[],today=localDateIso(),extras:ConsumptionExtra[]=[]){
  const result=estimateConsumption(item,purchases,habits,checks,today,1,extras);
- const hasExtra=extras.some(e=>key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&validDate(e.date)&&e.date<=today);
+ const hasExtra=extras.some(e=>!e.charged&&key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&validDate(e.date)&&e.date<=today);
  if(item.qty<=0||item.location==='Congelador'||item.storageMode==='reserva'||(result.source==='unknown'&&!hasExtra))return result;
  const peers=inventory.filter(i=>i.stock!=='falta'&&i.qty>0&&i.location!=='Congelador'&&i.storageMode!=='reserva'&&key(i.name,i.category)===key(item.name,item.category)&&compatible(i.unit,item.unit));
  const ownIndex=peers.findIndex(i=>i===item||(item.id!==undefined&&i.id===item.id));
@@ -68,7 +70,7 @@ export function estimateInventoryConsumption(item:Omit<Item,'date'>,inventory:Ar
  const rate=Math.min(planToBase(result.dailyRate,item.unit),...peers.filter(i=>i.quickLevel==='queda'&&i.quickObservedAt).map(i=>planToBase(estimateConsumption(i,purchases,habits,checks,today).dailyRate,i.unit)).filter(x=>x>0));
  if(!Number.isFinite(rate)||(rate<=0&&!hasExtra))return result;
  const ordered=[...lots].sort((a,b)=>(a.i.expires||a.i.estimatedExpires||'9999').localeCompare(b.i.expires||b.i.estimatedExpires||'9999')||(a.i.purchasedAt||a.date).localeCompare(b.i.purchasedAt||b.date)||a.index-b.index);
- const exceptional=extras.filter(e=>key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&Number.isFinite(e.qty)&&validDate(e.date)&&e.date<=today);
+ const exceptional=extras.filter(e=>!e.charged&&key(e.name)===key(item.name,item.category)&&compatible(e.unit,item.unit)&&e.qty>0&&Number.isFinite(e.qty)&&validDate(e.date)&&e.date<=today);
  const events=[...new Set([...lots.map(x=>x.date),...exceptional.map(x=>x.date),today])].sort();
  let previous=events[0];
  for(const date of events){
