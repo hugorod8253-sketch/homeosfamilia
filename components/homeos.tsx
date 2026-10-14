@@ -961,7 +961,10 @@ export default function HomeOS({account}:{account?:AccountHomeContext}={}){
  }
 
  if(!hydrated)return <div className="app-loading">{accountProblem?<div className="ha-auth-error"><strong>No se puede abrir el hogar con seguridad</strong><p>{accountProblem}</p><div><button onClick={()=>{setAccountProblem("");setAccountRetry(n=>n+1)}}>Reintentar conexión</button><button onClick={account?.onAccessDenied}>Volver a mis hogares</button></div></div>:<><div className="app-loading-mark">H</div><strong>HomeOS</strong></>}</div>;
- if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus} accountMode={Boolean(account)}/>;
+ if(!state.profile.onboardingDone){
+  if(account&&account.role!=="owner")return <main className="ha-page"><section className="ha-panel"><span className="ha-badge">CONFIGURACIÓN DEL HOGAR</span><h1>El hogar se está preparando</h1><p>Solo la persona administradora responde las preguntas iniciales. Cuando termine, todas las cuentas tendrán las mismas compras, inventario y preferencias.</p><p role="status">Comprobando novedades automáticamente…</p><button type="button" className="secondary" onClick={account.onManage}>Ver mi familia</button></section></main>;
+  return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus} accountMode={Boolean(account)}/>;
+ }
 
  return <div className={demoMode?"app-shell demo-mode":"app-shell"}>
   {storageError&&<div className="storage-error" role="alert">No se pueden guardar los cambios en este navegador. Revisa el espacio o los permisos de almacenamiento antes de cerrar HomeOS.</div>}
