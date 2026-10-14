@@ -1573,7 +1573,23 @@ function RecipeNutrition({recipe,total=false}:{recipe:Recipe;total?:boolean}){
  return <div className="macro-row nutrition-estimate"><b>≈ {Math.round(data.calories)} kcal</b><span>{data.protein} g proteína</span><span>{data.carbs} g carbohidratos</span><span>{data.fat} g grasas</span><small>{total?"Total receta":"Por ración"} · {calculated.complete?"valores genéricos aproximados":"estimación del recetario; ingredientes sin recalcular"}</small>{calculated.complete&&calculated.assumptions.length>0&&<small>{calculated.assumptions.join(" · ")}</small>}</div>;
 }
 
-function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;onOpenCasa:()=>void}){
+function Habitos({state,setState,onAdjust,onOpenCasa}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;onAdjust:()=>void;onOpenCasa:()=>void}){
+ const drinkRoutine=normalizeDrinkRoutine(state.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE);
+ const [visitorCups,setVisitorCups]=useState(2);
+ const [visitorMilk,setVisitorMilk]=useState(false);
+ const [visitorSaved,setVisitorSaved]=useState("");
+ function recordVisitorCoffee(){
+  const batch=crypto.randomUUID();
+  const entries=visitExtras(drinkRoutine,visitorCups,visitorMilk,localDateIso(),batch);
+  if(!entries.length)return;
+  setState(old=>({...old,profile:{...old.profile,consumptionExtras:[...(old.profile.consumptionExtras||[]),...entries].slice(-250)}}));
+  setVisitorSaved(batch);
+ }
+ function undoVisitorCoffee(){
+  if(!visitorSaved)return;
+  setState(old=>({...old,profile:{...old.profile,consumptionExtras:(old.profile.consumptionExtras||[]).filter(e=>!e.id.startsWith(visitorSaved+"-"))}}));
+  setVisitorSaved("");
+ }
  const recent=(date:string)=>{const days=calendarDaysUntil(date);return days<=0&&days>=-28};
  const purchases=state.purchaseHistory.filter(p=>recent(p.date));
  const meals=state.mealHistory.filter(m=>recent(m.date));
@@ -1596,7 +1612,15 @@ function Habitos({state,onAdjust,onOpenCasa}:{state:AppState;onAdjust:()=>void;o
  const reminder=reviewed&&calendarDaysUntil(reviewed)<-14;
  return <div className="habits-v3">
   <div className="hv-heading"><div><span className="hv-period">Últimos 28 días</span><h2>Así estáis comprando y comiendo</h2><p>Una mirada a los registros para elegir con más variedad.</p></div><button className="primary" onClick={onAdjust}>Mejorar previsiones · 1 min</button></div>
-  <div className="hv-adjust-help">Indica cuánto duran algunas compras. Ayuda a prever qué puede faltar, sin contar ni pesar.</div>
+  <div className="hv-adjust-help">El ritmo habitual se basa en vuestras respuestas; una visita no debería multiplicar el consumo de cada día. Las cantidades siguen siendo estimadas hasta que se comprueban.</div>
+   <section className="routine-guest" aria-label="Consumo excepcional de visitas">
+    <div className="routine-guest-info"><span className="routine-guest-mark" aria-hidden="true">☕</span><div><strong>¿Hoy hubo visitas?</strong><p>Registra solo los cafés extra que se han tomado. No cambia la rutina diaria.</p></div></div>
+    {drinkRoutine.coffeeFormat!=="none"?
+     <><div className="routine-guest-controls"><div className="routine-options">{[1,2,3,4,6].map(n=><button type="button" key={n} className={visitorCups===n?"active":""} aria-pressed={visitorCups===n} onClick={()=>{setVisitorCups(n);setVisitorSaved("")}}>{n} {n===1?"café":"cafés"}</button>)}</div><button type="button" className={visitorMilk?"routine-guest-milk selected":"routine-guest-milk"} aria-pressed={visitorMilk} onClick={()=>{setVisitorMilk(v=>!v);setVisitorSaved("")}}>{visitorMilk?"✓ Con leche":"¿Con leche?"}</button><button type="button" className="primary" disabled={Boolean(visitorSaved)} onClick={recordVisitorCoffee}>Registrar extra</button></div>
+     {visitorSaved&&<div className="routine-guest-saved" role="status">Consumo extra guardado. El ritmo diario no ha cambiado. <button type="button" onClick={undoVisitorCoffee}>Deshacer</button></div>}
+     <small>Usamos la cantidad por taza que definiste. Si hay dudas sobre el stock, confirma lo que queda desde Casa.</small></>:
+     <div className="routine-guest-empty"><span>Primero elige qué tipo de café tenéis. No vamos a suponerlo.</span><button type="button" className="secondary" onClick={onAdjust}>Configurar café</button></div>}
+   </section>
   <section className="hv-reading" aria-labelledby="hv-reading-title"><div className="hv-reading-heading"><h3 id="hv-reading-title">Lectura rápida</h3></div><div className="hv-insights">
    {purchases.length>0&&<div className="hv-insight"><span aria-hidden="true">🛒</span><div><strong>Lo que más aparece en tus compras</strong><p>{defs.map(d=>({name:d.name,count:purchases.filter(p=>belongs(p.name,d.key)).length})).sort((a,b)=>b.count-a.count).filter(d=>d.count>0).slice(0,2).map(d=>d.name+" · "+d.count+" registros").join(" / ")||"Aún faltan compras de alimentos"}</p></div></div>}
    {purchases.filter(p=>belongs(p.name,"snack")).length>0&&<div className="hv-insight"><span aria-hidden="true">🍫</span><div><strong>Dulces y snacks en tus compras</strong><p>{purchases.filter(p=>belongs(p.name,"snack")).length} registros. Puedes alternarlos con fruta, yogur natural o frutos secos.</p></div></div>}
