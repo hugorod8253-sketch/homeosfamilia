@@ -55,7 +55,16 @@ export default function HomeAccountGateway(){
   }catch(err){setError(errorMessage(err))}
   finally{setLoading(false)}
  },[loadHomes]);
- useEffect(()=>{void restore()},[restore]);
+ useEffect(()=>{if(!accountBackendEnabled()){setLoading(false);return}void restore()},[restore]);
+ useEffect(()=>{
+  const onStorage=(event:StorageEvent)=>{
+   if(event.key==="homeos:account-auth:v1"&&!event.newValue){
+    setSelected(null);setManageOpen(false);setSession(null);setMembers([]);setHouses([]);
+   }
+  };
+  window.addEventListener("storage",onStorage);
+  return()=>window.removeEventListener("storage",onStorage);
+ },[]);
  useEffect(()=>{if(!session||!selected)return;writeBrowserStorage(homeKey(session.user.id),selected)},[selected,session]);
  useEffect(()=>{if(!selected||!manageOpen)return;void listAccountMembers(selected).then(setMembers).catch(err=>setError(errorMessage(err)))},[selected,manageOpen]);
  const current=houses.find(h=>h.householdId===selected);
