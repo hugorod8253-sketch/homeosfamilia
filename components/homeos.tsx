@@ -38,6 +38,7 @@ import { SPANISH_SUPERMARKETS, normalizeSupermarket, editDistance } from "../lib
 import { appendConfirmedStockCheck, emptyInventoryItem, freezeInventoryItem, thawInventoryItem } from "../lib/inventory-lifecycle";
 import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type ConsumptionExtra, type StockCheck } from "../lib/consumption-engine";
 import { DEFAULT_DRINK_ROUTINE, normalizeDrinkRoutine, drinkRoutineHabits, visitExtras, coffeeProduct, type DrinkRoutine } from "../lib/household-routines";
+import { chargeVisitorUse } from "../lib/guest-use";
 
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
@@ -1583,17 +1584,33 @@ function Habitos({state,setState,onAdjust,onOpenCasa}:{state:AppState;setState:R
  const [visitorCups,setVisitorCups]=useState(2);
  const [visitorMilk,setVisitorMilk]=useState(false);
  const [visitorSaved,setVisitorSaved]=useState("");
+ const [visitorUndoIssue,setVisitorUndoIssue]=useState(false);
+ const guestUndoRef=useRef<{batch:string;before:AppState;after:AppState;unmatched:string[]}|null>(null);
  function recordVisitorCoffee(){
-  const batch=crypto.randomUUID();
-  const entries=visitExtras(drinkRoutine,visitorCups,visitorMilk,localDateIso(),batch);
+  if(visitorSaved)return;
+  const batch=crypto.randomUUID(),today=localDateIso();
+  const entries=visitExtras(drinkRoutine,visitorCups,visitorMilk,today,batch);
   if(!entries.length)return;
-  setState(old=>({...old,profile:{...old.profile,consumptionExtras:[...(old.profile.consumptionExtras||[]),...entries].slice(-250)}}));
+  setState(old=>{
+   const charged=chargeVisitorUse(old.inventory,entries,today,item=>
+    estimateInventoryConsumption(item,old.inventory,old.purchaseHistory,old.profile.consumptionHabits||[],old.stockChecks,today,old.profile.consumptionExtras||[]),
+    normalizeDrinkRoutine(old.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE).milkPackLiters);
+   const next:AppState={...old,inventory:charged.inventory,profile:{...old.profile,consumptionExtras:[...(old.profile.consumptionExtras||[]),...charged.events].slice(-250)}};
+   guestUndoRef.current={batch,before:old,after:next,unmatched:charged.unmatched};
+   return next;
+  });
   setVisitorSaved(batch);
+  setVisitorUndoIssue(false);
  }
  function undoVisitorCoffee(){
-  if(!visitorSaved)return;
-  setState(old=>({...old,profile:{...old.profile,consumptionExtras:(old.profile.consumptionExtras||[]).filter(e=>!e.id.startsWith(visitorSaved+"-"))}}));
+  const previous=guestUndoRef.current;
+  if(!previous||previous.batch!==visitorSaved||state!==previous.after){
+   setVisitorUndoIssue(true);
+   return;
+  }
+  setState(current=>current===previous.after?previous.before:current);
   setVisitorSaved("");
+  guestUndoRef.current=null;
  }
  const recent=(date:string)=>{const days=calendarDaysUntil(date);return days<=0&&days>=-28};
  const purchases=state.purchaseHistory.filter(p=>recent(p.date));
@@ -1622,7 +1639,7 @@ function Habitos({state,setState,onAdjust,onOpenCasa}:{state:AppState;setState:R
     <div className="routine-guest-info"><span className="routine-guest-mark" aria-hidden="true">☕</span><div><strong>¿Hoy hubo visitas?</strong><p>Registra solo los cafés extra que se han tomado. No cambia la rutina diaria.</p></div></div>
     {drinkRoutine.coffeeFormat!=="none"?
      <><div className="routine-guest-controls"><div className="routine-options">{[1,2,3,4,6].map(n=><button type="button" key={n} className={visitorCups===n?"active":""} aria-pressed={visitorCups===n} disabled={Boolean(visitorSaved)} onClick={()=>setVisitorCups(n)}>{n} {n===1?"café":"cafés"}</button>)}</div><button type="button" className={visitorMilk?"routine-guest-milk selected":"routine-guest-milk"} aria-pressed={visitorMilk} disabled={Boolean(visitorSaved)} onClick={()=>setVisitorMilk(v=>!v)}>{visitorMilk?"✓ Con leche":"¿Con leche?"}</button><button type="button" className="primary" disabled={Boolean(visitorSaved)} onClick={recordVisitorCoffee}>Registrar extra</button></div>
-     {visitorSaved&&<div className="routine-guest-saved" role="status">Consumo extra guardado. El ritmo diario no ha cambiado. <button type="button" onClick={undoVisitorCoffee}>Deshacer</button><button type="button" onClick={()=>setVisitorSaved("")}>Registrar otro consumo</button></div>}
+     {visitorSaved&&<div className="routine-guest-saved" role="status">Consumo extra guardado. El ritmo diario no ha cambiado. <button type="button" onClick={undoVisitorCoffee}>Deshacer</button><button type="button" onClick={()=>setVisitorSaved("")}>Registrar otro consumo</button></div>{guestUndoRef.current?.unmatched.length? <small className="routine-guest-warning">No hemos supuesto el tamaño de {guestUndoRef.current.unmatched.join(", ")}. Revisa la cantidad desde Casa para asegurar la previsión.</small>:null}{visitorUndoIssue&&<small className="routine-guest-warning">El hogar ha cambiado desde entonces. Para evitar borrar otros cambios, corrige la cantidad desde Casa.</small>}}
      <small>Usamos la cantidad por taza que definiste. Si hay dudas sobre el stock, confirma lo que queda desde Casa.</small></>:
      <div className="routine-guest-empty"><span>Primero elige qué tipo de café tenéis. No vamos a suponerlo.</span><button type="button" className="secondary" onClick={onAdjust}>Configurar café</button></div>}
    </section>
