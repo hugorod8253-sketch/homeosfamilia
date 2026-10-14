@@ -14,6 +14,8 @@ const apiKey=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||"";
 let ongoingRefresh:Promise<HomeAccountSession|null>|null=null;
 
 export function accountAuthConfigured(){return Boolean(url&&apiKey)}
+/** Never expose active sign-up until SQL permissions and rollback are verified in staging. */
+export function accountBackendEnabled(){return process.env.NEXT_PUBLIC_HOMEOS_ACCOUNTS_ENABLED==="true"}
 export function readAccountSession():HomeAccountSession|null{
  try{
   const x=JSON.parse(readBrowserStorage(KEY)||"null");
