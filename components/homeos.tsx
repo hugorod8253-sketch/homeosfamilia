@@ -637,7 +637,10 @@ export default function HomeOS({account}:{account?:AccountHomeContext}={}){
  const readyPlansRef=useRef<Set<string>>(new Set());
  const readyPlansInitializedRef=useRef(false);
  const localKey=(key:string)=>account?"homeos:account:"+account.userId+":"+account.householdId+":"+key:key;
- const readHome=(conn:HomeConnection)=>isAccountConnection(conn)?readAccountHousehold(conn.householdId):readRemoteHousehold(conn);
+ const readHome=async(conn:HomeConnection)=>{
+  try{return isAccountConnection(conn)?await readAccountHousehold(conn.householdId):await readRemoteHousehold(conn)}
+  catch(err){if(["not_member","auth_required"].includes((err as {code?:string}).code||""))account?.onAccessDenied();throw err}
+ };
  const writeHome=async(conn:HomeConnection,data:AppState,revision:number)=>{
   if(!isAccountConnection(conn))return writeRemoteHousehold(conn,data,revision);
   try{return await writeAccountHousehold(conn.householdId,data,revision)}
