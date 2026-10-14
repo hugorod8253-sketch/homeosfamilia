@@ -3,7 +3,7 @@ import {useCallback,useEffect,useState,type FormEvent,type ReactNode} from "reac
 import HomeOS from "./homeos";
 import {readBrowserStorage,writeBrowserStorage} from "../lib/browser-storage";
 import {
- accountAuthConfigured,createAccount,signInAccount,signOutAccount,verifyAccountSession,
+ accountAuthConfigured,accountBackendEnabled,createAccount,signInAccount,signOutAccount,verifyAccountSession,
  listAccountHouseholds,createAccountHousehold,joinAccountHousehold,claimLegacyHousehold,
  listAccountMembers,inviteAccountMember,removeAccountMember,leaveAccountHousehold,
  type HomeAccount,type HomeAccountMember,type HomeAccountSession
@@ -127,7 +127,7 @@ export default function HomeAccountGateway(){
   setSession(null);setHouses([]);setMembers([]);setError("");setSuccess("");
  }
  async function openManager(){setManageOpen(true);setError("");setInvite("");if(current)try{setMembers(await listAccountMembers(current.householdId))}catch(err){setError(errorMessage(err))}}
- if(!accountAuthConfigured())return <main className="ha-page"><section className="ha-panel"><h1>HomeOS</h1><p>El acceso por cuentas aún no está configurado en este entorno.</p></section></main>;
+ if(!accountAuthConfigured()||!accountBackendEnabled())return <main className="ha-page"><section className="ha-panel"><span className="ha-badge">CUENTAS FAMILIARES · EN PRUEBAS</span><h1>Acceso familiar en preparación</h1><p>El inventario de HomeOS sigue disponible en la aplicación habitual. Las cuentas personales se activarán después de comprobar permisos, copias de seguridad y sincronización real.</p><p>No te pediremos registrarte antes de que funcione.</p></section></main>;
  if(loading)return <main className="ha-page"><section className="ha-panel" role="status"><h1>HomeOS</h1><p>Comprobando tu sesión y tus hogares…</p></section></main>;
  if(current&&!manageOpen)return <HomeOS key={current.householdId+"-"+session?.user.id} account={{
   householdId:current.householdId,userId:session!.user.id,
