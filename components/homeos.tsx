@@ -959,44 +959,80 @@ export default function HomeOS(){
 
 function ConsumptionSetup({state,setState,finish}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;finish:()=>void}){
  const choices=useMemo(()=>{
-  const latest=new Map<string,ConsumptionHabit>();
-  const dates=new Map<string,string>();
+  const latest=new Map<string,ConsumptionHabit>(),dates=new Map<string,string>();
   for(const p of [...state.purchaseHistory].sort((a,b)=>b.date.localeCompare(a.date))){
-   const canonical=norm(classifyProduct(p.name,p.category).canonical);
    if(p.qty<=0)continue;
+   const canonical=norm(classifyProduct(p.name,p.category).canonical);
    if(!latest.has(canonical)){latest.set(canonical,{id:"habit-"+canonical,name:p.name,qty:p.qty,unit:p.unit,days:7});dates.set(canonical,p.date)}
    else if(dates.get(canonical)===p.date){const c=latest.get(canonical)!;if(planUnitFamily(c.unit)===planUnitFamily(p.unit)&&(["mass","volume"].includes(planUnitFamily(c.unit))||c.unit===p.unit))c.qty=planFromBase(planToBase(c.qty,c.unit)+planToBase(p.qty,p.unit),c.unit)}
   }
-  if(latest.size)return [...latest.values()].sort((a,b)=>Number((state.profile.consumptionHabits||[]).some(h=>norm(h.name)===norm(a.name)))-Number((state.profile.consumptionHabits||[]).some(h=>norm(h.name)===norm(b.name)))).slice(0,6);
-  const basic=[{id:"habit-leche",name:"Leche",qty:1,unit:"L",days:7},{id:"habit-huevos",name:"Huevos",qty:12,unit:"uds",days:7},{id:"habit-pan",name:"Pan",qty:1,unit:"barra",days:7},{id:"habit-yogur",name:"Yogur natural",qty:6,unit:"uds",days:7},{id:"habit-papel",name:"Papel higiénico",qty:6,unit:"rollos",days:7},{id:"habit-pasta",name:"Macarrones",qty:1,unit:"pack",days:7}];
-  const home=state.inventory.filter(i=>i.category!=="Preparados"&&i.qty>0&&i.stock!=="falta").slice(0,6).map(i=>({id:"habit-"+norm(classifyProduct(i.name,i.category).canonical),name:i.name,qty:i.qty,unit:i.unit,days:7}));
-  return home.length?home:basic;
- },[state.purchaseHistory,state.inventory,state.profile.consumptionHabits]);
+  if(latest.size)return [...latest.values()].filter(h=>!/^routine-/.test(h.id)).slice(0,6);
+  return [
+   {id:"habit-leche",name:"Leche",qty:1,unit:"L",days:7},
+   {id:"habit-huevos",name:"Huevos",qty:12,unit:"uds",days:7},
+   {id:"habit-pan",name:"Pan",qty:1,unit:"barra",days:7},
+   {id:"habit-yogur",name:"Yogur natural",qty:6,unit:"uds",days:7},
+   {id:"habit-papel",name:"Papel higiénico",qty:6,unit:"rollos",days:7}
+  ];
+ },[state.purchaseHistory]);
  const [answers,setAnswers]=useState<Record<string,number|null>>({});
- const [dailyRoutines,setDailyRoutines]=useState<string[]>([]);
- const routinePresets:ConsumptionHabit[]=[
-  {id:"routine-coffee",name:"Café molido",qty:250,unit:"g",days:30},
-  {id:"routine-milk",name:"Leche",qty:1,unit:"L",days:7},
-  {id:"routine-protein",name:"Proteína en polvo",qty:30,unit:"g",days:1},
-  {id:"routine-energy",name:"Bebida energética",qty:1,unit:"uds",days:1},
-  {id:"routine-vitamins",name:"Vitaminas",qty:1,unit:"uds",days:1}
- ];
- function save(){setState(s=>{
-  let habits=[...(s.profile.consumptionHabits||[])];
-  for(const c of choices){if(!(c.id in answers))continue;
-   habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==norm(classifyProduct(c.name).canonical));
-   const days=answers[c.id];if(days)habits.push({...c,days});
-  }
-  for(const preset of routinePresets.filter(p=>dailyRoutines.includes(p.id))){
-   const canonical=norm(classifyProduct(preset.name).canonical);
-   if(!choices.some(c=>norm(classifyProduct(c.name).canonical)===canonical&&c.id in answers)){
-    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==canonical);
-    habits.push(preset);
+ const [drink,setDrink]=useState<DrinkRoutine>(()=>normalizeDrinkRoutine(state.profile.drinkRoutine||DEFAULT_DRINK_ROUTINE));
+ const [drinkEdited,setDrinkEdited]=useState(false);
+ const editDrink=(patch:Partial<DrinkRoutine>)=>{setDrink(old=>normalizeDrinkRoutine({...old,...patch}));setDrinkEdited(true)};
+ const predicted=drinkRoutineHabits(drink);
+ function save(){
+  setState(s=>{
+   let habits=[...(s.profile.consumptionHabits||[])];
+   for(const c of choices){
+    if(!(c.id in answers))continue;
+    habits=habits.filter(h=>norm(classifyProduct(h.name).canonical)!==norm(classifyProduct(c.name).canonical));
+    const days=answers[c.id];
+    if(days)habits.push({...c,days});
    }
-  }
-  return {...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso(),consumptionHabits:habits}};
- });finish()}
- return <section className="consumption-setup quick-consumption"><span className="eyebrow">OPCIONAL · HASTA 6 RESPUESTAS</span><h2>¿Cuánto suele durar esta compra?</h2><p>Responde de memoria. Usamos la cantidad comprada; no necesitas pesar ni contar nada. Incluye alimentos y productos del hogar.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit}{state.purchaseHistory.length?" en la última compra":" · punto de partida orientativo"}</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"Una semana"],[14,"Dos semanas"],[30,"Un mes"],[null,"No lo sé"]].map(([days,label])=><button key={String(days)} className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}<div className="meal-actions"><button className="primary" onClick={save}>Guardar respuestas</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div><div className="quick-habit-row"><div><strong>¿Qué tomas casi todos los días?</strong><small>Selecciona tus rutinas habituales. Son valores iniciales editables, no cantidades confirmadas.</small></div><div className="quick-habit-options">{routinePresets.map(p=><button type="button" key={p.id} className={dailyRoutines.includes(p.id)?"secondary active":"secondary"} aria-pressed={dailyRoutines.includes(p.id)} onClick={()=>setDailyRoutines(old=>old.includes(p.id)?old.filter(id=>id!==p.id):[...old,p.id])}>{p.name} · {p.qty} {p.unit}/{p.days===1?"día":p.days+" días"}</button>)}</div><small>Ejemplo: una taza de café no equivale siempre a 8 g. Ajusta gramos, tamaño del paquete y frecuencia en Hábitos para mejorar la previsión.</small></div><p>Solo orienta las estimaciones. Las cantidades confirmadas tienen prioridad; el inventario no cambia al responder.</p></section>
+   if(drinkEdited){
+    const managedNames=new Set(["cafe en grano","cafe molido","cafe soluble","capsulas de cafe","cacao soluble"]);
+    const upcoming=drinkRoutineHabits(drink);
+    const milkRoutine=upcoming.some(h=>h.id==="routine-milk");
+    habits=habits.filter(h=>!h.id.startsWith("routine-")&&!managedNames.has(norm(h.name))&&!(milkRoutine&&norm(h.name)==="leche"));
+    habits=[...habits,...upcoming];
+   }
+   return {...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso(),drinkRoutine:drinkEdited?drink:s.profile.drinkRoutine,consumptionHabits:habits}};
+  });
+  finish();
+ }
+ const cupChoices=[0,1,2,3,4,5,6,8,10];
+ const milkChoices=[...new Set([0,1,2,3,drink.coffeeCupsPerDay])].filter(n=>n<=drink.coffeeCupsPerDay);
+ return <section className="consumption-setup quick-consumption">
+  <span className="eyebrow">TU CASA · SOLO AL EMPEZAR, LUEGO APRENDEMOS</span>
+  <h2>¿Qué se consume realmente en casa?</h2>
+  <p>Cuenta el total del hogar, no por persona. Basta con elegir lo habitual. Los días con visitas no cambiarán esta rutina.</p>
+  <div className="routine-form-grid">
+   <article className="routine-card coffee-routine">
+    <div className="routine-card-title"><span aria-hidden="true">☕</span><div><strong>Café de toda la casa</strong><small>Entre todos, un día normal</small></div></div>
+    <label className="routine-label">¿Qué tipo de café utilizáis?</label>
+    <div className="routine-options">{([["none","No tomamos"],["beans","En grano"],["ground","Molido"],["pods","Cápsulas"],["instant","Soluble"]] as [DrinkRoutine["coffeeFormat"],string][]).map(([value,label])=><button type="button" className={drink.coffeeFormat===value?"active":""} aria-pressed={drink.coffeeFormat===value} key={value} onClick={()=>editDrink({coffeeFormat:value})}>{label}</button>)}</div>
+    {drink.coffeeFormat!=="none"&&<>
+     <label className="routine-label">¿Cuántos cafés tomáis en total al día?</label>
+     <div className="routine-options">{cupChoices.map(n=><button type="button" key={n} aria-pressed={drink.coffeeCupsPerDay===n} className={drink.coffeeCupsPerDay===n?"active":""} onClick={()=>editDrink({coffeeCupsPerDay:n})}>{n}</button>)}</div>
+     {drink.coffeeCupsPerDay>0&&<>
+      <label className="routine-label">¿Cuántos llevan leche?</label>
+      <div className="routine-options">{milkChoices.map(n=><button type="button" key={n} aria-pressed={drink.coffeeMilkCupsPerDay===n} className={drink.coffeeMilkCupsPerDay===n?"active":""} onClick={()=>editDrink({coffeeMilkCupsPerDay:n})}>{n===drink.coffeeCupsPerDay?"Todos ("+n+")":n}</button>)}</div>
+      <details className="routine-dose"><summary>Ajustar cantidad por café · opcional</summary><label>{drink.coffeeFormat==="pods"?"1 cápsula por café": "Gramos de café por taza"}{drink.coffeeFormat!=="pods"&&<input type="number" min="1" max="25" step="1" value={drink.coffeeGramsPerCup} onChange={e=>editDrink({coffeeGramsPerCup:Number(e.target.value)})}/>}</label><label>Leche por café con leche (ml)<input type="number" min="0" max="400" step="10" value={drink.milkMlPerCoffee} onChange={e=>editDrink({milkMlPerCoffee:Number(e.target.value)})}/></label></details>
+     </>}
+    </>}
+   </article>
+   <article className="routine-card cocoa-routine">
+    <div className="routine-card-title"><span aria-hidden="true">🥛</span><div><strong>ColaCao o cacao soluble</strong><small>Por ejemplo, el desayuno de los niños</small></div></div>
+    <label className="routine-label">¿Cuántos vasos tomáis al día entre todos?</label>
+    <div className="routine-options">{[0,1,2,3,4,5,6,8].map(n=><button type="button" key={n} className={drink.cocoaCupsPerDay===n?"active":""} aria-pressed={drink.cocoaCupsPerDay===n} onClick={()=>editDrink({cocoaCupsPerDay:n})}>{n}</button>)}</div>
+    {drink.cocoaCupsPerDay>0&&<details className="routine-dose"><summary>Ajustar cada vaso · opcional</summary><label>Cacao soluble (g)<input type="number" min="1" max="50" value={drink.cocoaGramsPerCup} onChange={e=>editDrink({cocoaGramsPerCup:Number(e.target.value)})}/></label><label>Leche (ml)<input type="number" min="0" max="500" step="10" value={drink.cocoaMilkMlPerCup} onChange={e=>editDrink({cocoaMilkMlPerCup:Number(e.target.value)})}/></label></details>}
+   </article>
+  </div>
+  <div className="routine-forecast" role="status"><strong>Lo que HomeOS tendrá en cuenta</strong>{predicted.length?<div>{predicted.map(h=><span key={h.id}>{h.name}: <b>{h.qty} {h.unit}/día</b></span>)}</div>:<p>No asignaremos un consumo de café, leche ni cacao sin tus respuestas.</p>}<small>Son aproximaciones iniciales, no cantidades confirmadas. Se ajustan con compras y revisiones de stock.</small></div>
+  <details className="routine-other"><summary>Otros productos habituales · opcional</summary><p>Si recuerdas cuánto suele durar un envase, puedes indicarlo. Si no lo sabes, no inventamos una cantidad.</p>{choices.map(c=><div className="quick-habit-row" key={c.id}><div><strong>{c.name}</strong><small>{c.qty} {c.unit} · ¿cuánto suelen durar?</small></div><div className="quick-habit-options">{[[3,"2–3 días"],[7,"1 semana"],[14,"2 semanas"],[30,"1 mes"],[null,"No sé"]] .map(([days,label])=><button key={String(days)} type="button" className={c.id in answers&&answers[c.id]===days?"secondary active":"secondary"} aria-pressed={c.id in answers&&answers[c.id]===days} onClick={()=>setAnswers(a=>({...a,[c.id]:days as number|null}))}>{label}</button>)}</div></div>)}</details>
+  <p className="routine-honesty"><strong>¿Y si vienen visitas?</strong> En Hábitos podrás indicar los cafés extra de ese día. Se descontarán del stock estimado una sola vez, sin multiplicar el consumo diario del hogar.</p>
+  <div className="meal-actions"><button className="primary" onClick={save}>Guardar hábitos del hogar</button><button className="secondary" onClick={()=>{setState(s=>({...s,profile:{...s.profile,consumptionSetupDone:true,consumptionReviewedAt:localDateIso()}}));finish()}}>Ahora no</button></div>
+ </section>;
 }
 
 function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error"}){
