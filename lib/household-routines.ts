@@ -10,11 +10,13 @@ export type DrinkRoutine = {
  cocoaCupsPerDay:number;
  cocoaGramsPerCup:number;
  cocoaMilkMlPerCup:number;
+ milkPackLiters:number|null;
 };
 export const DEFAULT_DRINK_ROUTINE:DrinkRoutine={
  coffeeFormat:"none", coffeeCupsPerDay:0, coffeeGramsPerCup:8,
  coffeeMilkCupsPerDay:0, milkMlPerCoffee:60,
- cocoaCupsPerDay:0, cocoaGramsPerCup:15, cocoaMilkMlPerCup:200
+ cocoaCupsPerDay:0, cocoaGramsPerCup:15, cocoaMilkMlPerCup:200,
+ milkPackLiters:null
 };
 const formats:CoffeeFormat[]=["none","beans","ground","pods","instant"];
 const clip=(n:unknown,min:number,max:number,fallback:number)=>Number.isFinite(Number(n))?Math.max(min,Math.min(max,Number(n))):fallback;
@@ -29,7 +31,8 @@ export function normalizeDrinkRoutine(raw:unknown):DrinkRoutine{
   milkMlPerCoffee:clip(v.milkMlPerCoffee,0,400,60),
   cocoaCupsPerDay:clip(v.cocoaCupsPerDay,0,30,0),
   cocoaGramsPerCup:clip(v.cocoaGramsPerCup,1,50,15),
-  cocoaMilkMlPerCup:clip(v.cocoaMilkMlPerCup,0,500,200)
+  cocoaMilkMlPerCup:clip(v.cocoaMilkMlPerCup,0,500,200),
+  milkPackLiters:typeof v.milkPackLiters==='number'&&[.5,1,1.5,2].includes(v.milkPackLiters)?v.milkPackLiters:null
  };
 }
 export function coffeeProduct(format:CoffeeFormat){
@@ -43,7 +46,11 @@ export function drinkRoutineHabits(value:DrinkRoutine):ConsumptionHabit[]{
  }
  if(r.cocoaCupsPerDay>0)habits.push({id:"routine-cocoa",name:"Cacao soluble",qty:round(r.cocoaCupsPerDay*r.cocoaGramsPerCup),unit:"g",days:1});
  const liters=(r.coffeeMilkCupsPerDay*r.milkMlPerCoffee+r.cocoaCupsPerDay*r.cocoaMilkMlPerCup)/1000;
- if(liters>0)habits.push({id:"routine-milk",name:"Leche",qty:round(liters),unit:"L",days:1});
+ if(liters>0){
+  habits.push({id:"routine-milk",name:"Leche",qty:round(liters),unit:"L",days:1});
+  // Only convert cartons to litres when the household confirms the carton size.
+  if(r.milkPackLiters)habits.push({id:"routine-milk-bricks",name:"Leche",qty:round(liters/r.milkPackLiters),unit:"bricks",days:1});
+ }
  return habits;
 }
 /** Visitors are recorded as a one-off dated quantity, never as a permanent increase of cups/day. */
