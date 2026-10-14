@@ -23,6 +23,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   const photoInput = useRef<HTMLInputElement>(null);
   const controls = useRef<IScannerControls|null>(null);
   const sequence = useRef(0);
+  const alternativesSequence = useRef(0);
   const abort = useRef<AbortController|null>(null);
   const lookupRef = useRef<(code:string)=>void>(()=>{});
   const mounted = useRef(true);
@@ -68,7 +69,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     const barcode=normalizeBarcode(value);
     const id=++sequence.current;
     abort.current?.abort(); stopCamera(); setCamera(false); setFeedback(''); setExtra(false);
-    setResult(null);setAlternatives(null);
+    setResult(null);setAlternatives(null);alternativesSequence.current++;setAlternativeBusy(false);
     if(!barcode) {setBusy(false);setResult({status:'invalid',message:'Revisa los números del código de barras.'});return}
     const controller=new AbortController();abort.current=controller;
     setBusy(true);setPacks(1);setLocation('');
@@ -87,6 +88,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     stopCamera();setCamera(false);setCameraError('');setReadingPhoto(true);
     const id=++sequence.current, url=URL.createObjectURL(file);
     abort.current?.abort();setBusy(false);setResult(null);setFeedback('');
+    alternativesSequence.current++;setAlternativeBusy(false);setAlternatives(null);
     try {
       const { BrowserMultiFormatReader }=await import('@zxing/browser');
       const value=await new BrowserMultiFormatReader().decodeFromImageUrl(url);
@@ -100,6 +102,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   }
   function changeKind(value:ProductKind) {
     sequence.current++;abort.current?.abort();stopCamera();setCamera(false);setBusy(false);setReadingPhoto(false);setExtra(false);
+    alternativesSequence.current++;setAlternativeBusy(false);
     setKind(value);setAlternatives(null);setResult(null);setFeedback('');setCameraError('');
   }
   async function findAlternatives(product:BarcodeProduct) {
@@ -107,14 +110,17 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     const category=product.categoryTags?.filter(tag=>!broad.has(tag)).at(-1);
     const grade=nutritionRating(product);
     if(!category||!grade)return;
+    const id=++alternativesSequence.current;
+    const current=()=>mounted.current&&id===alternativesSequence.current;
     setAlternativeBusy(true);setAlternatives(null);
     try {
       const response=await fetch('/api/alternatives?'+new URLSearchParams({code:product.barcode,category,grade,name:product.name,categories:(product.categoryTags||[]).join(',')}));
       const data=await response.json();
+      if(!current())return;
       if(response.ok && data && Array.isArray(data.items))setAlternatives(data);
       else setAlternatives({items:[],message:'No se pueden consultar alternativas ahora.'});
-    } catch {setAlternatives({items:[],message:'Sin conexión para buscar alternativas.'});}
-    finally {setAlternativeBusy(false);}
+    } catch {if(current())setAlternatives({items:[],message:'Sin conexión para buscar alternativas.'});}
+    finally {if(current())setAlternativeBusy(false);}
   }
   const product=result?.status==='found'?result.product:null;
   const grade=nutritionRating(product||undefined);
@@ -141,7 +147,17 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   const nutritionLabels:Record<string,string>={'energy-kcal':'Energía','proteins':'Proteínas','carbohydrates':'Hidratos','sugars':'Azúcares','fat':'Grasas','saturated-fat':'Saturadas','fiber':'Fibra','salt':'Sal'};
   return <div className="modal-backdrop"><section className="modal product-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="product-scanner-title">
     <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Escanea tu producto</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
-    <div className="scanner-kind" role="group" aria-label="Tipo de producto"><button className={kind==='food'?'active':''} aria-pressed={kind==='food'} onClick={()=>changeKind('food')}>Alimentación</button><button className={kind==='beauty'?'active':''} aria-pressed={kind==='beauty'} onClick={()=>changeKind('beauty')}>Cosmética e higiene</button><button className={kind==='household'?'active':''} aria-pressed={kind==='household'} onClick={()=>changeKind('household')}>Hogar y otros</button></div>
+    <div className="scanner-kind" role="group" aria-label="Tipo de producto">
+      {([
+        ['food','Alimentación','Comida y bebida','🥦'],
+        ['beauty','Cosmética','Higiene y cuidado','🧴'],
+        ['household','Hogar','Limpieza y otros','🧽'],
+      ] as const).map(([value,label,description,icon])=><button key={value} type="button" className={`scanner-category scanner-category-${value}${kind===value?' active':''}`} aria-pressed={kind===value} onClick={()=>changeKind(value)}>
+        <span className="scanner-category-check" aria-hidden="true">{kind===value?'✓':''}</span>
+        <span className="scanner-category-icon" aria-hidden="true">{icon}</span>
+        <strong>{label}</strong><small>{description}</small>
+      </button>)}
+    </div>
     <div className="scanner-input-panel">
       <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Escanear código de barras'}</button>
       <button className="secondary scanner-photo-button" disabled={busy||readingPhoto} onClick={()=>photoInput.current?.click()}>{readingPhoto?'Leyendo foto…':'Leer una foto del código'}</button>

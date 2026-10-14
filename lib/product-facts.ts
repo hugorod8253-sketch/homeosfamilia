@@ -8,8 +8,8 @@ export function storedProductFacts(item: ProductFactsItem): BarcodeProduct | und
   const code = typeof item.barcode === 'string' ? normalizeBarcode(item.barcode) : undefined;
   if (!code || !p || typeof p.barcode !== 'string' ||
       p.barcode.padStart(14,'0') !== code.padStart(14,'0') ||
-      !['food','beauty'].includes(p.kind) || typeof p.name !== 'string' || !p.name.trim()) return;
-  const host = p.kind === 'food' ? 'world.openfoodfacts.org' : 'world.openbeautyfacts.org';
+      !['food','beauty','household'].includes(p.kind) || typeof p.name !== 'string' || !p.name.trim()) return;
+  const host = p.kind === 'food' ? 'world.openfoodfacts.org' : p.kind === 'beauty' ? 'world.openbeautyfacts.org' : 'world.openproductsfacts.org';
   if (!p.source || p.source.url !== `https://${host}/product/${p.barcode}` ||
       typeof p.source.name !== 'string' || p.source.license !== 'ODbL-1.0' ||
       !Number.isFinite(Date.parse(p.source.fetchedAt)) ||

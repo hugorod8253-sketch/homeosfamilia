@@ -64,6 +64,13 @@ assert.equal(atHome.inventory[0].purchaseDateUnknown,true);assert.equal(atHome.i
 assert.equal(addScannedProduct(atHome,commercial,'inventory',1).state,atHome);
 assert.equal(addScannedProduct(atHome,commercial,'inventory',1,'',true).state.inventory.length,2);
 const cosmetics=addScannedProduct(initial,beauty,'shopping',1).state;
+const household=parseBarcodeProduct({product:{code:'036000291452',product_name:'Producto hogar de prueba',product_type:'product',quantity:'500 ml'}},'036000291452','household')!;
+const householdList=addScannedProduct(initial,household,'shopping',1).state;
+assert.equal(householdList.shopping[0].category,'Limpieza y hogar','Unknown household products must never be classified as food');
+const householdBought=completePurchase({...householdList,shopping:householdList.shopping.map(item=>({...item,status:'carrito' as const}))},[householdList.shopping[0].id],2,'Lidl','2026-10-10');
+assert.equal(storedProductFacts(householdBought.inventory[0])?.kind,'household','Household facts must survive checkout');
+assert.equal(nutritionRating(storedProductFacts(householdBought.inventory[0])),undefined);
+assert.equal(storedProductFacts({...householdBought.inventory[0],productInfo:{...household,source:{...household.source,url:'https://evil.example/product/036000291452'}}}),undefined);
 const cosmeticsBought=completePurchase({...cosmetics,shopping:cosmetics.shopping.map(item=>({...item,status:'carrito' as const}))},[cosmetics.shopping[0].id],undefined,'Lidl','2026-10-10');
 assert.equal(cosmeticsBought.inventory[0].category,'Higiene y cuidado');
 assert.equal(storedProductFacts(cosmeticsBought.inventory[0])?.kind,'beauty');
