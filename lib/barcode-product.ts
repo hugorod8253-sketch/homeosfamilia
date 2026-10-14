@@ -31,7 +31,7 @@ export function parseBarcodeProduct(payload: unknown, barcode: string, kind: Pro
   if (!Object.keys(p).length || root.status === 0 || root.status === 'failure') return;
   // Reject a different product rather than silently assigning its label to this barcode.
   if (p.code !== undefined && String(p.code).padStart(14, '0') !== barcode.padStart(14, '0')) return;
-  if (p.product_type && p.product_type !== kind) return;
+  if (p.product_type && p.product_type !== (kind === 'household' ? 'product' : kind) && !(kind === 'household' && p.product_type === 'petfood')) return;
   const name = str(p.product_name_es) ?? str(p.product_name) ?? str(p.product_name_en);
   if (!name) return;
   const ingredients = str(p.ingredients_text_es) ?? str(p.ingredients_text) ?? str(p.ingredients_text_en);
@@ -68,12 +68,15 @@ export async function lookupBarcode(value: string, kind: ProductKind, options: {
   const timer = setTimeout(() => abort.abort(), options.timeoutMs ?? 8000);
   try {
     const fields = 'code,product_type,product_name,product_name_es,product_name_en,brands,quantity,product_quantity_unit,categories,categories_tags,ingredients_text,ingredients_text_es,ingredients_text_en,allergens_tags,nutriments,nutriscore_grade,nova_group,additives_tags';
-    const response = await (options.fetcher ?? fetch)(`https://${hosts[kind]}/api/v3/product/${barcode}.json?lc=es&cc=es&fields=${fields}`, {
+    const response = await (options.fetcher ?? fetch)(`https://world.openfoodfacts.org/api/v3/product/${barcode}.json?product_type=all&lc=es&cc=es&fields=${fields}`, {
       signal: abort.signal, credentials: 'omit', headers: { Accept: 'application/json', ...(options.userAgent ? {'User-Agent':options.userAgent} : {}) },
     });
     if (response.status === 404) return { status: 'not-found', message: 'Producto no encontrado. Puedes añadirlo manualmente.' };
     if (!response.ok) return { status: 'unavailable', message: 'No se puede consultar ahora. Tu compra sigue disponible.' };
-    const product = parseBarcodeProduct(await response.json(), barcode, kind);
+    const payload = await response.json();
+    const detected = (payload?.product?.product_type ?? payload?.product_type) as string | undefined;
+    const actualKind: ProductKind = detected === 'beauty' ? 'beauty' : detected === 'food' ? 'food' : detected === 'product' || detected === 'petfood' ? 'household' : kind;
+    const product = parseBarcodeProduct(payload, barcode, actualKind);
     return product ? { status: 'found', product } : { status: 'not-found', message: 'No hay una ficha utilizable. Puedes añadirlo manualmente.' };
   } catch {
     return { status: 'unavailable', message: 'Sin conexión o consulta interrumpida. Puedes continuar manualmente.' };
