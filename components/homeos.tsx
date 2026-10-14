@@ -39,7 +39,12 @@ import { appendConfirmedStockCheck, emptyInventoryItem, freezeInventoryItem, tha
 import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type ConsumptionExtra, type StockCheck } from "../lib/consumption-engine";
 import { DEFAULT_DRINK_ROUTINE, normalizeDrinkRoutine, drinkRoutineHabits, visitExtras, coffeeProduct, type DrinkRoutine } from "../lib/household-routines";
 import { chargeVisitorUse } from "../lib/guest-use";
+import {readAccountHousehold,writeAccountHousehold,type HomeAccount} from "../lib/homeos-account";
 
+type AccountHomeContext={householdId:string;userId:string;memberName:string;role:HomeAccount["role"];onManage:()=>void;onAccessDenied:()=>void};
+type AccountConnection={householdId:string;accountUserId:string};
+type HomeConnection=SyncCredentials|AccountConnection;
+const isAccountConnection=(conn:HomeConnection):conn is AccountConnection=>"accountUserId" in conn;
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
 type Location = "Nevera"|"Congelador"|"Despensa"|"Suplementos"|"Sin ubicar";
@@ -152,9 +157,9 @@ export function normalizeState(x:any):AppState{
  const shopping=migratedShopping.map(i=>({...i,supermarket:i.supermarket?normalizeSupermarket(i.supermarket):undefined,sources:i.sources?.length?i.sources:shoppingSources(i)}));
  return cleanWeeklyState({...DEFAULT,...raw,stockChecks:Array.isArray(raw.stockChecks)?raw.stockChecks.filter((c:any)=>c&&typeof c.name==="string"&&typeof c.date==="string"&&Number.isFinite(c.qty)&&c.qty>=0):[],menuPreferences:normalizeMenuPreferences(raw.menuPreferences),profile,members,events:Array.isArray(raw.events)?raw.events.slice(-200):[],inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done"):[],productPreferences,budget:Math.max(0,Number(raw.budget)||0),spent:Math.max(0,Number(raw.spent)||0),waste:Math.max(0,Number(raw.waste)||0),wasteSaved:Math.max(0,Number(raw.wasteSaved)||0),productEngineVersion:1});
 }
-function loadState():AppState{
+function loadState(storageKey="homeos:v5"):AppState{
  if(typeof window==="undefined") return DEFAULT;
- try{return normalizeState(JSON.parse(readBrowserStorage("homeos:v5")||"{}"))}catch{return DEFAULT}
+ try{return normalizeState(JSON.parse(readBrowserStorage(storageKey)||"{}"))}catch{return DEFAULT}
 }
 function daysUntil(date?:string){return date?calendarDaysUntil(date):999}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
@@ -594,7 +599,7 @@ export function updateScannedFacts(s:AppState,product:BarcodeProduct):AppState {
  return {...s,shopping:s.shopping.map(i=>matches(i)?{...i,productInfo:product}:i),inventory:s.inventory.map(i=>matches(i)?{...i,productInfo:product}:i)};
 }
 
-export default function HomeOS(){
+export default function HomeOS({account}:{account?:AccountHomeContext}={}){
  const [view,setView]=useState<View>("inicio");
  const [state,setState]=useState<AppState>(DEFAULT);
  const [hydrated,setHydrated]=useState(false);
@@ -616,7 +621,9 @@ export default function HomeOS(){
  const [mealSeed,setMealSeed]=useState("");
  const [comerFocus,setComerFocus]=useState<"ideas"|"aprovechar"|"themes"|"catalog"|null>(null);
  const [deviceMemberId,setDeviceMemberId]=useState("");
- const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
+ const [syncCreds,setSyncCreds]=useState<HomeConnection|null>(null);
+ const [accountProblem,setAccountProblem]=useState("");
+ const [accountRetry,setAccountRetry]=useState(0);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
  const [ticketCameraRequest,setTicketCameraRequest]=useState(0);
  const receiptRef=useRef<HTMLInputElement>(null);
@@ -629,7 +636,17 @@ export default function HomeOS(){
  const stateRef=useRef(state);
  const readyPlansRef=useRef<Set<string>>(new Set());
  const readyPlansInitializedRef=useRef(false);
- function rememberSyncSnapshot(json:string){lastSyncedJsonRef.current=json;writeBrowserStorage("homeos:sync-base:v1",json)}
+ const localKey=(key:string)=>account?"homeos:account:"+account.userId+":"+account.householdId+":"+key:key;
+ const readHome=(conn:HomeConnection)=>isAccountConnection(conn)?readAccountHousehold(conn.householdId):readRemoteHousehold(conn);
+ const writeHome=async(conn:HomeConnection,data:AppState,revision:number)=>{
+  if(!isAccountConnection(conn))return writeRemoteHousehold(conn,data,revision);
+  try{return await writeAccountHousehold(conn.householdId,data,revision)}
+  catch(err){if((err as {code?:string}).code==="conflict")throw new SyncConflictError((err as {revision?:number}).revision||revision);
+   if(["not_member","auth_required"].includes((err as {code?:string}).code||""))account?.onAccessDenied();
+   throw err;
+  }
+ };
+ function rememberSyncSnapshot(json:string){lastSyncedJsonRef.current=json;writeBrowserStorage(localKey("homeos:sync-base:v1"),json)}
 
  useEffect(()=>{stateRef.current=state},[state]);
  useEffect(()=>{
@@ -649,15 +666,22 @@ export default function HomeOS(){
   if(newlyReady.length===1)setToast("Ya tienes todo para "+newlyReady[0].recipe.title);
   else if(newlyReady.length>1)setToast(newlyReady.length+" recetas guardadas ya están listas para cocinar");
  },[hydrated,state.inventory,state.recipePlans]);
- useEffect(()=>{if(!hydrated||demoMode)return;const saved=readBrowserStorage("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
- useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)writeBrowserStorage("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
+ useEffect(()=>{
+  if(!hydrated||demoMode)return;
+  const householdMembers=state.members.slice(0,state.profile.householdSize);
+  const saved=readBrowserStorage(localKey("homeos:device-member"));
+  const matched=account?householdMembers.find(m=>m.name.trim().toLowerCase()===account.memberName.trim().toLowerCase()):null;
+  const valid=householdMembers.some(m=>m.id===saved);
+  setDeviceMemberId(matched?.id||(valid?saved||"":householdMembers[0]?.id||""));
+ },[hydrated,state.profile.householdSize,state.members.length,account?.userId]);
+ useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)writeBrowserStorage(localKey("homeos:device-member"),deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
 
  useEffect(()=>{
   let alive=true;
   (async()=>{
    const params=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams();
    const demoParam=params.get("demo");
-   const demo=demoParam==="menu"?"menu":demoParam==="ideas"||demoParam==="sin-menu"?"ideas":null;
+   const demo=account?null:demoParam==="menu"?"menu":demoParam==="ideas"||demoParam==="sin-menu"?"ideas":null;
    if(demo){
     setDemoMode(demo);
     setState(demoState(demo==="menu"));
@@ -666,7 +690,7 @@ export default function HomeOS(){
     if(alive)setHydrated(true);
     return;
    }
-   const fresh=params.get("fresh")==="1";
+   const fresh=!account&&params.get("fresh")==="1";
    if(fresh){
     removeBrowserStorage("homeos:v5");
     removeBrowserStorage("homeos:device-member");
@@ -675,30 +699,32 @@ export default function HomeOS(){
     removeBrowserStorage("homeos:sync-base:v1");
     window.history.replaceState({},document.title,window.location.pathname);
    }
-   const local=fresh?DEFAULT:loadState();
-   const creds=fresh?null:getStoredSync();
+   const local=fresh?DEFAULT:loadState(localKey("homeos:v5"));
+   const creds:HomeConnection|null=account?{householdId:account.householdId,accountUserId:account.userId}:fresh?null:getStoredSync();
    if(creds&&syncConfigured()){
     setSyncStatus("connecting");
     try{
-     const remote=await readRemoteHousehold(creds);
+     const remote=await readHome(creds);
      if(!alive)return;
      if(remote){
       const remoteState=normalizeState(remote.data);
       let base={...DEFAULT,spent:Math.min(local.spent,remoteState.spent),waste:Math.min(local.waste,remoteState.waste),wasteSaved:Math.min(local.wasteSaved,remoteState.wasteSaved)};
-      try{const savedBase=readBrowserStorage("homeos:sync-base:v1");if(savedBase)base=normalizeState(JSON.parse(savedBase))}catch{}
-      const restored=local.profile.onboardingDone?normalizeState(mergeHouseholdState(base,local,remoteState)):remoteState;
+      try{const savedBase=readBrowserStorage(localKey("homeos:sync-base:v1"));if(savedBase)base=normalizeState(JSON.parse(savedBase))}catch{}
+      const restored=(account||local.profile.onboardingDone)?normalizeState(mergeHouseholdState(base,local,remoteState)):remoteState;
       setSyncCreds(creds);
       syncRevisionRef.current=remote.revision;
       rememberSyncSnapshot(JSON.stringify(remoteState));
       setState(restored);
       setSyncStatus("synced");
      }else{
+      if(account){setAccountProblem("No tienes acceso a este hogar. Vuelve a la selección de cuentas.");return}
       clearSync();
       setState(local);
       setSyncStatus("local");
      }
-    }catch{
+    }catch(err){
      if(!alive)return;
+     if(account){setAccountProblem(err instanceof Error?err.message:"No se ha podido verificar el acceso.");return}
      setSyncCreds(creds);
      setState(local);
      setSyncStatus("error");
@@ -710,7 +736,7 @@ export default function HomeOS(){
    if(alive)setHydrated(true);
   })();
   return()=>{alive=false};
- },[]);
+ },[account?.householdId,account?.userId,accountRetry]);
 
  useEffect(()=>{
   if(!hydrated)return;
@@ -720,7 +746,7 @@ export default function HomeOS(){
  },[hydrated,state.inventory]);
 
  useEffect(()=>{
-  if(!hydrated||demoMode||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
+  if(account||!hydrated||demoMode||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
   syncCreateRef.current=true;
   const snapshot=state;
   setSyncStatus("connecting");
@@ -735,8 +761,8 @@ export default function HomeOS(){
  useEffect(()=>{
   if(!hydrated||demoMode||typeof window==="undefined")return;
   const json=JSON.stringify(state);
-  setStorageError(!writeBrowserStorage("homeos:v5",json));
-  if(!syncCreds||!state.profile.onboardingDone||!syncConfigured()||json===lastSyncedJsonRef.current)return;
+  setStorageError(!writeBrowserStorage(localKey("homeos:v5"),json));
+  if(!syncCreds||(!account&&!state.profile.onboardingDone)||!syncConfigured()||json===lastSyncedJsonRef.current)return;
   if(syncTimerRef.current)clearTimeout(syncTimerRef.current);
   syncTimerRef.current=setTimeout(async()=>{
    if(syncWritingRef.current)return;
@@ -746,7 +772,7 @@ export default function HomeOS(){
    let saved=false;
    setSyncStatus("connecting");
    try{
-    const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
+    const revision=await writeHome(syncCreds,snapshot,syncRevisionRef.current);
     syncRevisionRef.current=revision;
     rememberSyncSnapshot(snapshotJson);
     saved=true;
@@ -772,7 +798,7 @@ export default function HomeOS(){
    if(JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current){setSyncWriteTick(n=>n+1);return}
    const beforeRead=lastSyncedJsonRef.current;
    try{
-    const remote=await readRemoteHousehold(syncCreds);
+    const remote=await readHome(syncCreds);
     if(!alive||!remote||remote.revision<=syncRevisionRef.current||syncWritingRef.current||JSON.stringify(stateRef.current)!==beforeRead)return;
     const remoteState=normalizeState(remote.data);
     syncRevisionRef.current=remote.revision;
@@ -791,10 +817,10 @@ export default function HomeOS(){
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{
   if(!hydrated||demoMode||!state.profile.onboardingDone||typeof window==="undefined")return;
-  if(readBrowserStorage("homeos:quick-guide-seen")!=="1")setTourOpen(true);
+  if(readBrowserStorage(localKey("homeos:quick-guide-seen"))!=="1")setTourOpen(true);
  },[hydrated,state.profile.onboardingDone,demoMode]);
  function closeQuickGuide(){
-  writeBrowserStorage("homeos:quick-guide-seen","1");
+  writeBrowserStorage(localKey("homeos:quick-guide-seen"),"1");
   setTourOpen(false);
  }
  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"})},[view]);
@@ -804,7 +830,7 @@ export default function HomeOS(){
   if(!creds||!syncConfigured())return false;
   setSyncStatus("connecting");
   try{
-   const remote=await readRemoteHousehold(creds);
+   const remote=await readHome(creds);
    if(!remote){setSyncStatus("error");return false}
    const remoteState=normalizeState(remote.data);
    storeSync(creds);
@@ -826,15 +852,15 @@ export default function HomeOS(){
   }catch{setToast("No se pudo copiar el código")}
  }
 
- async function resolveSyncConflict(creds:SyncCredentials){
-  const remote=await readRemoteHousehold(creds);
+ async function resolveSyncConflict(creds:HomeConnection){
+  const remote=await readHome(creds);
   if(!remote)throw new Error("sync_remote_missing");
   let base=DEFAULT;
   try{base=normalizeState(JSON.parse(lastSyncedJsonRef.current||"{}"))}catch{}
   const local=stateRef.current;
   const remoteState=normalizeState(remote.data);
   const merged=normalizeState(mergeHouseholdState(base,local,remoteState));
-  const revision=await writeRemoteHousehold(creds,merged,remote.revision);
+  const revision=await writeHome(creds,merged,remote.revision);
   syncRevisionRef.current=revision;
   rememberSyncSnapshot(JSON.stringify(merged));
   const latest=stateRef.current;
@@ -853,7 +879,7 @@ export default function HomeOS(){
   let saved=false;
   setSyncStatus("connecting");
   try{
-   const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
+   const revision=await writeHome(syncCreds,snapshot,syncRevisionRef.current);
    syncRevisionRef.current=revision;
    rememberSyncSnapshot(JSON.stringify(snapshot));
    saved=true;
@@ -929,7 +955,7 @@ export default function HomeOS(){
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
 
- if(!hydrated)return <div className="app-loading"><div className="app-loading-mark">H</div><strong>HomeOS</strong></div>;
+ if(!hydrated)return <div className="app-loading">{accountProblem?<div className="ha-auth-error"><strong>No se puede abrir el hogar con seguridad</strong><p>{accountProblem}</p><div><button onClick={()=>{setAccountProblem("");setAccountRetry(n=>n+1)}}>Reintentar conexión</button><button onClick={account?.onAccessDenied}>Volver a mis hogares</button></div></div>:<><div className="app-loading-mark">H</div><strong>HomeOS</strong></>}</div>;
  if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus}/>;
 
  return <div className={demoMode?"app-shell demo-mode":"app-shell"}>
