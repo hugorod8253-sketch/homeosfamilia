@@ -39,7 +39,12 @@ import { appendConfirmedStockCheck, emptyInventoryItem, freezeInventoryItem, tha
 import { estimateConsumption, estimateInventoryConsumption, shoppingQuantityStep, changeShoppingQuantity, type ConsumptionHabit, type ConsumptionExtra, type StockCheck } from "../lib/consumption-engine";
 import { DEFAULT_DRINK_ROUTINE, normalizeDrinkRoutine, drinkRoutineHabits, visitExtras, coffeeProduct, type DrinkRoutine } from "../lib/household-routines";
 import { chargeVisitorUse } from "../lib/guest-use";
+import {readAccountHousehold,writeAccountHousehold,type HomeAccount} from "../lib/homeos-account";
 
+type AccountHomeContext={householdId:string;userId:string;memberName:string;role:HomeAccount["role"];onManage:()=>void;onAccessDenied:()=>void};
+type AccountConnection={householdId:string;accountUserId:string};
+type HomeConnection=SyncCredentials|AccountConnection;
+const isAccountConnection=(conn:HomeConnection):conn is AccountConnection=>"accountUserId" in conn;
 type View = "inicio"|"comer"|"comprar"|"casa"|"finanzas"|"habitos";
 type StockState = "hay"|"poco"|"falta"|"mucho"|"incierto";
 type Location = "Nevera"|"Congelador"|"Despensa"|"Suplementos"|"Sin ubicar";
@@ -73,7 +78,7 @@ type RecipePlan = {id:string;recipe:Recipe;createdAt:string;plannedFor?:string;s
 type Profile = {
   householdSize:number; supermarkets:string[]; mainSupermarket:string; goals:Goal[];
   nutrition:NutritionMode; cooking:CookingStyle; shoppingCycle:"diaria"|"semanal"|"quincenal"|"mensual"|"mixta";
-  consumptionHabits?:ConsumptionHabit[]; drinkRoutine?:DrinkRoutine; consumptionExtras?:ConsumptionExtra[]; consumptionSetupDone?:boolean; consumptionReviewedAt?:string; notifications:boolean; onboardingDone:boolean; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
+  consumptionHabits?:ConsumptionHabit[]; drinkRoutine?:DrinkRoutine; consumptionExtras?:ConsumptionExtra[]; consumptionSetupDone?:boolean; consumptionReviewedAt?:string; notifications:boolean; onboardingDone:boolean; onboardingStep?:number; onboardingConfirmedSteps?:number[]; financeMode:"orientativo"|"preciso"; kitchenTools:string[];
 };
 export type AppState = {
   stockChecks:StockCheck[]; retiredWeeklyMenu?:WeeklyMenuPlan; menuPreferences:MenuPreferences; inventory:InventoryItem[]; shopping:ShoppingItem[]; purchaseHistory:PurchaseRecord[]; purchaseSessions:PurchaseSession[]; mealHistory:MealRecord[]; weeklyMenu:WeeklyMenuPlan|null; recipePlans:RecipePlan[]; productPreferences:Record<string,ProductPreference>; members:Member[]; events:EventItem[];
@@ -152,9 +157,9 @@ export function normalizeState(x:any):AppState{
  const shopping=migratedShopping.map(i=>({...i,supermarket:i.supermarket?normalizeSupermarket(i.supermarket):undefined,sources:i.sources?.length?i.sources:shoppingSources(i)}));
  return cleanWeeklyState({...DEFAULT,...raw,stockChecks:Array.isArray(raw.stockChecks)?raw.stockChecks.filter((c:any)=>c&&typeof c.name==="string"&&typeof c.date==="string"&&Number.isFinite(c.qty)&&c.qty>=0):[],menuPreferences:normalizeMenuPreferences(raw.menuPreferences),profile,members,events:Array.isArray(raw.events)?raw.events.slice(-200):[],inventory,shopping,purchaseHistory:Array.isArray(raw.purchaseHistory)?raw.purchaseHistory:[],purchaseSessions:Array.isArray(raw.purchaseSessions)?raw.purchaseSessions:[],mealHistory:Array.isArray(raw.mealHistory)?raw.mealHistory:[],weeklyMenu:raw.weeklyMenu&&Array.isArray(raw.weeklyMenu.slots)?raw.weeklyMenu:null,recipePlans:Array.isArray(raw.recipePlans)?raw.recipePlans.filter((p:any)=>p&&p.recipe&&p.status!=="done"):[],productPreferences,budget:Math.max(0,Number(raw.budget)||0),spent:Math.max(0,Number(raw.spent)||0),waste:Math.max(0,Number(raw.waste)||0),wasteSaved:Math.max(0,Number(raw.wasteSaved)||0),productEngineVersion:1});
 }
-function loadState():AppState{
+function loadState(storageKey="homeos:v5"):AppState{
  if(typeof window==="undefined") return DEFAULT;
- try{return normalizeState(JSON.parse(readBrowserStorage("homeos:v5")||"{}"))}catch{return DEFAULT}
+ try{return normalizeState(JSON.parse(readBrowserStorage(storageKey)||"{}"))}catch{return DEFAULT}
 }
 function daysUntil(date?:string){return date?calendarDaysUntil(date):999}
 function fmtDate(){return new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date())}
@@ -594,7 +599,7 @@ export function updateScannedFacts(s:AppState,product:BarcodeProduct):AppState {
  return {...s,shopping:s.shopping.map(i=>matches(i)?{...i,productInfo:product}:i),inventory:s.inventory.map(i=>matches(i)?{...i,productInfo:product}:i)};
 }
 
-export default function HomeOS(){
+export default function HomeOS({account}:{account?:AccountHomeContext}={}){
  const [view,setView]=useState<View>("inicio");
  const [state,setState]=useState<AppState>(DEFAULT);
  const [hydrated,setHydrated]=useState(false);
@@ -616,7 +621,9 @@ export default function HomeOS(){
  const [mealSeed,setMealSeed]=useState("");
  const [comerFocus,setComerFocus]=useState<"ideas"|"aprovechar"|"themes"|"catalog"|null>(null);
  const [deviceMemberId,setDeviceMemberId]=useState("");
- const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
+ const [syncCreds,setSyncCreds]=useState<HomeConnection|null>(null);
+ const [accountProblem,setAccountProblem]=useState("");
+ const [accountRetry,setAccountRetry]=useState(0);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
  const [ticketCameraRequest,setTicketCameraRequest]=useState(0);
  const receiptRef=useRef<HTMLInputElement>(null);
@@ -629,7 +636,20 @@ export default function HomeOS(){
  const stateRef=useRef(state);
  const readyPlansRef=useRef<Set<string>>(new Set());
  const readyPlansInitializedRef=useRef(false);
- function rememberSyncSnapshot(json:string){lastSyncedJsonRef.current=json;writeBrowserStorage("homeos:sync-base:v1",json)}
+ const localKey=(key:string)=>account?"homeos:account:"+account.userId+":"+account.householdId+":"+key:key;
+ const readHome=async(conn:HomeConnection)=>{
+  try{return isAccountConnection(conn)?await readAccountHousehold(conn.householdId):await readRemoteHousehold(conn)}
+  catch(err){if(["not_member","auth_required"].includes((err as {code?:string}).code||""))account?.onAccessDenied();throw err}
+ };
+ const writeHome=async(conn:HomeConnection,data:AppState,revision:number)=>{
+  if(!isAccountConnection(conn))return writeRemoteHousehold(conn,data,revision);
+  try{return await writeAccountHousehold(conn.householdId,data,revision)}
+  catch(err){if((err as {code?:string}).code==="conflict")throw new SyncConflictError((err as {revision?:number}).revision||revision);
+   if(["not_member","auth_required"].includes((err as {code?:string}).code||""))account?.onAccessDenied();
+   throw err;
+  }
+ };
+ function rememberSyncSnapshot(json:string){lastSyncedJsonRef.current=json;writeBrowserStorage(localKey("homeos:sync-base:v1"),json)}
 
  useEffect(()=>{stateRef.current=state},[state]);
  useEffect(()=>{
@@ -649,15 +669,22 @@ export default function HomeOS(){
   if(newlyReady.length===1)setToast("Ya tienes todo para "+newlyReady[0].recipe.title);
   else if(newlyReady.length>1)setToast(newlyReady.length+" recetas guardadas ya están listas para cocinar");
  },[hydrated,state.inventory,state.recipePlans]);
- useEffect(()=>{if(!hydrated||demoMode)return;const saved=readBrowserStorage("homeos:device-member");const valid=state.members.slice(0,state.profile.householdSize).some(m=>m.id===saved);const next=valid?saved||"":state.members[0]?.id||"";setDeviceMemberId(next)},[hydrated,state.profile.householdSize,state.members.length]);
- useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)writeBrowserStorage("homeos:device-member",deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
+ useEffect(()=>{
+  if(!hydrated||demoMode)return;
+  const householdMembers=state.members.slice(0,state.profile.householdSize);
+  const saved=readBrowserStorage(localKey("homeos:device-member"));
+  const matched=account?householdMembers.find(m=>m.name.trim().toLowerCase()===account.memberName.trim().toLowerCase()):null;
+  const valid=householdMembers.some(m=>m.id===saved);
+  setDeviceMemberId(matched?.id||(valid?saved||"":householdMembers[0]?.id||""));
+ },[hydrated,state.profile.householdSize,state.members.length,account?.userId]);
+ useEffect(()=>{if(hydrated&&!demoMode&&deviceMemberId)writeBrowserStorage(localKey("homeos:device-member"),deviceMemberId)},[hydrated,deviceMemberId,demoMode]);
 
  useEffect(()=>{
   let alive=true;
   (async()=>{
    const params=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams();
    const demoParam=params.get("demo");
-   const demo=demoParam==="menu"?"menu":demoParam==="ideas"||demoParam==="sin-menu"?"ideas":null;
+   const demo=account?null:demoParam==="menu"?"menu":demoParam==="ideas"||demoParam==="sin-menu"?"ideas":null;
    if(demo){
     setDemoMode(demo);
     setState(demoState(demo==="menu"));
@@ -666,7 +693,7 @@ export default function HomeOS(){
     if(alive)setHydrated(true);
     return;
    }
-   const fresh=params.get("fresh")==="1";
+   const fresh=!account&&params.get("fresh")==="1";
    if(fresh){
     removeBrowserStorage("homeos:v5");
     removeBrowserStorage("homeos:device-member");
@@ -675,30 +702,32 @@ export default function HomeOS(){
     removeBrowserStorage("homeos:sync-base:v1");
     window.history.replaceState({},document.title,window.location.pathname);
    }
-   const local=fresh?DEFAULT:loadState();
-   const creds=fresh?null:getStoredSync();
+   const local=fresh?DEFAULT:loadState(localKey("homeos:v5"));
+   const creds:HomeConnection|null=account?{householdId:account.householdId,accountUserId:account.userId}:fresh?null:getStoredSync();
    if(creds&&syncConfigured()){
     setSyncStatus("connecting");
     try{
-     const remote=await readRemoteHousehold(creds);
+     const remote=await readHome(creds);
      if(!alive)return;
      if(remote){
       const remoteState=normalizeState(remote.data);
       let base={...DEFAULT,spent:Math.min(local.spent,remoteState.spent),waste:Math.min(local.waste,remoteState.waste),wasteSaved:Math.min(local.wasteSaved,remoteState.wasteSaved)};
-      try{const savedBase=readBrowserStorage("homeos:sync-base:v1");if(savedBase)base=normalizeState(JSON.parse(savedBase))}catch{}
-      const restored=local.profile.onboardingDone?normalizeState(mergeHouseholdState(base,local,remoteState)):remoteState;
+      try{const savedBase=readBrowserStorage(localKey("homeos:sync-base:v1"));if(savedBase)base=normalizeState(JSON.parse(savedBase))}catch{}
+      const restored=(account||local.profile.onboardingDone)?normalizeState(mergeHouseholdState(base,local,remoteState)):remoteState;
       setSyncCreds(creds);
       syncRevisionRef.current=remote.revision;
       rememberSyncSnapshot(JSON.stringify(remoteState));
       setState(restored);
       setSyncStatus("synced");
      }else{
+      if(account){setAccountProblem("No tienes acceso a este hogar. Vuelve a la selección de cuentas.");return}
       clearSync();
       setState(local);
       setSyncStatus("local");
      }
-    }catch{
+    }catch(err){
      if(!alive)return;
+     if(account){setAccountProblem(err instanceof Error?err.message:"No se ha podido verificar el acceso.");return}
      setSyncCreds(creds);
      setState(local);
      setSyncStatus("error");
@@ -710,7 +739,7 @@ export default function HomeOS(){
    if(alive)setHydrated(true);
   })();
   return()=>{alive=false};
- },[]);
+ },[account?.householdId,account?.userId,accountRetry]);
 
  useEffect(()=>{
   if(!hydrated)return;
@@ -720,7 +749,7 @@ export default function HomeOS(){
  },[hydrated,state.inventory]);
 
  useEffect(()=>{
-  if(!hydrated||demoMode||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
+  if(account||!hydrated||demoMode||!state.profile.onboardingDone||syncCreds||!syncConfigured()||syncCreateRef.current)return;
   syncCreateRef.current=true;
   const snapshot=state;
   setSyncStatus("connecting");
@@ -735,8 +764,8 @@ export default function HomeOS(){
  useEffect(()=>{
   if(!hydrated||demoMode||typeof window==="undefined")return;
   const json=JSON.stringify(state);
-  setStorageError(!writeBrowserStorage("homeos:v5",json));
-  if(!syncCreds||!state.profile.onboardingDone||!syncConfigured()||json===lastSyncedJsonRef.current)return;
+  setStorageError(!writeBrowserStorage(localKey("homeos:v5"),json));
+  if(!syncCreds||(!account&&!state.profile.onboardingDone)||!syncConfigured()||json===lastSyncedJsonRef.current)return;
   if(syncTimerRef.current)clearTimeout(syncTimerRef.current);
   syncTimerRef.current=setTimeout(async()=>{
    if(syncWritingRef.current)return;
@@ -746,7 +775,7 @@ export default function HomeOS(){
    let saved=false;
    setSyncStatus("connecting");
    try{
-    const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
+    const revision=await writeHome(syncCreds,snapshot,syncRevisionRef.current);
     syncRevisionRef.current=revision;
     rememberSyncSnapshot(snapshotJson);
     saved=true;
@@ -772,7 +801,7 @@ export default function HomeOS(){
    if(JSON.stringify(stateRef.current)!==lastSyncedJsonRef.current){setSyncWriteTick(n=>n+1);return}
    const beforeRead=lastSyncedJsonRef.current;
    try{
-    const remote=await readRemoteHousehold(syncCreds);
+    const remote=await readHome(syncCreds);
     if(!alive||!remote||remote.revision<=syncRevisionRef.current||syncWritingRef.current||JSON.stringify(stateRef.current)!==beforeRead)return;
     const remoteState=normalizeState(remote.data);
     syncRevisionRef.current=remote.revision;
@@ -791,20 +820,21 @@ export default function HomeOS(){
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),2400);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{
   if(!hydrated||demoMode||!state.profile.onboardingDone||typeof window==="undefined")return;
-  if(readBrowserStorage("homeos:quick-guide-seen")!=="1")setTourOpen(true);
+  if(readBrowserStorage(localKey("homeos:quick-guide-seen"))!=="1")setTourOpen(true);
  },[hydrated,state.profile.onboardingDone,demoMode]);
  function closeQuickGuide(){
-  writeBrowserStorage("homeos:quick-guide-seen","1");
+  writeBrowserStorage(localKey("homeos:quick-guide-seen"),"1");
   setTourOpen(false);
  }
  useEffect(()=>{window.scrollTo({top:0,behavior:"smooth"})},[view]);
 
  async function connectHome(code:string){
+  if(account){setToast("Entra en Gestión de familia para aceptar invitaciones HOS2.");account.onManage();return false}
   const creds=parseConnectionCode(code);
   if(!creds||!syncConfigured())return false;
   setSyncStatus("connecting");
   try{
-   const remote=await readRemoteHousehold(creds);
+   const remote=await readHome(creds);
    if(!remote){setSyncStatus("error");return false}
    const remoteState=normalizeState(remote.data);
    storeSync(creds);
@@ -819,22 +849,23 @@ export default function HomeOS(){
  }
 
  async function copyHomeCode(){
-  if(!syncCreds)return;
+  if(account){account.onManage();return}
+  if(!syncCreds||isAccountConnection(syncCreds))return;
   try{
    await navigator.clipboard.writeText(connectionCode(syncCreds));
    setToast("Código del hogar copiado");
   }catch{setToast("No se pudo copiar el código")}
  }
 
- async function resolveSyncConflict(creds:SyncCredentials){
-  const remote=await readRemoteHousehold(creds);
+ async function resolveSyncConflict(creds:HomeConnection){
+  const remote=await readHome(creds);
   if(!remote)throw new Error("sync_remote_missing");
   let base=DEFAULT;
   try{base=normalizeState(JSON.parse(lastSyncedJsonRef.current||"{}"))}catch{}
   const local=stateRef.current;
   const remoteState=normalizeState(remote.data);
   const merged=normalizeState(mergeHouseholdState(base,local,remoteState));
-  const revision=await writeRemoteHousehold(creds,merged,remote.revision);
+  const revision=await writeHome(creds,merged,remote.revision);
   syncRevisionRef.current=revision;
   rememberSyncSnapshot(JSON.stringify(merged));
   const latest=stateRef.current;
@@ -853,7 +884,7 @@ export default function HomeOS(){
   let saved=false;
   setSyncStatus("connecting");
   try{
-   const revision=await writeRemoteHousehold(syncCreds,snapshot,syncRevisionRef.current);
+   const revision=await writeHome(syncCreds,snapshot,syncRevisionRef.current);
    syncRevisionRef.current=revision;
    rememberSyncSnapshot(JSON.stringify(snapshot));
    saved=true;
@@ -929,8 +960,11 @@ export default function HomeOS(){
   setShoppingActive(false);setActiveStore("");setToast(`${cart.length} productos guardados como compra reciente`);
  }
 
- if(!hydrated)return <div className="app-loading"><div className="app-loading-mark">H</div><strong>HomeOS</strong></div>;
- if(!state.profile.onboardingDone)return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus}/>;
+ if(!hydrated)return <div className="app-loading">{accountProblem?<div className="ha-auth-error"><strong>No se puede abrir el hogar con seguridad</strong><p>{accountProblem}</p><div><button onClick={()=>{setAccountProblem("");setAccountRetry(n=>n+1)}}>Reintentar conexión</button><button onClick={account?.onAccessDenied}>Volver a mis hogares</button></div></div>:<><div className="app-loading-mark">H</div><strong>HomeOS</strong></>}</div>;
+ if(!state.profile.onboardingDone){
+  if(account&&account.role!=="owner")return <main className="ha-page"><section className="ha-panel"><span className="ha-badge">CONFIGURACIÓN DEL HOGAR</span><h1>El hogar se está preparando</h1><p>Solo la persona administradora responde las preguntas iniciales. Cuando termine, todas las cuentas tendrán las mismas compras, inventario y preferencias.</p><p role="status">Comprobando novedades automáticamente…</p><button type="button" className="secondary" onClick={account.onManage}>Ver mi familia</button></section></main>;
+  return <Onboarding state={state} setState={setState} connectHome={connectHome} syncStatus={syncStatus} accountMode={Boolean(account)}/>;
+ }
 
  return <div className={demoMode?"app-shell demo-mode":"app-shell"}>
   {storageError&&<div className="storage-error" role="alert">No se pueden guardar los cambios en este navegador. Revisa el espacio o los permisos de almacenamiento antes de cerrar HomeOS.</div>}
@@ -944,12 +978,12 @@ export default function HomeOS(){
   </aside>
 
   <main className="main">
-   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{view!=="inicio"&&view!=="comprar"&&<button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Abrir Lente HomeOS"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Lente</span></button>}{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
+   <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions">{view!=="inicio"&&view!=="comprar"&&<button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Abrir Lente HomeOS"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Lente</span></button>}{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)} aria-label="Configuración personal">{account?.memberName?account.memberName.trim().slice(0,2).toUpperCase():"FR"}</button></div></header>
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode} accountMemberName={account?.memberName}/>} 
    {view==="habitos"&&<section className="stack"><Habitos state={state} setState={setState} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
    {(view==="inicio"||view==="comprar")&&<section className="homeos-scan-feature" aria-label="Escanear y analizar productos"><div className="homeos-scan-feature-icon" aria-hidden="true">▥</div><div className="homeos-scan-feature-copy"><strong>Lente HomeOS</strong><span>Apunta a un producto y descubre qué es, qué contiene y dónde guardarlo. Una sola cámara para todo.</span></div><button type="button" className="homeos-scan-feature-action" onClick={()=>{setScannerItem(null);setScannerOpen(true)}}>Abrir Lente →</button></section>}
-   {view==="comprar"&&<Comprar reviewHome={(command)=>{setCasaCommand(command);setCasaFocus("all");setView("casa")}} openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
+   {view==="comprar"&&<Comprar reviewHome={(command)=>{setCasaCommand(command);setCasaFocus("all");setView("casa")}} openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} accountMemberName={account?.memberName} cameraRequest={ticketCameraRequest}/>}
    {view==="casa"&&<Casa initialCommand={casaCommand} clearCommand={()=>setCasaCommand(null)} openProductFacts={openProductFacts} state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
@@ -958,7 +992,7 @@ export default function HomeOS(){
   {mobileMoreOpen&&<div className="mobile-more-backdrop" onMouseDown={()=>setMobileMoreOpen(false)}><div className="mobile-more-sheet" onMouseDown={e=>e.stopPropagation()}><div className="mobile-more-handle"/><button onClick={()=>{setView("finanzas");setMobileMoreOpen(false)}}><span className="more-icon finance">▥</span><div><strong>Finanzas</strong><small>Gasto, presupuesto y categorías</small></div><b>›</b></button>{state.profile.nutrition!=="off"&&<button onClick={()=>{setView("habitos");setMobileMoreOpen(false)}}><span className="more-icon habits">◴</span><div><strong>Hábitos</strong><small>Cómo está comiendo el hogar</small></div><b>›</b></button>}<button onClick={()=>{setProfileOpen(true);setMobileMoreOpen(false)}}><span className="more-icon settings">⚙</span><div><strong>Configuración</strong><small>Hogar, preferencias y sincronización</small></div><b>›</b></button></div></div>}
   {scannerOpen&&<ProductScanner initialProduct={scannerItem?storedProductFacts(scannerItem):undefined} initialCode={scannerItem?.barcode} onFacts={product=>setState(s=>updateScannedFacts(s,product))} close={()=>setScannerOpen(false)} onAdd={(product,target,packs,location,extra)=>{const next=addScannedProduct(stateRef.current,product,target,packs,location,extra);if(next.state!==stateRef.current){stateRef.current=next.state;setState(next.state)}return next.message}}/>}
   {consumptionSetupOpen&&<div className="modal-backdrop"><section className="modal confirm-stock-modal"><div className="modal-head"><h2>Tu ritmo habitual</h2><button aria-label="Cerrar hábitos iniciales" onClick={()=>setConsumptionSetupOpen(false)}>×</button></div><ConsumptionSetup state={state} setState={setState} finish={()=>setConsumptionSetupOpen(false)}/></section></div>}
-  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
+  {profileOpen&&<ProfileModal state={state} setState={setState} close={()=>setProfileOpen(false)} syncCreds={syncCreds} accountMode={Boolean(account)} onManageAccount={account?.onManage} accountMemberName={account?.memberName} syncStatus={syncStatus} connectHome={connectHome} copyHomeCode={copyHomeCode} syncNow={syncNow} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} setToast={setToast}/>}
   {tourOpen&&<QuickStartGuide close={closeQuickGuide}/>}
   {purchaseUndo&&<div className="purchase-undo" role="status"><span><strong>Receta vinculada a la compra</strong>{purchaseUndo.title}</span><button onClick={()=>unlinkRecipeShopping(purchaseUndo.recipeId,purchaseUndo.previous)}>Deshacer</button><button aria-label="Cerrar aviso de compra" onClick={()=>setPurchaseUndo(null)}>×</button></div>}
   {toast&&<div className="toast" role="status" aria-live="polite"><span>✓</span>{toast}</div>}
@@ -1048,10 +1082,11 @@ function ConsumptionSetup({state,setState,finish}:{state:AppState;setState:React
  </section>;
 }
 
-function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error"}){
- const [step,setStep]=useState(0);
- const [confirmedSteps,setConfirmedSteps]=useState<number[]>([]);
- const confirmStep=(n:number)=>setConfirmedSteps(old=>old.includes(n)?old:[...old,n]);
+function Onboarding({state,setState,connectHome,syncStatus,accountMode}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;connectHome:(code:string)=>Promise<boolean>;syncStatus:"local"|"connecting"|"synced"|"error";accountMode:boolean}){
+ const [step,setStep]=useState(()=>Math.max(0,Math.min(5,Math.round(Number(state.profile.onboardingStep)||0))));
+ const [confirmedSteps,setConfirmedSteps]=useState<number[]>(()=>Array.isArray(state.profile.onboardingConfirmedSteps)?state.profile.onboardingConfirmedSteps.filter(n=>Number.isInteger(n)&&n>=0&&n<5):[]);
+ const confirmStep=(n:number)=>{setConfirmedSteps(old=>old.includes(n)?old:[...old,n]);setState(old=>({...old,profile:{...old.profile,onboardingConfirmedSteps:[...new Set([...(old.profile.onboardingConfirmedSteps||[]),n])]}}))};
+ const goStep=(n:number)=>{const next=Math.max(0,Math.min(5,n));setStep(next);setState(old=>({...old,profile:{...old.profile,onboardingStep:next}}))};
  const [joinOpen,setJoinOpen]=useState(false);
  const [joinCode,setJoinCode]=useState("");
  const [joinError,setJoinError]=useState("");
@@ -1071,9 +1106,9 @@ function Onboarding({state,setState,connectHome,syncStatus}:{state:AppState;setS
   {step===2&&<div className="ob-panel"><span className="eyebrow">COCINA</span><h1>¿Cómo quieres cocinar normalmente?</h1><div className="goal-grid">{[["rapido","Voy con prisas","Ideas de 5–20 min."],["normal","Cocino normal","Equilibrio entre tiempo y variedad."],["cocinar","Me gusta cocinar","Recetas más completas."],["mealprep","Preparo varios días","Raciones, nevera y congelador."]].map(([id,label,desc])=><button key={id} className={state.profile.cooking===id?"goal-choice active":"goal-choice"} onClick={()=>{confirmStep(2);setState(s=>({...s,profile:{...s.profile,cooking:id as CookingStyle}}))}}><strong>{label}</strong><span>{desc}</span></button>)}</div><details className="onboarding-options"><summary><span><strong>Personalizar mis recetas</strong><small>Opcional · dietas y alimentos que prefieres evitar</small></span><span className="onboarding-expand-action" aria-hidden="true">Configurar <span className="onboarding-plus">+</span></span></summary><div className="profile-market-grid">{[["any","Como de todo"],["vegetarian","Vegetariano"],["vegan","Vegano"]].map(([diet,label])=><button type="button" key={diet} aria-pressed={state.menuPreferences.diet===diet} className={state.menuPreferences.diet===diet?"active":""} onClick={()=>setState(s=>({...s,menuPreferences:{...s.menuPreferences,diet:diet as MenuPreferences["diet"]}}))}>{label}</button>)}</div><p>Evitar en las recetas:</p><div className="profile-market-grid">{["Pescado","Marisco","Lácteos","Gluten","Huevos","Frutos secos","Cerdo","Soja"].map(food=><button type="button" key={food} aria-pressed={state.menuPreferences.excludes.includes(food)} className={state.menuPreferences.excludes.includes(food)?"active":""} onClick={()=>setState(s=>({...s,menuPreferences:{...s.menuPreferences,excludes:s.menuPreferences.excludes.includes(food)?s.menuPreferences.excludes.filter(x=>x!==food):[...s.menuPreferences.excludes,food]}}))}>{food}</button>)}</div><label className="onboarding-custom-label" htmlFor="custom-avoid-food">¿Quieres evitar algún otro alimento?</label><form className="onboarding-custom-row" onSubmit={e=>{e.preventDefault();addCustomAvoid()}}><input id="custom-avoid-food" value={customAvoid} onChange={e=>setCustomAvoid(e.target.value)} placeholder="Ej.: champiñones, cilantro, cebolla" maxLength={180}/><button className="secondary" type="submit" disabled={!customAvoid.trim()}>Añadir</button></form><div className="onboarding-custom-tags">{state.menuPreferences.excludes.filter(x=>!["Pescado","Marisco","Lácteos","Gluten","Huevos","Frutos secos","Cerdo","Soja"].includes(x)).map(x=><button type="button" key={x} onClick={()=>setState(s=>({...s,menuPreferences:{...s.menuPreferences,excludes:s.menuPreferences.excludes.filter(y=>y!==x)}}))}>{x} ×</button>)}</div><p>Estas exclusiones orientan las recetas; para alergias o celiaquía comprueba siempre ingredientes, trazas y contaminación cruzada del envase.</p></details><details className="onboarding-options"><summary><span><strong>Mis herramientas de cocina</strong><small>Opcional · adapta recetas a tu equipamiento</small></span><span className="onboarding-expand-action" aria-hidden="true">Configurar <span className="onboarding-plus">+</span></span></summary><div className="profile-market-grid">{KITCHEN_TOOLS.map(tool=><button key={tool} type="button" aria-pressed={state.profile.kitchenTools.includes(tool)} className={state.profile.kitchenTools.includes(tool)?"active":""} onClick={()=>setState(s=>({...s,profile:{...s.profile,kitchenTools:s.profile.kitchenTools.includes(tool)?s.profile.kitchenTools.filter(x=>x!==tool):[...s.profile.kitchenTools,tool]}}))}>{tool}</button>)}</div></details></div>}
   {step===3&&<div className="ob-panel"><span className="eyebrow">HÁBITOS</span><h1>¿Quieres que HomeOS aprenda cómo compra el hogar?</h1><div className="goal-grid">{[["basica","Sí, enséñame tendencias","Proteína, verdura, fruta, carbohidratos y snacks a partir de compras reales."],["off","No necesito esta parte","Casa, compra y recetas funcionarán igual."]].map(([id,label,desc])=><button key={id} className={state.profile.nutrition===id?"goal-choice active":"goal-choice"} onClick={()=>{confirmStep(3);setState(s=>({...s,profile:{...s.profile,nutrition:id as NutritionMode}}))}}><strong>{label}</strong><span>{desc}</span></button>)}</div><details className="onboarding-options"><summary><span><strong>Definir presupuesto semanal</strong><small>Opcional · puedes cambiarlo después</small></span><span className="onboarding-expand-action" aria-hidden="true">Configurar <span className="onboarding-plus">+</span></span></summary><p>Solo para orientarte. Puedes cambiarlo después en Finanzas.</p><div className="profile-market-grid">{[0,50,75,100,150,200].map(amount=><button type="button" key={amount} aria-pressed={state.budget===weeklyBudgetToMonthly(amount)} className={state.budget===weeklyBudgetToMonthly(amount)?"active":""} onClick={()=>setState(s=>({...s,budget:weeklyBudgetToMonthly(amount)}))}>{amount?amount+" €/semana":"Sin límite"}</button>)}</div>{state.budget>0&&<small>Equivale aproximadamente a {state.budget} €/mes en Finanzas.</small>}</details></div>}
   {step===4&&<div className="ob-panel"><span className="eyebrow">TIENDAS</span><h1>¿Dónde compráis?</h1><p>Opcional. Si no quieres configurarlo ahora, HomeOS usará “Compra general”.</p><div className="market-grid">{SUPERMARKETS.map(m=><button key={m} className={state.profile.supermarkets.includes(m)?"choice active":"choice"} onClick={()=>{confirmStep(4);toggleMarket(m)}}>{m}</button>)}</div></div>}
-  {step===5&&<div className="ob-panel"><ConsumptionSetup state={state} setState={setState} finish={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true}}))}/></div>}
-  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>setStep(x=>Math.max(0,x-1))}>Atrás</button>{step<5?<button className="primary" disabled={step<4&&!confirmedSteps.includes(step)} onClick={()=>setStep(x=>x+1)}>{step<4&&!confirmedSteps.includes(step)?"Elige una opción":"Continuar"}</button>:null}</div>{step===0&&<p className="onboarding-required-note">Responde las preguntas básicas para adaptar HomeOS a tu hogar. Podrás cambiarlas después.</p>}
-  <div className="existing-home">{!joinOpen?<button className="join-link" onClick={()=>setJoinOpen(true)}>Ya tengo HomeOS en otro dispositivo</button>:<div className="join-box"><div><strong>Conectar con mi hogar</strong><small>Pega el código que aparece en HomeOS del otro dispositivo.</small></div><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button className="primary" disabled={!joinCode.trim()||syncStatus==="connecting"} onClick={joinExisting}>{syncStatus==="connecting"?"Conectando…":"Conectar"}</button>{joinError&&<span className="form-error">{joinError}</span>}<button className="join-cancel" onClick={()=>{setJoinOpen(false);setJoinError("")}}>Cancelar</button></div>}</div>
+  {step===5&&<div className="ob-panel"><ConsumptionSetup state={state} setState={setState} finish={()=>setState(s=>({...s,profile:{...s.profile,onboardingDone:true,onboardingStep:undefined,onboardingConfirmedSteps:undefined}}))}/></div>}
+  <div className="ob-actions"><button className="secondary" disabled={step===0} onClick={()=>goStep(step-1)}>Atrás</button>{step<5?<button className="primary" disabled={step<4&&!confirmedSteps.includes(step)} onClick={()=>goStep(step+1)}>{step<4&&!confirmedSteps.includes(step)?"Elige una opción":"Continuar"}</button>:null}</div>{step===0&&<p className="onboarding-required-note">Responde las preguntas básicas para adaptar HomeOS a tu hogar. Podrás cambiarlas después.</p>}
+  {!accountMode&&<div className="existing-home">{!joinOpen?<button className="join-link" onClick={()=>setJoinOpen(true)}>Ya tengo HomeOS en otro dispositivo</button>:<div className="join-box"><div><strong>Conectar con mi hogar</strong><small>Pega el código que aparece en HomeOS del otro dispositivo.</small></div><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button className="primary" disabled={!joinCode.trim()||syncStatus==="connecting"} onClick={joinExisting}>{syncStatus==="connecting"?"Conectando…":"Conectar"}</button>{joinError&&<span className="form-error">{joinError}</span>}<button className="join-cancel" onClick={()=>{setJoinOpen(false);setJoinError("")}}>Cancelar</button></div>}</div>}
  </div></div>
 }
 
@@ -1117,7 +1152,7 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
  </article>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openThemes,openProfile,notify,demoMode}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string,slot?:WeeklyMenuPlan["slots"][number])=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openThemes:()=>void;openProfile:()=>void;notify:()=>void;demoMode:"menu"|"ideas"|null}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openThemes,openProfile,notify,demoMode,accountMemberName}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string,slot?:WeeklyMenuPlan["slots"][number])=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openThemes:()=>void;openProfile:()=>void;notify:()=>void;demoMode:"menu"|"ideas"|null;accountMemberName?:string}){
  const [now,setNow]=useState(()=>new Date());
  const [calendarOpen,setCalendarOpen]=useState(false);
  const [weather,setWeather]=useState<number|null>(null);
@@ -1148,8 +1183,8 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const hour=now.getHours();
  const primaryName=(state.members[0]?.name||"").trim();
  const showName=primaryName&&!["tu","tú","yo","miembro 1"].includes(norm(primaryName));
- const greetingName=showName?primaryName:"Fran";
- const greeting=(hour<6?"Buenas noches":hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches")+", "+greetingName;
+ const greetingName=accountMemberName?.trim()||(showName?primaryName:"");
+ const greeting=(hour<6?"Buenas noches":hour<12?"Buenos días":hour<20?"Buenas tardes":"Buenas noches")+(greetingName?", "+greetingName:"");
   const habitBalance=habitBalanceSignals(state);
  const habitLearning=habitBalance.every(x=>x.tone==="learning");
  const currentMonthKey=todayIso.slice(0,7);
@@ -1158,7 +1193,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  const primaryIdea=homeIdeas[0];
 
  return <section className="home-final">
-  <div className="home-mobile-brand"><div className="home-mobile-brand-id">{logo()}<div><strong>HomeOS</strong><small>Tu cocina, sin carga mental</small></div></div><div className="home-mobile-brand-actions"><button className="notification-button" onClick={notify} aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button><button className="avatar" onClick={openProfile}>FR</button></div></div>
+  <div className="home-mobile-brand"><div className="home-mobile-brand-id">{logo()}<div><strong>HomeOS</strong><small>Tu cocina, sin carga mental</small></div></div><div className="home-mobile-brand-actions"><button className="notification-button" onClick={notify} aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button><button className="avatar" onClick={openProfile} aria-label="Configuración personal">{accountMemberName?.trim()?accountMemberName.trim().slice(0,2).toUpperCase():"H"}</button></div></div>
   <header className="home-final-head">
    <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
    <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{demoMode?18+"°C":weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{demoMode||weather!==null?"Sabadell":"Ahora"}</small></div></div>
@@ -1691,7 +1726,7 @@ export function attachReceiptToPurchase(s:AppState,sessionId:string,items:Receip
  return next;
 }
 
-function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{reviewHome:(command:HomeStatement)=>void;openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
+function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,accountMemberName,cameraRequest}:{reviewHome:(command:HomeStatement)=>void;openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;accountMemberName?:string;cameraRequest:number}){
  const [quick,setQuick]=useState("");
  const [homeStatements,setHomeStatements]=useState<HomeStatement[]>([]);
  const [bulkHelpDismissed,setBulkHelpDismissed]=useState(false);
@@ -1752,7 +1787,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
  useEffect(()=>{if(cameraRequest>0)requestAnimationFrame(()=>setTimeout(()=>receiptCameraRef.current?.click(),60))},[cameraRequest]);
  const members=state.members.slice(0,state.profile.householdSize);
  const currentMember=members.find(m=>m.id===deviceMemberId)||members[0];
- const requestedBy=currentMember?.name||"Tú";
+ const requestedBy=accountMemberName?.trim()||currentMember?.name||"Tú";
  const estimatedTotal=state.shopping.filter(i=>i.status==="carrito").reduce((sum,item)=>{
   const canonical=norm(classifyProduct(item.name,item.category).canonical);
   const last=[...state.purchaseHistory].reverse().find(x=>typeof x.price==="number"&&x.qty>0&&norm(classifyProduct(x.name,x.category).canonical)===canonical);
@@ -2017,7 +2052,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
   <div className="shopping-top"><div><span className="eyebrow">LISTA DE COMPRA</span><h2>{shoppingActive?(activeStore?"Comprando en "+activeStore:"¿Dónde estás comprando?"):"Lo que falta en casa"}</h2><p>Marca la casilla cuando cojas un producto. Al terminar la compra, lo cogido pasa a Casa.</p></div>{shoppingActive?<div className="shopping-session-actions"><button className="secondary" onClick={()=>{setState(s=>({...s,shopping:s.shopping.map(i=>i.status==="carrito"?{...i,status:"pendiente",boughtQty:undefined}:i)}));setShoppingActive(false);setActiveStore("");setPurchaseTotal("");setReceiptName("")}}>Salir</button><button className="primary" disabled={!activeStore||(state.profile.financeMode==="preciso"&&!purchaseTotal.trim())} onClick={()=>{const n=Number(purchaseTotal.replace(",","."));if(purchaseTotal.trim()&&(!Number.isFinite(n)||n<0)){setToast("Introduce un total válido, igual o mayor que cero");return}const manual=purchaseTotal.trim()&&Number.isFinite(n)?n:undefined;const total=manual??(state.profile.financeMode==="orientativo"&&estimatedTotal>0?estimatedTotal:undefined);finishShopping(total);setPurchaseTotal("");setReceiptName("")}}>Terminar compra</button></div>:<button className="primary shopping-start" onClick={()=>setShoppingActive(true)}><span>Empezar compra</span><small>Elige dónde compras y marca lo que vas cogiendo</small></button>}</div>
 
   {pendingRecipePlans.length>0&&<section className="shopping-recipe-memory-list"><h3>Compra para tus recetas</h3>{pendingRecipePlans.map(p=><article className="shopping-recipe-memory" key={p.id}><img src={RECIPES.find(r=>r.id===p.recipe.id)?.image||p.recipe.image||"/recipe-placeholder.svg"} alt=""/><div><strong>{p.recipe.title}</strong><p>{p.missing.length} ingredientes por completar{p.shoppingLinked?" · vinculados a la compra":""}</p></div><button onClick={()=>addFromRecipe(p.recipe,p.plannedFor)}>Añadir faltantes</button></article>)}</section>}
-  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. 2 bricks de leche, huevos y macarrones…"/><button type="button" className={shoppingListening?"meal-mic homeos-voice listening":"meal-mic homeos-voice"} onClick={startShoppingVoice} aria-label={shoppingListening?"Terminar voz y añadir los productos":"Hablar para añadir productos"}>{micIcon()}<span>{shoppingListening?"Listo":"Hablar"}</span></button><span className="device-member-pill" title="Este dispositivo añade productos a nombre de esta persona">👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
+  {!shoppingActive?<div className="quick-add smart"><input value={quick} onChange={e=>setQuick(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} enterKeyHint="done" placeholder="Ej. 2 bricks de leche, huevos y macarrones…"/><button type="button" className={shoppingListening?"meal-mic homeos-voice listening":"meal-mic homeos-voice"} onClick={startShoppingVoice} aria-label={shoppingListening?"Terminar voz y añadir los productos":"Hablar para añadir productos"}>{micIcon()}<span>{shoppingListening?"Listo":"Hablar"}</span></button><span className="device-member-pill" title={accountMemberName?"Tu cuenta personal añade los productos con este nombre":"Este dispositivo añade productos a nombre de esta persona"}>👤 {requestedBy}</span><button onClick={()=>add()}>Añadir</button></div>:<div className="store-picker"><span>Estoy en</span><button className={activeStore==="Compra general"?"active":""} onClick={()=>setActiveStore("Compra general")}>Compra general</button>{state.profile.supermarkets.map(s=><button key={s} className={(activeStore===s?"active ":"")+storeClass(s)} onClick={()=>setActiveStore(s)}>{s}</button>)}<button className="add-store-button" onClick={()=>setAddingStore(true)}>＋ Añadir supermercado</button></div>}
   {voiceHelp&&<p className="voice-help" role="status">{voiceHelp}</p>}
   {homeStatements.length>0&&<section className="intent-review"><h3>Esto es para Casa</h3><p>No lo he añadido a la compra. Revisa qué vas a guardar.</p>{homeStatements.map((command,index)=><div key={index}><strong>{command.name}</strong><span>{command.kind==="prepared"?"Comida preparada":"Existencias"} · {command.location}</span><button className="secondary" disabled={Boolean(productChoice)} onClick={()=>reviewHome(command)}>Revisar en Casa</button><button className="secondary" onClick={()=>setHomeStatements(xs=>xs.filter((_,j)=>j!==index))}>Omitir</button></div>)}</section>}
   {shoppingActive&&/costco|makro/i.test(activeStore)&&!bulkHelpDismissed&&<section className="intent-review"><h3>¿Parte de esta compra es para más adelante?</h3><p>En carne y productos aptos para congelar, usa «Congelar como reserva». El resto seguirá su uso habitual; la tienda no cambia el consumo por sí sola.</p><button className="secondary" onClick={()=>setBulkHelpDismissed(true)}>Entendido</button></section>}
@@ -2307,7 +2342,7 @@ function Finanzas({state,setState,available,monthlySpent}:{state:AppState;setSta
  </section>
 }
 
-function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,copyHomeCode,syncNow,deviceMemberId,setDeviceMemberId,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;close:()=>void;syncCreds:SyncCredentials|null;syncStatus:"local"|"connecting"|"synced"|"error";connectHome:(code:string)=>Promise<boolean>;copyHomeCode:()=>Promise<void>;syncNow:()=>Promise<void>;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;setToast:(s:string)=>void}){
+function ProfileModal({state,setState,close,syncCreds,accountMode,onManageAccount,accountMemberName,syncStatus,connectHome,copyHomeCode,syncNow,deviceMemberId,setDeviceMemberId,setToast}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;close:()=>void;syncCreds:HomeConnection|null;accountMode:boolean;onManageAccount?:()=>void;accountMemberName?:string;syncStatus:"local"|"connecting"|"synced"|"error";connectHome:(code:string)=>Promise<boolean>;copyHomeCode:()=>Promise<void>;syncNow:()=>Promise<void>;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;setToast:(s:string)=>void}){
  const [draft,setDraft]=useState<AppState>(state);
  const [themePeriod,setThemePeriod]=useState<"week"|"month">("month");
  const featuredTheme=themeForPeriod(themePeriod);
@@ -2346,7 +2381,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
     <div className="member-summary"><b>{presenceText(m.presence)}</b><span>{appetiteText(m.appetite)}</span></div>
    </article>)}</div>:<div className="settings-list improved-settings">
     <label><span>Personas del hogar</span><select value={draft.profile.householdSize} onChange={e=>setDraft(s=>{const householdSize=Number(e.target.value);return {...s,profile:{...s.profile,householdSize},members:ensureMembers(s.members,householdSize)}})}>{[1,2,3,4,5,6].map(n=><option key={n}>{n}</option>)}</select></label>
-    {members.length>1&&<label><span>Identidad de este dispositivo</span><select value={members.some(m=>m.id===draftDeviceMemberId)?draftDeviceMemberId:(members[0]?.id||"")} onChange={e=>setDraftDeviceMemberId(e.target.value)}>{members.map(m=><option value={m.id} key={m.id}>{m.name}</option>)}</select><small>Se configura una vez: todo lo que añadas desde este móvil u ordenador queda asociado automáticamente a esta persona.</small></label>}
+    {members.length>1&&!accountMode&&<label><span>Identidad de este dispositivo</span><select value={members.some(m=>m.id===draftDeviceMemberId)?draftDeviceMemberId:(members[0]?.id||"")} onChange={e=>setDraftDeviceMemberId(e.target.value)}>{members.map(m=><option value={m.id} key={m.id}>{m.name}</option>)}</select><small>Se configura una vez: todo lo que añadas desde este móvil u ordenador queda asociado automáticamente a esta persona.</small></label>}
     <label><span>Estilo habitual de cocina</span><select value={draft.profile.cooking} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,cooking:e.target.value as CookingStyle}}))}><option value="rapido">Rápida</option><option value="normal">Normal</option><option value="cocinar">Me gusta cocinar</option><option value="mealprep">Meal prep</option></select></label>
     <label><span>Hábitos de alimentación</span><select value={draft.profile.nutrition} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,nutrition:e.target.value as NutritionMode}}))}><option value="basica">Mostrar tendencias</option><option value="off">Ocultar</option></select><small>Analiza compras y recetas como señales; no sustituye una valoración nutricional.</small></label>
     <label><span>Compra habitual</span><select value={draft.profile.shoppingCycle} onChange={e=>setDraft(s=>({...s,profile:{...s.profile,shoppingCycle:e.target.value as Profile["shoppingCycle"]}}))}><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option><option value="mixta">Grande + compras rápidas</option><option value="diaria">Frecuente</option></select></label>
@@ -2356,7 +2391,7 @@ function ProfileModal({state,setState,close,syncCreds,syncStatus,connectHome,cop
     <div className="profile-market-section kitchen-tools-setting"><span>Qué tienes para cocinar</span><p>HomeOS muestra las formas de preparación compatibles cuando la receta las tiene disponibles.</p><div className="profile-market-grid">{KITCHEN_TOOLS.map(t=><button type="button" key={t} className={draft.profile.kitchenTools.includes(t)?"active":""} onClick={()=>toggleTool(t)}>{t}</button>)}</div></div>
    </div>}
 
-  <section className="sync-settings"><div className="sync-settings-head"><div><small>HOGAR COMPARTIDO</small><h3>Sincronización entre dispositivos</h3><p>{syncCreds?"Compra, inventario, calendario y perfiles se guardan para toda la casa.":"HomeOS está preparando el hogar compartido."}</p></div><span className={"sync-state "+syncStatus}>{syncStatus==="synced"?"Sincronizado":syncStatus==="connecting"?"Guardando…":syncStatus==="error"?"Sin conexión":"Local"}</span></div>{syncCreds&&<div className="sync-actions"><button type="button" className="secondary" onClick={copyHomeCode}>Copiar código para otro dispositivo</button><button type="button" className="secondary" onClick={syncNow}>Sincronizar ahora</button></div>}<details className="join-details"><summary>Conectar con el hogar de otro dispositivo</summary><p>Para compartir la misma lista e inventario con tu familia. Usa el código de ese hogar; no une dos inventarios independientes.</p><div className="join-inline"><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button type="button" onClick={joinOther} disabled={!joinCode.trim()||syncStatus==="connecting"}>Conectar</button></div>{joinError&&<span className="form-error">{joinError}</span>}</details></section>
+  <section className="sync-settings"><div className="sync-settings-head"><div><small>HOGAR COMPARTIDO</small><h3>Sincronización entre dispositivos</h3><p>{syncCreds?"Compra, inventario, calendario y perfiles se guardan para toda la casa.":"HomeOS está preparando el hogar compartido."}</p></div><span className={"sync-state "+syncStatus}>{syncStatus==="synced"?"Sincronizado":syncStatus==="connecting"?"Guardando…":syncStatus==="error"?"Sin conexión":"Local"}</span></div>{accountMode&&<p className="ha-linked-account">Sesión personal: <strong>{accountMemberName||"Tu cuenta"}</strong>. El acceso familiar y las invitaciones se gestionan por separado.</p>}{syncCreds&&<div className="sync-actions">{accountMode?<button type="button" className="secondary" onClick={()=>{close();onManageAccount?.()}}>Gestionar miembros e invitaciones</button>:<button type="button" className="secondary" onClick={copyHomeCode}>Copiar código para otro dispositivo</button>}<button type="button" className="secondary" onClick={syncNow}>Sincronizar ahora</button></div>}{!accountMode&&<details className="join-details"><summary>Conectar con el hogar de otro dispositivo</summary><p>Para compartir la misma lista e inventario con tu familia. Usa el código de ese hogar; no une dos inventarios independientes.</p><div className="join-inline"><input value={joinCode} onChange={e=>setJoinCode(e.target.value)} placeholder="HOS1.…"/><button type="button" onClick={joinOther} disabled={!joinCode.trim()||syncStatus==="connecting"}>Conectar</button></div>{joinError&&<span className="form-error">{joinError}</span>}</details>}</section>
   </div>
 
   <div className="modal-actions sticky-actions"><button type="button" className="secondary" onClick={cancel}>Cancelar</button><button type="button" className="primary" disabled={!dirty} onClick={save}>{dirty?"Guardar cambios":"Sin cambios"}</button></div>
