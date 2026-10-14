@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { lookupBarcode } from "../lib/barcode-product";
 const barcode="3560070791460";
-const responseFor=(product_type:string)=>async()=>new Response(JSON.stringify({
+const responseFor=(product_type:string):typeof fetch=>async()=>new Response(JSON.stringify({
  product:{code:barcode,product_type,product_name_es:"Producto de ejemplo",ingredients_text:"Componentes declarados",allergens_tags:[],nutriments:{"sugars_100g":3}}
-}),{status:200,headers:{"content-type":"application/json"}}) as Promise<Response>;
+}),{status:200,headers:{"content-type":"application/json"}});
 for(const [source,expected] of [["food","food"],["beauty","beauty"],["product","household"],["petfood","household"]] as const){
  const result=await lookupBarcode(barcode,"food",{fetcher:responseFor(source)});
  assert.equal(result.status,"found");
