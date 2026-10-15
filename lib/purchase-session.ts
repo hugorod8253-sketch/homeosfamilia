@@ -23,8 +23,15 @@ export function markPurchasePending(session: PurchaseSession): PurchaseSession {
 /** Idempotent: an already confirmed purchase never emits additional inventory events. */
 export function confirmPurchase(session: PurchaseSession, at: string): { session: PurchaseSession; events: PurchaseEvent[] } {
   if (session.status === "confirmed" || session.status === "archived") return { session, events: [] };
-  const events = session.lines.filter(x => x.picked && x.quantity > 0 && Number.isFinite(x.quantity))
-    .map(x => ({ sessionId: session.id, type: "confirmed" as const, at, lineId: x.id, quantity: x.quantity }));
+  const unique = new Map<string, PurchaseLine>();
+  for (const line of session.lines) {
+    if (line.picked && line.id.trim() && Number.isFinite(line.quantity) && line.quantity > 0) {
+      if (unique.has(line.id)) throw new Error("duplicate_purchase_line_id");
+      unique.set(line.id, line);
+    }
+  }
+  if (!unique.size) throw new Error("purchase_has_no_confirmed_lines");
+  const events = [...unique.values()].map(x => ({ sessionId: session.id, type: "confirmed" as const, at, lineId: x.id, quantity: x.quantity }));
   return { session: { ...session, status: "confirmed", confirmedAt: at }, events };
 }
 
