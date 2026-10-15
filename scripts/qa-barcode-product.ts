@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { assessFood } from '../lib/food-assessment';
+import { assessFood, sugarPerPackage } from '../lib/food-assessment';
 import { lookupBarcode, normalizeBarcode, parseBarcodeProduct } from '../lib/barcode-product';
 import { scannedPackage, scannedPackCount, changeScannedQuantity } from '../lib/scanned-package';
 import { normalizeState, addScannedProduct, completePurchase, updateScannedFacts } from '../components/homeos';
@@ -31,6 +31,7 @@ assert.ok(assessFood(caffeinated).evidence.some(x=>x==='Azúcares: 11.5 g'));
 const cola={...caffeinated,name:'Coca-Cola Original',nutritionPer100g:{'energy-kcal':42,sugars:10.6,'saturated-fat':0,salt:0},packageSize:'330 ml'};
 assert.ok(assessFood(cola).evidence.includes('Azúcares: 10.6 g'),'Cola sugar stays visible per 100 ml');
 assert.equal('score' in assessFood(cola),false,'No high universal rating for sugary drinks');
+assert.deepEqual(sugarPerPackage(cola),{grams:34.98,quantity:330,unit:'ml'});
 assert.ok(assessFood(caffeinated).warnings.some(x=>x.includes('cafeína')));
 assert.equal('score' in assessFood({...caffeinated,ingredients:''}),false);
 assert.equal(assessFood({...caffeinated,nutritionPer100g:{sugars:10}}).status,'insufficient-data');
