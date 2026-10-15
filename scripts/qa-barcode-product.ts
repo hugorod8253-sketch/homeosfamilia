@@ -26,8 +26,13 @@ const missingGrade=parseBarcodeProduct({product:{code:'3560070791460',product_na
 assert.equal(missingGrade.nutriScore,undefined,'Unknown grades are never fabricated');
 const caffeinated={...food,ingredients:'agua, azúcar, cafeína, aromas',nutritionPer100g:{'energy-kcal':45,sugars:11.5,'saturated-fat':0,salt:0.1},nutritionBasis:'100 ml' as const};
 assert.equal(assessFood(caffeinated).status,'estimated');
+assert.equal('score' in assessFood(caffeinated),false,'HomeOS must not invent a universal food score');
+assert.ok(assessFood(caffeinated).evidence.some(x=>x==='Azúcares: 11.5 g'));
+const cola={...caffeinated,name:'Coca-Cola Original',nutritionPer100g:{'energy-kcal':42,sugars:10.6,'saturated-fat':0,salt:0},packageSize:'330 ml'};
+assert.ok(assessFood(cola).evidence.includes('Azúcares: 10.6 g'),'Cola sugar stays visible per 100 ml');
+assert.equal('score' in assessFood(cola),false,'No high universal rating for sugary drinks');
 assert.ok(assessFood(caffeinated).warnings.some(x=>x.includes('cafeína')));
-assert.equal(assessFood({...caffeinated,ingredients:''}).score,null);
+assert.equal('score' in assessFood({...caffeinated,ingredients:''}),false);
 assert.equal(assessFood({...caffeinated,nutritionPer100g:{sugars:10}}).status,'insufficient-data');
 assert.equal(assessFood({...caffeinated,kind:'beauty'}).status,'not-applicable');
 const beauty = parseBarcodeProduct(payload, '3560070791460', 'beauty')!;
