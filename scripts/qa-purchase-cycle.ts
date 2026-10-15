@@ -48,4 +48,13 @@ assert.equal([...next.inventory].sort(comparePurchasePriority)[0].id,'old');
 const other=completePurchase({...initial,shopping:[{...pending,id:'other'}]},['other'],3,'Mercadona','2026-10-08');
 const shared=mergeHouseholdState(initial,next,other);
 assert.equal(shared.inventory.length,3);assert.equal(shared.spent,5);
+
+const noCart=completePurchase(initial,[],10,'Lidl','2026-10-08');
+assert.equal(noCart,initial,'No purchase without explicitly picked items');
+const invalidCart=completePurchase({...initial,shopping:[{...pending,status:'carrito',boughtQty:0}]},['new'],10,'Lidl','2026-10-08');
+assert.equal(invalidCart.inventory.length,1,'Zero-quantity purchase must not create inventory');
+const unknownReceipt=attachReceiptToPurchase(initial,'missing-session',receipt,5);
+assert.equal(unknownReceipt,initial,'Unknown receipt session must not mutate state');
+const receiptWithoutTotal=attachReceiptToPurchase(next,next.purchaseSessions[0].id,receipt);
+assert.equal(receiptWithoutTotal.spent,next.spent,'Receipt without a confirmed total must not invent spending');
 console.log('PASS: dated lots, oldest-first recipes, explicit receipt linking and idempotence, household sync, remaining stock and duplicate-free suggestions');
