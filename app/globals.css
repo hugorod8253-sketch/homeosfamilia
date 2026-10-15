@@ -2490,3 +2490,20 @@ main p,.modal p{font-size:16px!important}
 
 /* First-run visual hierarchy: distinct steps, clearer selections */
 .onboarding-card{border:1px solid #d5dfed!important;box-shadow:0 12px 38px #203d6320!important}.onboarding-progress{background:#e4ebf5!important;border-radius:999px!important;overflow:hidden}.onboarding-progress span{background:linear-gradient(90deg,#215ab0,#0c8d98)!important}.ob-panel{background:#f7f9fc;border:1px solid #e1e8f1;border-radius:18px;padding:clamp(14px,3vw,24px)}.ob-panel .eyebrow{color:#24589b!important;font-weight:800;letter-spacing:.09em}.ob-panel .number-grid .choice,.ob-panel .goal-grid .goal-choice,.ob-panel .market-grid .choice{border:2px solid #d3dfeb!important;background:#fff!important;color:#233b56!important;border-radius:14px!important;min-height:52px}.ob-panel .number-grid .choice.active,.ob-panel .goal-grid .goal-choice.active,.ob-panel .market-grid .choice.active{border-color:#1d63b6!important;background:#e6f0ff!important;color:#124984!important;box-shadow:inset 0 0 0 1px #1d63b6}.onboarding-required-note{font-size:13px;line-height:1.5;color:#51677e;padding:8px 4px}.ob-actions button:disabled{opacity:.6;cursor:not-allowed}@media(max-width:700px){.onboarding-card{padding:12px!important}.ob-panel{padding:15px}.ob-panel .goal-grid{gap:10px}.ob-panel .goal-grid .goal-choice{padding:14px!important;text-align:left}}
+
+/* Make voice actions read as controls, never as an isolated round icon. */
+.meal-mic{border-radius:14px!important;width:auto!important;max-width:none!important;min-width:48px!important;height:48px!important;min-height:48px!important;padding:10px 13px!important;}
+.quick-add.smart .meal-mic{width:auto!important;min-width:142px!important;max-width:none!important;flex:0 0 auto!important;border-radius:14px!important;padding:10px 14px!important;font-weight:800!important;white-space:nowrap!important;}
+.quick-add.smart .meal-mic .mic-svg{flex:0 0 19px}
+.meal-mic:focus-visible{outline:3px solid #7ab58c!important;outline-offset:2px}
+.meal-mic.listening{min-width:150px!important}
+.onboarding-people>p:first-of-type{max-width:64ch}
+.onboarding-member{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:14px;margin:12px 0;border:1px solid #d6e0ec;border-radius:16px;background:#fff}
+.onboarding-member>strong{grid-column:1/-1;color:#204c7a}
+.onboarding-member label{display:grid;gap:5px;font-size:14px;font-weight:700;color:#42566c}
+.onboarding-member input,.onboarding-member select{width:100%;min-height:44px;border:1px solid #cad5e1;border-radius:10px;padding:9px 10px;background:#fff;color:#24364a;font-size:15px}
+.onboarding-member .onboarding-person-avoid{grid-column:1/-1}
+.onboarding-profile-note{font-size:14px!important;color:#596a7d}
+@media(max-width:560px){.onboarding-member{grid-template-columns:1fr;padding:12px}.onboarding-member .onboarding-person-avoid{grid-column:auto}.quick-add.smart .meal-mic{min-width:142px!important;flex:1 1 142px!important}}
+.quick-add.smart{display:flex!important;flex-wrap:wrap!important;align-items:stretch!important}
+.quick-add.smart>input{flex:1 1 320px!important;min-width:0}
