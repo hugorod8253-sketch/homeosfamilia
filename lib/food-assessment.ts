@@ -20,6 +20,8 @@ export function assessFood(product:BarcodeProduct):FoodAssessment {
  if(/\b(cafe[ií]na|caffeine|guaran[aá]|yerba mate)\b/i.test(ingredients))warnings.push('Contiene ingredientes asociados a cafeína: revisar dosis y población destinataria');
  if(/\b(az[uú]car|sugar|jarabe de glucosa|glucose syrup|dextrosa)\b/i.test(ingredients))warnings.push('Se declaran azúcares o jarabes en ingredientes; su posición indica orden por peso');
  const additives=product.additives||[];
+ if(additives.length)warnings.push('Aditivos declarados: consulta la ficha y las condiciones de uso; su presencia no demuestra riesgo');
+ if(/\\b(?:eco|ecol[oó]gic[oa]|organic|bio)\\b/i.test(product.name+' '+(product.categoryText||'')))warnings.push('La denominación ecológica no acredita por sí sola una mejor composición nutricional; verifica el sello oficial del envase');
  const evidence=[`Energía: ${energy} kcal / ${product.nutritionBasis}`,`Azúcares: ${sugar} g`,`Grasas saturadas: ${saturated} g`,`Sal: ${salt} g`,`Aditivos identificados: ${additives.length}`];
  // This is a provisional transparent nutrition index, not a toxicity score.
  let score=85-Math.min(25,sugar*1.1)-Math.min(20,saturated*2)-Math.min(20,salt*10)-Math.min(10,energy/100)+Math.min(8,(n.fiber||0)*1.5);
