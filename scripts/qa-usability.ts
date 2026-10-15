@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {parsePreparedInput} from '../lib/prepared-input';
 import {dailyIdeas} from '../lib/daily-ideas';
 import {estimateRecipeNutrition} from '../lib/recipe-nutrition';
@@ -30,4 +31,6 @@ const habits=[{id:'h',name:'Leche',qty:1,unit:'L',days:14}];
 const estimate=estimateConsumption(item,purchases,habits,[],'2026-10-08');assert.equal(estimate.source,'habit');assert.equal(estimate.estimatedQty,.5);assert.equal(item.qty,1);
 const checked=estimateConsumption(item,purchases,habits,[{id:'a',name:'Leche',qty:1,unit:'L',date:'2026-10-01',location:'Todo'},{id:'b',name:'Leche',qty:0,unit:'L',date:'2026-10-08',location:'Todo'}],'2026-10-08');assert.equal(checked.source,'confirmed');
 assert.equal(shoppingCategoryLabel('Lácteos'),'Huevos y lácteos');
+const homeosUi=readFileSync('components/homeos.tsx','utf8');
+assert.ok(homeosUi.includes('Consulta ingredientes y datos por envase; añádelo a tu compra o inventario.'),'Scanner copy must promise factual product details, not a subjective score');
 console.log('PASS: sobras, tres comidas distintas, macros completos/adaptados, incertidumbre y hábitos sin alterar inventario');
