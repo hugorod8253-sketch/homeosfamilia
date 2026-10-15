@@ -10,3 +10,18 @@ export function interpretHouseholdNote(text:string){
  return undefined;
 }
 export function weeklyBudgetToMonthly(amount:number){return Number.isFinite(amount)&&amount>0?Math.round(amount*52/12):0;}
+
+/** Calendar-month allowance for a weekly budget configured during the current month. */
+export function weeklyBudgetForMonth(amount:number,startsOn:string|undefined,month:string){
+ if(!Number.isFinite(amount)||amount<=0)return 0;
+ const [year,monthNumber]=month.split("-").map(Number);
+ if(!year||!monthNumber||monthNumber<1||monthNumber>12)return weeklyBudgetToMonthly(amount);
+ const daysInMonth=new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
+ if(startsOn?.startsWith(month+"-")){
+  const day=Number(startsOn.slice(8,10));
+  if(!Number.isFinite(day)||day<1||day>daysInMonth)return weeklyBudgetToMonthly(amount);
+  return Math.round(amount*(daysInMonth-day+1)/7*100)/100;
+ }
+ if(startsOn&&startsOn.slice(0,7)>month)return 0;
+ return weeklyBudgetToMonthly(amount);
+}

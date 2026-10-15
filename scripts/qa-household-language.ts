@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {interpretShoppingRequest,parseShoppingQuantity,shoppingInputNeedsReview} from '../lib/shopping-input';
-import {interpretHouseholdNote,weeklyBudgetToMonthly} from '../lib/household-language';
+import {interpretHouseholdNote,weeklyBudgetForMonth,weeklyBudgetToMonthly} from '../lib/household-language';
 import {normalizeSupermarket} from '../lib/supermarkets';
 import {quickStockChoices} from '../lib/quick-stock';
 const mixed=interpretShoppingRequest('Necesito ir al supermercado a comprar leche, huevos y luego a meter en la nevera pasta con macarrones y tomate');
@@ -20,6 +20,10 @@ assert.equal(interpretHouseholdNote('No come fuera')?.presence,'casa');
 assert.equal(interpretHouseholdNote('Come en casa pero algunos días sale')?.presence,'variable');
 assert.equal(interpretHouseholdNote('Nos gustan los domingos'),undefined);
 assert.equal(weeklyBudgetToMonthly(75),325);assert.equal(weeklyBudgetToMonthly(Infinity),0);
+assert.equal(weeklyBudgetForMonth(100,'2026-10-15','2026-10'),242.86);
+assert.equal(weeklyBudgetForMonth(100,'2026-10-15','2026-11'),433);
+assert.equal(weeklyBudgetForMonth(100,'2026-10-31','2026-10'),14.29);
+assert.equal(weeklyBudgetForMonth(100,'2026-11-01','2026-10'),0);
 assert.equal(normalizeSupermarket('costco'),'Costco');assert.equal(normalizeSupermarket('ldl'),'Lidl');
 assert.ok(quickStockChoices('Leche','bricks').some(x=>x.qty===12&&x.unit==='bricks'));
 console.log('PASS: conversational purchases separated from Casa, milk containers, no invented pack volume, optional routines and weekly budgets');
