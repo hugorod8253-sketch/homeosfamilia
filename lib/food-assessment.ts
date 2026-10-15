@@ -1,6 +1,16 @@
 import type { BarcodeProduct } from './barcode-product';
+import { scannedPackage } from './scanned-package';
 
 export type FoodAssessment = {status:'estimated'|'insufficient-data'|'not-applicable';reasons:string[];warnings:string[];evidence:string[]};
+
+export function sugarPerPackage(product:BarcodeProduct):{grams:number;quantity:number;unit:'g'|'ml'}|undefined {
+ const sugar=product.nutritionPer100g?.sugars, pack=scannedPackage({packageSize:product.packageSize});
+ if(!Number.isFinite(sugar)||!pack||!['g','ml','L'].includes(pack.unit))return;
+ const unit=product.nutritionBasis==='100 ml'?'ml':'g';
+ const quantity=pack.unit==='L'?pack.qty*1000:pack.qty;
+ if((unit==='ml'&&pack.unit==='g')||(unit==='g'&&pack.unit!=='g'))return;
+ return {grams:Math.round((sugar as number)*quantity/100*100)/100,quantity,unit};
+}
 
 /** Shows only declared facts. HomeOS does not infer a universal health grade. */
 export function assessFood(product:BarcodeProduct):FoodAssessment {
