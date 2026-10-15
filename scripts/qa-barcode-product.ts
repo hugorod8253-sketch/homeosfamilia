@@ -16,6 +16,13 @@ const food = parseBarcodeProduct(payload, '3560070791460', 'food')!;
 assert.equal(food.nutriScore, 'b'); assert.equal(food.nutritionPer100g.proteins, 0);
 assert.equal(food.nutritionPer100g.sugars, undefined); assert.equal(food.nutritionPer100g.fat, undefined);
 assert.ok(food.missing.includes('allergens')); // Unknown is never presented as allergen-free.
+
+const legacyGrade = parseBarcodeProduct({product:{code:'3560070791460',product_name:'Yogur',nutrition_grades:'C',nutriments:{sugars_100ml:4.5},product_quantity_unit:'ml'}},'3560070791460','food')!;
+assert.equal(legacyGrade.nutriScore,'c','Older Open Food Facts Nutri-Score field remains supported');
+assert.equal(legacyGrade.nutritionPer100g.sugars,4.5,'Per-100ml beverages are parsed');
+assert.equal(legacyGrade.nutritionBasis,'100 ml');
+const missingGrade=parseBarcodeProduct({product:{code:'3560070791460',product_name:'Yogur',nutriscore_grade:'unknown'}},'3560070791460','food')!;
+assert.equal(missingGrade.nutriScore,undefined,'Unknown grades are never fabricated');
 const beauty = parseBarcodeProduct(payload, '3560070791460', 'beauty')!;
 assert.equal(beauty.nutriScore, undefined); assert.deepEqual(beauty.nutritionPer100g, {});
 assert.equal(parseBarcodeProduct(payload, '036000291452', 'food'), undefined);
