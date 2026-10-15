@@ -24,3 +24,12 @@ check(attachReceiptFingerprint(withReceipt, "ticket-abc").receiptFingerprints.le
 check(confirmPurchase(withReceipt, "2026-10-15T12:00:00").events.length === 0, "Late ticket never duplicates stock");
 check(pendingSessions([pending, base, withReceipt]).length === 2, "Old pending sessions not removed");
 console.log("purchase-session checks passed");
+
+let rejectedEmpty = false;
+try { confirmPurchase({ ...base, lines: base.lines.map(x => ({ ...x, picked: false })) }, "2026-10-15T12:00:00"); }
+catch (e) { rejectedEmpty = (e as Error).message === "purchase_has_no_confirmed_lines"; }
+check(rejectedEmpty, "Empty purchase confirmation rejected");
+let rejectedDuplicate = false;
+try { confirmPurchase({ ...base, lines: [base.lines[0], base.lines[0]] }, "2026-10-15T12:00:00"); }
+catch (e) { rejectedDuplicate = (e as Error).message === "duplicate_purchase_line_id"; }
+check(rejectedDuplicate, "Duplicate line identifiers rejected");
