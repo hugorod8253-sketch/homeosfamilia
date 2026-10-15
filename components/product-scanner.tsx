@@ -73,7 +73,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
     const controller=new AbortController();abort.current=controller;
     setBusy(true);setPacks(1);setLocation('');
     try {
-      const response=await fetch(`/api/products?code=${barcode}&kind=${kind}`,{signal:controller.signal});
+      const response=await fetch(`/api/products?code=${barcode}&kind=auto`,{signal:controller.signal});
       const data = await response.json() as LookupResult;
       if(id===sequence.current && mounted.current) {setResult(data);if(data.status==='found')onFacts?.(data.product)}
     } catch {
@@ -141,7 +141,7 @@ export default function ProductScanner({close,onAdd,initialProduct,initialCode,o
   const nutritionLabels:Record<string,string>={'energy-kcal':'Energía','proteins':'Proteínas','carbohydrates':'Hidratos','sugars':'Azúcares','fat':'Grasas','saturated-fat':'Saturadas','fiber':'Fibra','salt':'Sal'};
   return <div className="modal-backdrop"><section className="modal product-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="product-scanner-title">
     <div className="modal-head"><div><span className="eyebrow">ESCÁNER DE PRODUCTOS</span><h2 id="product-scanner-title">Escanea tu producto</h2></div><button aria-label="Cerrar escáner" onClick={close}>×</button></div>
-    <div className="scanner-kind" role="group" aria-label="Tipo de producto"><button className={kind==='food'?'active':''} aria-pressed={kind==='food'} onClick={()=>changeKind('food')}>Alimentación</button><button className={kind==='beauty'?'active':''} aria-pressed={kind==='beauty'} onClick={()=>changeKind('beauty')}>Cosmética e higiene</button><button className={kind==='household'?'active':''} aria-pressed={kind==='household'} onClick={()=>changeKind('household')}>Hogar y otros</button></div>
+    <p className="scanner-note">Detección automática de alimentación, cosmética y productos del hogar.</p>
     <div className="scanner-input-panel">
       <button className="primary scanner-camera-button" disabled={busy||readingPhoto} onClick={()=>{setCameraError('');setCamera(value=>!value)}}>{camera?'Detener cámara':'Escanear código de barras'}</button>
       <button className="secondary scanner-photo-button" disabled={busy||readingPhoto} onClick={()=>photoInput.current?.click()}>{readingPhoto?'Leyendo foto…':'Leer una foto del código'}</button>
