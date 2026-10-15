@@ -2504,6 +2504,9 @@ main p,.modal p{font-size:16px!important}
 .onboarding-member input,.onboarding-member select{width:100%;min-height:44px;border:1px solid #cad5e1;border-radius:10px;padding:9px 10px;background:#fff;color:#24364a;font-size:15px}
 .onboarding-member .onboarding-person-avoid{grid-column:1/-1}
 .onboarding-profile-note{font-size:14px!important;color:#596a7d}
+.scanner-package-value{display:grid;gap:4px;margin:10px 0;padding:13px 15px;border-radius:12px;background:#fff6e9;border:1px solid #f0dfc5;color:#584321}
+.scanner-package-value strong{font-size:17px}
+.scanner-package-value span{font-size:14px;color:#6b5b43}
 @media(max-width:560px){.onboarding-member{grid-template-columns:1fr;padding:12px}.onboarding-member .onboarding-person-avoid{grid-column:auto}.quick-add.smart .meal-mic{min-width:142px!important;flex:1 1 142px!important}}
 .quick-add.smart{display:flex!important;flex-wrap:wrap!important;align-items:stretch!important}
 .quick-add.smart>input{flex:1 1 320px!important;min-width:0}
