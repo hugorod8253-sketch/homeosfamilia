@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { assessFood } from '../lib/food-assessment';
 import { lookupBarcode, normalizeBarcode, parseBarcodeProduct } from '../lib/barcode-product';
 import { scannedPackage, scannedPackCount, changeScannedQuantity } from '../lib/scanned-package';
 import { normalizeState, addScannedProduct, completePurchase, updateScannedFacts } from '../components/homeos';
@@ -23,6 +24,12 @@ assert.equal(legacyGrade.nutritionPer100g.sugars,4.5,'Per-100ml beverages are pa
 assert.equal(legacyGrade.nutritionBasis,'100 ml');
 const missingGrade=parseBarcodeProduct({product:{code:'3560070791460',product_name:'Yogur',nutriscore_grade:'unknown'}},'3560070791460','food')!;
 assert.equal(missingGrade.nutriScore,undefined,'Unknown grades are never fabricated');
+const caffeinated={...food,ingredients:'agua, azúcar, cafeína, aromas',nutritionPer100g:{'energy-kcal':45,sugars:11.5,'saturated-fat':0,salt:0.1},nutritionBasis:'100 ml' as const};
+assert.equal(assessFood(caffeinated).status,'estimated');
+assert.ok(assessFood(caffeinated).warnings.some(x=>x.includes('cafeína')));
+assert.equal(assessFood({...caffeinated,ingredients:''}).score,null);
+assert.equal(assessFood({...caffeinated,nutritionPer100g:{sugars:10}}).status,'insufficient-data');
+assert.equal(assessFood({...caffeinated,kind:'beauty'}).status,'not-applicable');
 const beauty = parseBarcodeProduct(payload, '3560070791460', 'beauty')!;
 assert.equal(beauty.nutriScore, undefined); assert.deepEqual(beauty.nutritionPer100g, {});
 assert.equal(parseBarcodeProduct(payload, '036000291452', 'food'), undefined);
