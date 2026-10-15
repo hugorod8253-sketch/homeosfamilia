@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const code = normalizeBarcode(params.get('code') ?? '');
   const kind = params.get('kind');
-  if (!code || (kind !== 'food' && kind !== 'beauty' && kind !== 'household'))
+  if (!code || (kind !== 'auto' && kind !== 'food' && kind !== 'beauty' && kind !== 'household'))
     return Response.json({ status: 'invalid', message: 'Revisa el código y el tipo de producto.' }, { status: 400 });
   const key = `${kind}:${code}`, now = Date.now(), hit = cache.get(key);
   if (hit && hit.until > now) return Response.json(hit.result, { headers: { 'Cache-Control':'public, max-age=300' } });
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   let task = pending.get(key);
   if (!task) {
     queries++;
-    task = lookupBarcode(code, kind as ProductKind, { userAgent:'HomeOS/2.0 (https://homeosfamilia.vercel.app)' });
+    task = lookupBarcode(code, kind === 'auto' ? 'food' : kind as ProductKind, { userAgent:'HomeOS/2.0 (https://homeosfamilia.vercel.app)' });
     pending.set(key, task);
   }
   const result = await task;

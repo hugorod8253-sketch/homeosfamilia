@@ -39,11 +39,11 @@ export function parseBarcodeProduct(payload: unknown, barcode: string, kind: Pro
   if (kind === 'food') {
     const nutrients = obj(p.nutriments);
     for (const field of ['energy-kcal', 'proteins', 'carbohydrates', 'sugars', 'fat', 'saturated-fat', 'fiber', 'salt']) {
-      const value = nutrients[`${field}_100g`];
+      const value = nutrients[`${field}_100g`] ?? nutrients[`${field}_100ml`];
       if (typeof value === 'number' && Number.isFinite(value) && value >= 0) nutritionPer100g[field] = value;
     }
   }
-  const grade = kind === 'food' ? str(p.nutriscore_grade)?.toLowerCase() : undefined;
+  const grade = kind === 'food' ? [p.nutriscore_grade, p.nutrition_grades, p.nutrition_grade_fr].map(str).find(value => value && /^[a-e]$/i.test(value))?.toLowerCase() : undefined;
   return {
     barcode, kind, name, brand: str(p.brands), packageSize: str(p.quantity), ingredients,
     categoryText: str(p.categories), categoryTags: Array.isArray(p.categories_tags) ? p.categories_tags.filter((v): v is string => typeof v === 'string' && /^en:[a-z0-9-]+$/.test(v)).slice(-8) : [], nutritionBasis: /^(ml|cl|l)$/i.test(String(p.product_quantity_unit)) ? '100 ml' : '100 g',
@@ -67,7 +67,7 @@ export async function lookupBarcode(value: string, kind: ProductKind, options: {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), options.timeoutMs ?? 8000);
   try {
-    const fields = 'code,product_type,product_name,product_name_es,product_name_en,brands,quantity,product_quantity_unit,categories,categories_tags,ingredients_text,ingredients_text_es,ingredients_text_en,allergens_tags,nutriments,nutriscore_grade,nova_group,additives_tags';
+    const fields = 'code,product_type,product_name,product_name_es,product_name_en,brands,quantity,product_quantity_unit,categories,categories_tags,ingredients_text,ingredients_text_es,ingredients_text_en,allergens_tags,nutriments,nutriscore_grade,nutrition_grades,nutrition_grade_fr,nutriscore_version,nova_group,additives_tags';
     const response = await (options.fetcher ?? fetch)(`https://world.openfoodfacts.org/api/v3/product/${barcode}.json?product_type=all&lc=es&cc=es&fields=${fields}`, {
       signal: abort.signal, credentials: 'omit', headers: { Accept: 'application/json', ...(options.userAgent ? {'User-Agent':options.userAgent} : {}) },
     });
