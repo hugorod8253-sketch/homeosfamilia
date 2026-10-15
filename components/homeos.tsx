@@ -84,7 +84,7 @@ const KITCHEN_TOOLS=["Placa / inducción","Gas","Horno","Air fryer","Microondas"
 const CATEGORIES=["Todos","Fruta y verdura","Carne","Lácteos","Congelados","Preparados","Despensa","Bebidas","Snacks y dulces","Suplementos","Limpieza y hogar","Higiene y cuidado","Por clasificar"];
 const LOCATIONS=["Todo","Nevera","Congelador","Despensa","Revisar"];
 const CATEGORY_LABELS:Record<string,string>={"Todos":"Todo","Lácteos":shoppingCategoryLabel("Lácteos"),"Carne":"Carne y pescado","Fruta y verdura":"Fruta y verdura","Congelados":"Congelados","Despensa":"Despensa","Preparados":"Preparados","Bebidas":"Bebidas","Snacks y dulces":"Snacks y dulces","Suplementos":"Suplementos","Limpieza y hogar":"Limpieza y hogar","Higiene y cuidado":"Higiene y cuidado","Por clasificar":"Revisar"};
-const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥚🥛","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Por clasificar":"📦"};
+const CATEGORY_ICONS:Record<string,string>={"Todos":"▦","Lácteos":"🥚","Carne":"🥩","Fruta y verdura":"🥬","Congelados":"🧊","Despensa":"🥫","Preparados":"🍱","Bebidas":"🥤","Snacks y dulces":"🍪","Suplementos":"＋","Limpieza y hogar":"🧽","Higiene y cuidado":"🫧","Por clasificar":"📦"};
 const LOCATION_ICONS:Record<string,string>={"Todo":"🏠","Nevera":"❄️","Congelador":"🧊","Despensa":"🥫","Revisar":"◌"};
 
 
