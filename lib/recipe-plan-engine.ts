@@ -33,6 +33,10 @@ export function planUnitFamily(unit:string){
  if(["ud","racion","loncha"].includes(u))return "count";
  return "other";
 }
+export function planUnitsCompatible(a:string,b:string){
+ const family=planUnitFamily(a);
+ return family===planUnitFamily(b)&&(family==="mass"||family==="volume"||normalizePlanUnit(a)===normalizePlanUnit(b));
+}
 export function planToBase(amount:number,unit:string){
  const u=normalizePlanUnit(unit);
  if(u==="L"||u==="kg")return amount*1000;
@@ -65,29 +69,36 @@ export function planProductMatches(item:PlanInventoryItem,key:string,ingredientN
  return n.includes(k)||canonical.includes(k)||k.includes(canonical);
 }
 export function recipeShortages(ingredients:PlanIngredient[],inventory:PlanInventoryItem[]):RecipeShortage[]{
- const out:RecipeShortage[]=[];
- for(const ing of ingredients){
-  const parsed=parsePlanQty(ing.qty);
-  if(!parsed)continue;
-  const family=planUnitFamily(parsed.unit);
-  const requiredBase=planToBase(parsed.amount,parsed.unit);
-  let availableBase=0;
-  for(const item of inventory){
-   if(!planProductMatches(item,ing.key,ing.name))continue;
-   if(planUnitFamily(item.unit)!==family)continue;
-   if(family==="count"&&normalizePlanUnit(item.unit)!==normalizePlanUnit(parsed.unit))continue;
-   availableBase+=planToBase(Math.max(0,item.qty),item.unit);
+ // Allocate every confirmed inventory quantity once. Repeating an ingredient
+ // or using both a generic and a specific ingredient must not double-count food.
+ const remaining=inventory.map(item=>Number.isFinite(item.qty)?planToBase(Math.max(0,item.qty),item.unit):0);
+ const demands=ingredients.flatMap((ingredient,index)=>{
+  const parsed=parsePlanQty(ingredient.qty);
+  if(!parsed||parsed.amount<=0)return [];
+  const matches=inventory.flatMap((item,itemIndex)=>planProductMatches(item,ingredient.key,ingredient.name)&&planUnitsCompatible(item.unit,parsed.unit)?[itemIndex]:[]);
+  return [{ingredient,index,parsed,matches}];
+ });
+ // Allocate constrained ingredients first (e.g. carrots before generic vegetables).
+ demands.sort((a,b)=>a.matches.length-b.matches.length||a.index-b.index);
+ const shortages:Array<{index:number;shortage:RecipeShortage}>=[];
+ for(const {ingredient,index,parsed,matches} of demands){
+  const needed=planToBase(parsed.amount,parsed.unit);
+  let unfilled=needed;
+  for(const itemIndex of matches){
+   if(unfilled<=0)break;
+   const used=Math.min(unfilled,remaining[itemIndex]);
+   remaining[itemIndex]-=used;
+   unfilled-=used;
   }
-  const missingBase=Math.max(0,requiredBase-availableBase);
-  if(missingBase<=0)continue;
-  out.push({
-   name:ing.name,key:ing.key,unit:parsed.unit,
+  if(unfilled<=0.000001)continue;
+  shortages.push({index,shortage:{
+   name:ingredient.name,key:ingredient.key,unit:parsed.unit,
    required:Math.round(parsed.amount*100)/100,
-   available:Math.round(planFromBase(availableBase,parsed.unit)*100)/100,
-   missing:Math.round(planFromBase(missingBase,parsed.unit)*100)/100
-  });
+   available:Math.round(planFromBase(needed-unfilled,parsed.unit)*100)/100,
+   missing:Math.round(planFromBase(unfilled,parsed.unit)*100)/100
+  }});
  }
- return out;
+ return shortages.sort((a,b)=>a.index-b.index).map(x=>x.shortage);
 }
 
 /** Allocate real ingredients once; preserve unrelated inventory and incompatible units. */
@@ -119,7 +130,7 @@ export function sumSources(sources:ShoppingSource[],unit:string){
  const family=planUnitFamily(unit);
  let totalBase=0;
  for(const source of sources){
-  if(planUnitFamily(source.unit)!==family)continue;
+  if(!planUnitsCompatible(source.unit,unit))continue;
   totalBase+=planToBase(source.qty,source.unit);
  }
  return Math.round(planFromBase(totalBase,unit)*100)/100;
@@ -135,7 +146,7 @@ export function freeInventoryAfterReservations<T extends PlanInventoryItem & {pl
   let freeBase=planToBase(Math.max(0,item.qty),item.unit);
   for(const reservation of item.planReservations||[]){
    if(!reservation.planId||!active.has(reservation.planId)||reservation.planId===exceptPlanId)continue;
-   if(planUnitFamily(reservation.unit)!==planUnitFamily(item.unit))continue;
+   if(!planUnitsCompatible(reservation.unit,item.unit))continue;
    freeBase-=planToBase(Math.max(0,reservation.qty),reservation.unit);
   }
   const qty=Math.max(0,Math.round(planFromBase(Math.max(0,freeBase),item.unit)*100)/100);
@@ -151,7 +162,7 @@ export function remainingSourcesAfterPurchase(sources:ShoppingSource[],purchased
  const next=[...sources];
  for(const {source,index} of ordered){
   if(remainingBase<=0)break;
-  if(planUnitFamily(source.unit)!==planUnitFamily(purchasedUnit))continue;
+  if(!planUnitsCompatible(source.unit,purchasedUnit))continue;
   const sourceBase=planToBase(Math.max(0,source.qty),source.unit);
   const fulfilled=Math.min(sourceBase,remainingBase);
   const left=Math.max(0,sourceBase-fulfilled);
@@ -165,7 +176,7 @@ export function remainingSourcesAfterPurchase(sources:ShoppingSource[],purchased
 export function resizeShoppingSources(sources:ShoppingSource[],targetQty:number,unit:string){
  const current=sumSources(sources,unit);
  if(targetQty<=current)return remainingSourcesAfterPurchase(sources,current-Math.max(0,targetQty),unit);
- const first=sources.findIndex(s=>planUnitFamily(s.unit)===planUnitFamily(unit));
+ const first=sources.findIndex(s=>planUnitsCompatible(s.unit,unit));
  if(first<0)return sources;
  return sources.map((s,i)=>i===first?{...s,qty:Math.round((s.qty+planFromBase(planToBase(targetQty-current,unit),s.unit))*100)/100}:s);
 }
