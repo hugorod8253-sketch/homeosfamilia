@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {normalizeState} from "../components/homeos";
 import {recipeShortages,sumSources,remainingSourcesAfterPurchase,resizeShoppingSources,freeInventoryAfterReservations,planUnitsCompatible,consumePlanIngredients} from "../lib/recipe-plan-engine";
 import {startAutoPrepared,estimatePreparedRemaining,advanceAutoPrepared} from "../lib/quick-inventory";
 
@@ -61,3 +63,35 @@ assert.equal(estimatePreparedRemaining(prepared,"2026-10-27")?.estimatedQty,0);
 assert.equal(prepared.qty,4);
 assert.equal(estimatePreparedRemaining({...prepared,location:"Congelador"},"2026-10-22"),null);
 console.log("PASS: shared recipe quantities, vegetable priority, distinct units, FEFO and meal-prep estimates without silent deductions");
+
+const baseState=normalizeState({profile:{onboardingDone:true,dailyRoutineIntakes:[
+ {id:"coffee",qty:3,unit:"cafés",period:"día"},
+ {id:"milk",qty:2,unit:"vasos",period:"día"},
+ {id:"protein",qty:1,unit:"batidos",period:"día"},
+ {id:"energy",qty:0,unit:"latas",period:"día"},
+ {id:"vitamins",qty:1,unit:"tomas",period:"día"},
+ {id:"invalid",qty:99999,unit:"g",period:"día"}
+]},inventory:[{id:"coffee-bag",name:"Café molido",qty:250,unit:"g",stock:"hay",category:"Despensa",location:"Despensa"}]});
+assert.equal(baseState.profile.dailyRoutineIntakes?.length,5);
+assert.equal(baseState.profile.dailyRoutineIntakes?.find(r=>r.id==="coffee")?.qty,3);
+assert.equal(baseState.inventory[0].qty,250,"three coffees a day must not fabricate gram consumption");
+const restored=normalizeState(JSON.parse(JSON.stringify(baseState)));
+assert.deepEqual(restored.profile.dailyRoutineIntakes,baseState.profile.dailyRoutineIntakes,"save and reload keeps explicitly chosen human routines");
+const markup=readFileSync("components/homeos.tsx","utf8");
+const css=readFileSync("app/globals.css","utf8");
+assert(!markup.includes("disabled={step<4&&!confirmedSteps.includes(step)}"),"onboarding should not prevent Continue on a displayed default");
+assert(markup.includes("confirmedSteps.includes(0)&&state.profile.householdSize===n"),"initial household size must not appear user-selected");
+assert(markup.includes("confirmedSteps.includes(1)&&state.profile.shoppingCycle===id"),"shopping cycle must not appear user-selected");
+assert(markup.includes("explicitOptional.includes(\"budget\")"),"optional budget cannot look selected without a tap");
+const homeStart=markup.indexOf('return <section className="home-final">');
+const actionStart=markup.indexOf('<article className="home-final-actions">',homeStart);
+const ideasStart=markup.indexOf('<section className="home-final-top">',homeStart);
+const summaryStart=markup.indexOf('<section className="home-final-mid">',homeStart);
+assert(homeStart>=0&&actionStart>homeStart&&actionStart<ideasStart&&ideasStart<summaryStart,"home action shortcuts should be visible before secondary content");
+const homeActions=markup.slice(actionStart,ideasStart);
+assert.equal((homeActions.match(/<button\b/g)||[]).length,6,"the first row should contain six balanced quick actions");
+assert(homeActions.includes('homeTicketInput.current?.click()'),"ticket chooser should open directly within tap");
+assert(markup.includes('onChange={e=>{const file=e.currentTarget.files?.[0]'),"receipt file must flow from Home to shopping OCR");
+assert(!markup.includes('<section className="homeos-scan-feature"'),"scanner already lives in the mobile center navigation");
+assert(css.includes('border-radius:12px!important')&&css.includes('/* Voice is a labeled rectangular action'),"shopping microphone must be a labeled rectangle");
+console.log("PASS: explicit onboarding selections, readable routine units, mobile home shortcuts and direct receipt capture");
