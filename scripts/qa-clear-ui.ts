@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {observeStock,startAutoPrepared,advanceAutoPrepared,remainingAutoDays} from '../lib/quick-inventory';
+import {observeStock,startAutoPrepared,advanceAutoPrepared,estimatePreparedRemaining,remainingAutoDays} from '../lib/quick-inventory';
 import {quickStockChoices,speechErrorMessage} from '../lib/quick-stock';
 import {splitShoppingEntries,shoppingInputNeedsReview} from '../lib/shopping-input';
 import {freshnessNotice} from '../lib/household-reading';
@@ -30,17 +30,22 @@ const observation=observeStock({qty:900,stock:'hay',lastConfirmedAt:'2026-10-08'
 assert.equal(observation.qty,900);assert.equal(observation.lastConfirmedAt,undefined);
 assert.equal(observeStock({qty:0,stock:'falta'},'bastante').qty,0);
 const prepared=startAutoPrepared({qty:7,servings:7,stock:'hay',source:'mealprep',location:'Nevera'},7,'2026-10-01');
+// A plan may estimate future use, but it cannot silently mutate confirmed stock.
 const dayThree=advanceAutoPrepared(prepared,'2026-10-04');
-assert.equal(dayThree.qty,4);assert.equal(dayThree.servings,4);
-assert.equal(advanceAutoPrepared(dayThree,'2026-10-04'),dayThree);
-assert.equal(advanceAutoPrepared(prepared,'2026-09-30'),prepared);
-const finished=advanceAutoPrepared(dayThree,'2026-10-08');
-assert.equal(finished.qty,0);assert.equal(finished.mealPrepAutoDepleted,true);assert.equal(finished.stock,'incierto');
-assert.equal(advanceAutoPrepared(finished,'2026-12-01'),finished);
+assert.equal(dayThree,prepared);
+assert.equal(dayThree.qty,7);assert.equal(dayThree.servings,7);
+assert.equal(estimatePreparedRemaining(prepared,'2026-10-04')?.estimatedQty,4);
+assert.equal(estimatePreparedRemaining(prepared,'2026-09-30')?.estimatedQty,7);
+assert.equal(estimatePreparedRemaining(prepared,'2026-10-08')?.estimatedQty,0);
+assert.equal(advanceAutoPrepared(dayThree,'2026-10-08'),prepared);
+assert.equal(advanceAutoPrepared(prepared,'2026-12-01'),prepared);
 const frozen={...prepared,location:'Congelador'};assert.equal(advanceAutoPrepared(frozen,'2026-10-04'),frozen);
+assert.equal(estimatePreparedRemaining(frozen,'2026-10-04'),null);
 const paused={...dayThree,mealPrepAuto:false};assert.equal(advanceAutoPrepared(paused,'2026-10-20'),paused);
+assert.equal(estimatePreparedRemaining(paused,'2026-10-04'),null);
 assert.equal(remainingAutoDays(dayThree,'2026-10-04'),4);
 const corrected=startAutoPrepared({...dayThree,qty:5,servings:5},4,'2026-10-04');
 assert.equal(advanceAutoPrepared(corrected,'2026-10-04').qty,5);
-assert.equal(advanceAutoPrepared(corrected,'2026-10-08').qty,0);
-console.log('PASS: quick observations do not invent quantities; daily meal prep is idempotent, correctable, paused in freezer and separate from confirmed consumption');
+assert.equal(advanceAutoPrepared(corrected,'2026-10-08').qty,5);
+assert.equal(estimatePreparedRemaining(corrected,'2026-10-08')?.estimatedQty,0);
+console.log('PASS: quick stock remains an observation; meal prep forecast never modifies confirmed stock; paused and frozen forecasts are disabled');
