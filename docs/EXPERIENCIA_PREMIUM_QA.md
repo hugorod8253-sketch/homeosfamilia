@@ -46,3 +46,16 @@
 
 ## Próximo paso comprobable
 Validar los checks del PR, revisar las pantallas representativas en un móvil real (Inicio con/sin menú, Lista, Libro, Casa) y cerrar un recorrido completo compra → inventario → menú/receta → consumo → deshacer antes de declarar «premium» la experiencia.
+
+
+## Revisión UX del 20/10/2026 — onboarding e Inicio
+- **Onboarding sin preselección engañosa:** las respuestas iniciales de personas, ritmo de compra, estilo de cocina y hábitos solo aparecen marcadas tras un toque explícito. La selección de dieta y presupuesto opcionales también comienza sin marca. «Continuar» siempre funciona; las respuestas omitidas mantienen valores técnicos generales configurables después, no decisiones atribuidas al usuario.
+- **Hábitos cotidianos:** café (cafés/día), leche (vasos/día), proteína en polvo (batidos/día), bebidas energéticas (latas/día) y vitaminas (tomas/día). No convertir automáticamente a gramos, litros ni envases: tamaño de taza, brick, cacito y dosis cambian según usuario y producto. Estos hábitos se guardan aparte de la cantidad confirmada de compra e inventario.
+- **Guardar respuestas:** botones «Guardar y continuar» / «Omitir por ahora» al final de todas las preguntas, agrupados y pegados al borde inferior disponible para mejor acceso.
+- **Inicio móvil:** seis accesos rápidos en 3 columnas y 2 filas, justo debajo del saludo: escanear ticket, cenas rápidas, con lo que hay, nueva receta, cocinas del mundo y añadir a casa; después ideas, resumen y agenda. Se elimina la frase redundante bajo el saludo.
+- **Ticket directo:** al pulsar «Escanear ticket» se abre el selector de captura en ese mismo gesto, antes de cambiar a Comprar. El archivo seleccionado se entrega al OCR existente con revisión antes de registrar.
+- **Escáner de productos:** una entrada central en navegación móvil y la acción del encabezado en escritorio. Se elimina la tarjeta promocional duplicada de Inicio/Comprar.
+- **Dictado de compra:** control rectangular con icono y texto, tamaño táctil suficiente; no círculo decorativo.
+- **Sin sexto icono en navegación fija:** cinco destinos es intencional; el sexto acceso completa la cuadrícula de Inicio, sin saturar la navegación persistente.
+
+**Verificación pendiente:** probar visualmente el tamaño real de la barra inferior, la apertura de cámara para tickets y el dictado en un iPhone físico; probar también en Android y revisar movimiento reducido. Los tests de CI validan código y regresiones, no sustituyen una comprobación física.
