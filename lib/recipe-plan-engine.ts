@@ -127,7 +127,6 @@ export function consumePlanIngredients<T extends PlanInventoryItem>(items:T[],in
  return {inventory,exact};
 }
 export function sumSources(sources:ShoppingSource[],unit:string){
- const family=planUnitFamily(unit);
  let totalBase=0;
  for(const source of sources){
   if(!planUnitsCompatible(source.unit,unit))continue;
