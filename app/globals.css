@@ -2490,3 +2490,15 @@ main p,.modal p{font-size:16px!important}
 
 /* First-run visual hierarchy: distinct steps, clearer selections */
 .onboarding-card{border:1px solid #d5dfed!important;box-shadow:0 12px 38px #203d6320!important}.onboarding-progress{background:#e4ebf5!important;border-radius:999px!important;overflow:hidden}.onboarding-progress span{background:linear-gradient(90deg,#215ab0,#0c8d98)!important}.ob-panel{background:#f7f9fc;border:1px solid #e1e8f1;border-radius:18px;padding:clamp(14px,3vw,24px)}.ob-panel .eyebrow{color:#24589b!important;font-weight:800;letter-spacing:.09em}.ob-panel .number-grid .choice,.ob-panel .goal-grid .goal-choice,.ob-panel .market-grid .choice{border:2px solid #d3dfeb!important;background:#fff!important;color:#233b56!important;border-radius:14px!important;min-height:52px}.ob-panel .number-grid .choice.active,.ob-panel .goal-grid .goal-choice.active,.ob-panel .market-grid .choice.active{border-color:#1d63b6!important;background:#e6f0ff!important;color:#124984!important;box-shadow:inset 0 0 0 1px #1d63b6}.onboarding-required-note{font-size:13px;line-height:1.5;color:#51677e;padding:8px 4px}.ob-actions button:disabled{opacity:.6;cursor:not-allowed}@media(max-width:700px){.onboarding-card{padding:12px!important}.ob-panel{padding:15px}.ob-panel .goal-grid{gap:10px}.ob-panel .goal-grid .goal-choice{padding:14px!important;text-align:left}}
+
+
+/* HomeOS · five-action mobile navigation: readable, safe-area aware, no duplicate scanner CTA. */
+@media (max-width:720px){
+ .topbar .scanner-entry{display:none!important}
+ .bottom-nav button{min-height:60px;min-width:0;touch-action:manipulation}
+ .bottom-nav button .nav-icon{width:27px!important;height:25px!important}
+ .bottom-nav button .nav-icon svg{width:20px!important;height:20px!important}
+ .bottom-nav button small{display:block;font-size:clamp(11px,3.5vw,14px)!important;font-weight:650!important;white-space:nowrap;letter-spacing:-.01em}
+ .bottom-nav .scanner-tab .nav-icon{color:#2e6b9b!important}
+ .bottom-nav .scanner-tab.active,.bottom-nav .scanner-tab.active .nav-icon{color:#155c94!important}
+}
