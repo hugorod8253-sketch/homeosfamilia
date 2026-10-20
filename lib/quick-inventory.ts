@@ -9,15 +9,18 @@ export function startAutoPrepared<T extends AutoPrepared>(item:T,days:number,tod
  const qty=Math.max(0,item.servings??item.qty);
  return {...item,mealPrepAuto:true,mealPrepAutoStart:today,mealPrepAutoQty:qty,mealPrepAutoDays:Math.max(1,Math.min(30,Math.round(days))),mealPrepAutoApplied:0,mealPrepAutoDepleted:false};
 }
-/** Idempotent calendar-based deduction; never logs a meal or changes ingredients. */
-export function advanceAutoPrepared<T extends AutoPrepared>(item:T,today=localDateIso()):T{
- if(!item.mealPrepAuto||item.source!=='mealprep'||item.location==='Congelador'||!item.mealPrepAutoStart||!isCalendarDate(item.mealPrepAutoStart)||!isCalendarDate(today)||!item.mealPrepAutoDays||!Number.isFinite(item.mealPrepAutoQty))return item;
- const elapsed=Math.max(0,-calendarDaysUntil(item.mealPrepAutoStart,new Date(today+'T12:00:00')));
- const target=Math.floor(item.mealPrepAutoQty!*Math.min(elapsed,item.mealPrepAutoDays)/item.mealPrepAutoDays);
- const applied=item.mealPrepAutoApplied||0;
- if(target<=applied)return item;
- const qty=Math.max(0,(item.servings??item.qty)-(target-applied));
- return {...item,qty,servings:qty,stock:qty===0?'incierto':item.stock,mealPrepAutoApplied:target,mealPrepAutoDepleted:qty===0};
+/** A consumption plan is a forecast, not evidence that portions were eaten.
+ * Only an explicit meal, discard or inventory recount may change stock. */
+export function estimatePreparedRemaining(item:AutoPrepared,today=localDateIso()){
+ if(!item.mealPrepAuto||item.source!=="mealprep"||item.location==="Congelador"||!item.mealPrepAutoStart||!isCalendarDate(item.mealPrepAutoStart)||!isCalendarDate(today)||!item.mealPrepAutoDays||!Number.isFinite(item.mealPrepAutoQty))return null;
+ const days=Math.max(1,item.mealPrepAutoDays);
+ const elapsed=Math.max(0,-calendarDaysUntil(item.mealPrepAutoStart,new Date(today+"T12:00:00")));
+ const initial=Math.max(0,item.mealPrepAutoQty||0);
+ return {estimatedQty:Math.min(Math.max(0,item.servings??item.qty),Math.max(0,initial-Math.floor(initial*Math.min(elapsed,days)/days))),daysRemaining:Math.max(0,days-elapsed)};
+}
+/** Legacy entry point. Stop persisting predictions as confirmed consumption. */
+export function advanceAutoPrepared<T extends AutoPrepared>(item:T,_today=localDateIso()):T{
+ return item;
 }
 export function remainingAutoDays(item:AutoPrepared,today=localDateIso()){
  const elapsed=item.mealPrepAutoStart&&isCalendarDate(item.mealPrepAutoStart)?Math.max(0,-calendarDaysUntil(item.mealPrepAutoStart,new Date(today+'T12:00:00'))):0;
