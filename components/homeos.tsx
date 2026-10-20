@@ -610,6 +610,7 @@ export default function HomeOS(){
  const [syncCreds,setSyncCreds]=useState<SyncCredentials|null>(null);
  const [syncStatus,setSyncStatus]=useState<"local"|"connecting"|"synced"|"error">("local");
  const [ticketCameraRequest,setTicketCameraRequest]=useState(0);
+ const [homeTicketToRead,setHomeTicketToRead]=useState<{file:File;id:number}|null>(null);
  const receiptRef=useRef<HTMLInputElement>(null);
  const syncRevisionRef=useRef(0);
  const lastSyncedJsonRef=useRef("");
@@ -936,11 +937,11 @@ export default function HomeOS(){
 
   <main className="main">
    <header className={view==="inicio"?"topbar home-topbar":"topbar"}>{view!=="inicio"&&<div className="topbar-title"><div><span className="eyebrow">{fmtDate()}</span><h1>{view==="habitos"?"Hábitos":nav.find(n=>n.id===view)?.label}</h1></div></div>}<div className="top-actions"><button className="scanner-entry" onClick={()=>{setScannerItem(null);setScannerOpen(true)}} aria-label="Escanear producto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7v10M10 7v10M14 7v10M17 7v10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Escanear</span></button>{syncCreds&&<span className={`sync-pill ${syncStatus}`} title="Estado de sincronización del hogar; no es el estado de la IA">{syncStatus==="synced"?"● Hogar sincronizado":syncStatus==="connecting"?"↻ Guardando hogar":syncStatus==="error"?"! Hogar sin conexión":"Hogar local"}</span>}{view==="inicio"?<button className="notification-button" onClick={()=>setToast("No tienes avisos nuevos")} aria-label="Avisos" title="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>:<button className="help-button" onClick={()=>setTourOpen(true)} aria-label="Ver guía rápida" title="Ver guía rápida">?</button>}<button className="avatar" onClick={()=>setProfileOpen(true)}>FR</button></div></header>
-   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={()=>{setView("comprar");setTicketCameraRequest(v=>v+1)}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
+   {view==="inicio"&&<Inicio state={state} setState={setState} expiring={expiring} confidence={confidence} available={available} setView={setView} setCasaFocus={setCasaFocus} openRecipeIdea={(title)=>{setComerFocus("ideas");setMealSeed(title);setView("comer")}} openNewRecipe={()=>{setComerFocus("catalog");setMealSeed("");setView("comer")}} scanTicket={file=>{setHomeTicketToRead({file,id:Date.now()});setView("comprar")}} openHabits={()=>{setView("habitos")}} openThemes={()=>{setComerFocus("themes");setView("comer")}} openProfile={()=>setProfileOpen(true)} notify={()=>setToast("No tienes avisos nuevos")} demoMode={demoMode}/>} 
    {view==="habitos"&&<section className="stack"><Habitos state={state} onAdjust={()=>setConsumptionSetupOpen(true)} onOpenCasa={()=>{setCasaFocus("all");setView("casa")}}/></section>}
    {view==="comer"&&<Comer state={state} setState={setState} addFromRecipe={addFromRecipe} saveRecipePlan={saveRecipePlan} cancelRecipePlan={cancelRecipePlan} unlinkRecipeShopping={unlinkRecipeShopping} setToast={setToast} mealSeed={mealSeed} clearMealSeed={()=>setMealSeed("")} focusTab={comerFocus} clearFocusTab={()=>setComerFocus(null)}/>}
-   {(view==="inicio"||view==="comprar")&&<section className="homeos-scan-feature" aria-label="Escanear y analizar productos"><div className="homeos-scan-feature-icon" aria-hidden="true">▥</div><div className="homeos-scan-feature-copy"><strong>Escanea antes de comprar</strong><span>Descubre qué lleva, compara su valoración y añádelo a tu compra o inventario.</span></div><button type="button" className="homeos-scan-feature-action" onClick={()=>{setScannerItem(null);setScannerOpen(true)}}>Escanear producto →</button></section>}
-   {view==="comprar"&&<Comprar reviewHome={(command)=>{setCasaCommand(command);setCasaFocus("all");setView("casa")}} openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest}/>}
+
+   {view==="comprar"&&<Comprar reviewHome={(command)=>{setCasaCommand(command);setCasaFocus("all");setView("casa")}} openProductFacts={openProductFacts} state={state} setState={setState} addFromRecipe={addFromRecipe} activeStore={activeStore} setActiveStore={setActiveStore} shoppingActive={shoppingActive} setShoppingActive={setShoppingActive} finishShopping={finishShopping} receiptRef={receiptRef} setToast={setToast} deviceMemberId={deviceMemberId} setDeviceMemberId={setDeviceMemberId} cameraRequest={ticketCameraRequest} incomingTicket={homeTicketToRead} onTicketHandled={()=>setHomeTicketToRead(null)}/>}
    {view==="casa"&&<Casa initialCommand={casaCommand} clearCommand={()=>setCasaCommand(null)} openProductFacts={openProductFacts} state={state} setState={setState} setToast={setToast} focus={casaFocus} clearFocus={()=>setCasaFocus("all")} openRecipes={(name)=>{setComerFocus("ideas");setMealSeed(name);setView("comer")}}/>}
    {view==="finanzas"&&<Finanzas state={state} setState={setState} available={available} monthlySpent={monthlySpent}/>}
   </main>
@@ -1082,9 +1083,10 @@ function MiniAgenda({state,onOpen}:{state:AppState;onOpen:()=>void}){
  </article>
 }
 
-function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openThemes,openProfile,notify,demoMode}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string,slot?:WeeklyMenuPlan["slots"][number])=>void;openNewRecipe:()=>void;scanTicket:()=>void;openHabits:()=>void;openThemes:()=>void;openProfile:()=>void;notify:()=>void;demoMode:"menu"|"ideas"|null}){
+function Inicio({state,setState,expiring,confidence,available,setView,setCasaFocus,openRecipeIdea,openNewRecipe,scanTicket,openHabits,openThemes,openProfile,notify,demoMode}:{state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;expiring:InventoryItem[];confidence:number;available:number;setView:(v:View)=>void;setCasaFocus:(v:"all"|"expiring"|"prepared"|"reserve")=>void;openRecipeIdea:(title:string,slot?:WeeklyMenuPlan["slots"][number])=>void;openNewRecipe:()=>void;scanTicket:(file:File)=>void;openHabits:()=>void;openThemes:()=>void;openProfile:()=>void;notify:()=>void;demoMode:"menu"|"ideas"|null}){
  const [now,setNow]=useState(()=>new Date());
  const [calendarOpen,setCalendarOpen]=useState(false);
+ const homeTicketInput=useRef<HTMLInputElement>(null);
  const [weather,setWeather]=useState<number|null>(null);
  useEffect(()=>{const id=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(id)},[]);
  useEffect(()=>{
@@ -1125,9 +1127,22 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
  return <section className="home-final">
   <div className="home-mobile-brand"><div className="home-mobile-brand-id">{logo()}<div><strong>HomeOS</strong><small>Tu cocina, sin carga mental</small></div></div><div className="home-mobile-brand-actions"><button className="notification-button" onClick={notify} aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 19a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button><button className="avatar" onClick={openProfile}>FR</button></div></div>
   <header className="home-final-head">
-   <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2><p>Todo bajo control. Aquí tienes tu resumen de hoy.</p></div>
+   <div><span className="eyebrow">{new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(now)}</span><h2>{greeting}.</h2></div>
    <div className="home-weather"><span>{hour>=20||hour<7?"☾":"☀"}</span><div><strong>{demoMode?18+"°C":weather!==null?weather+"°C":now.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</strong><small>{demoMode||weather!==null?"Sabadell":"Ahora"}</small></div></div>
   </header>
+
+  <input ref={homeTicketInput} className="home-ticket-input" type="file" accept="image/*" capture="environment" aria-label="Foto del ticket" onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";if(file)scanTicket(file)}}/>
+   <article className="home-final-actions">
+    <div className="home-card-head"><div><small>ACCESOS RÁPIDOS</small><strong>¿Qué necesitas hacer?</strong></div></div>
+    <div className="home-final-action-grid">
+     <button className="action-ticket" onClick={()=>homeTicketInput.current?.click()}><span aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M4 11V5h6M22 5h6v6M28 22v5h-6M10 27H4v-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M11 9h10v15l-2-1-3 1-3-1-2 1Z" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M14 13h4M14 17h4" stroke="currentColor" strokeWidth="1.7"/></svg></span><strong>Escanear ticket</strong></button>
+     <button onClick={()=>openRecipeIdea("Quiero una cena rápida")}><span>⚡</span><strong>Cenas rápidas</strong></button>
+     <button onClick={()=>openRecipeIdea("")}><span>🍳</span><strong>Con lo que hay</strong></button>
+     <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong></button>
+     <button onClick={openThemes}><span>🍣</span><strong>Cocinas del mundo</strong></button>
+     <button onClick={()=>{setCasaFocus("all");setView("casa")}}><span>⌂</span><strong>Añadir a Casa</strong></button>
+    </div>
+   </article>
 
   <section className="home-final-top">
    <article className="home-final-menu">
@@ -1139,16 +1154,7 @@ function Inicio({state,setState,expiring,confidence,available,setView,setCasaFoc
    <article className="home-theme-card"><img className="home-theme-photo" src={themeRecipes(themeForMonth().id,RECIPES)[0]?.image||"/recipe-images/x20.webp"} alt={themeRecipes(themeForMonth().id,RECIPES)[0]?.title||"Pizza"}/><span>{themeForMonth().icon}</span><div><small>DESCUBRE ESTE MES</small><strong>{themeForMonth().title}</strong><p>Una temática distinta cada mes. Elige cuándo probarla.</p></div><button onClick={openThemes}>Explorar ›</button></article>
   </section>
 
-   <article className="home-final-actions">
-    <div className="home-card-head"><div><small>ACCESOS RÁPIDOS</small><strong>Hazlo en un toque</strong></div></div>
-    <div className="home-final-action-grid">
-     <button onClick={()=>openRecipeIdea("Quiero una cena rápida")}><span>⚡</span><strong>Cenas rápidas</strong></button>
-     <button onClick={openNewRecipe}><span>＋</span><strong>Nueva receta</strong></button>
-     <button onClick={scanTicket}><span aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M4 11V5h6M22 5h6v6M28 22v5h-6M10 27H4v-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M11 9h10v15l-2-1-3 1-3-1-2 1Z" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M14 13h4M14 17h4" stroke="currentColor" strokeWidth="1.7"/></svg></span><strong>Escanear ticket</strong></button>
-     <button onClick={()=>{setCasaFocus("all");setView("casa")}}><span>⌂</span><strong>Añadir a Casa</strong></button>
-     <button onClick={openThemes}><span>🍣</span><strong>Cocinas del mundo</strong></button>
-    </div>
-   </article>
+
 
   <section className="home-final-mid">
    <div className="home-final-summary">
@@ -1616,7 +1622,7 @@ export function attachReceiptToPurchase(s:AppState,sessionId:string,items:Receip
  return next;
 }
 
-function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest}:{reviewHome:(command:HomeStatement)=>void;openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number}){
+function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activeStore,setActiveStore,shoppingActive,setShoppingActive,finishShopping,receiptRef,setToast,deviceMemberId,setDeviceMemberId,cameraRequest,incomingTicket,onTicketHandled}:{reviewHome:(command:HomeStatement)=>void;openProductFacts:(item:ProductFactsItem)=>void;state:AppState;setState:React.Dispatch<React.SetStateAction<AppState>>;addFromRecipe:(r:Recipe,plannedFor?:string)=>void;activeStore:string;setActiveStore:(s:string)=>void;shoppingActive:boolean;setShoppingActive:(b:boolean)=>void;finishShopping:(total?:number)=>void;receiptRef:React.RefObject<HTMLInputElement|null>;setToast:(s:string)=>void;deviceMemberId:string;setDeviceMemberId:(id:string)=>void;cameraRequest:number;incomingTicket:{file:File;id:number}|null;onTicketHandled:()=>void}){
  const [quick,setQuick]=useState("");
  const [homeStatements,setHomeStatements]=useState<HomeStatement[]>([]);
  const [bulkHelpDismissed,setBulkHelpDismissed]=useState(false);
@@ -1674,6 +1680,7 @@ function Comprar({reviewHome,openProductFacts,state,setState,addFromRecipe,activ
  const [ocrTotal,setOcrTotal]=useState<number|undefined>(undefined);
  const [ocrPhotoCount,setOcrPhotoCount]=useState(0);
  const receiptCameraRef=useRef<HTMLInputElement>(null);
+ useEffect(()=>{if(incomingTicket){onTicketHandled();void ticketSelected(incomingTicket.file)}},[incomingTicket]);
  useEffect(()=>{if(cameraRequest>0)requestAnimationFrame(()=>setTimeout(()=>receiptCameraRef.current?.click(),60))},[cameraRequest]);
  const members=state.members.slice(0,state.profile.householdSize);
  const currentMember=members.find(m=>m.id===deviceMemberId)||members[0];
